@@ -871,7 +871,7 @@ function openPrint(id){
   const r = cachedList.find(x=>x.id===id);
   if(!r) return;
 
-  document.getElementById('p-department').textContent = `（${r.department || '　　　　　　　　　　　　　　'}）`;
+  document.getElementById('p-department').textContent = r.department ? `（営繕部${r.department}）` : `（　　　　　　　　　　　　　　）`;
   document.getElementById('p-submit-date').innerHTML = fmtReiwaLine(r.submit_date, '提出', true);
   document.getElementById('p-start-date').innerHTML = fmtReiwaLine(r.start_date, '　　着 工 予 定');
   document.getElementById('p-end-date').innerHTML = fmtReiwaLine(r.end_date, '　　終 了 予 定');
