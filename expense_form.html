@@ -1,0 +1,940 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>予想経費申請書</title>
+<style>
+  :root{
+    --ink:#e2604a;
+    --ink-dark:#b8412c;
+    --paper:#fffdf9;
+    --line:#e4ded2;
+    --text:#2b2622;
+    --muted:#8a7f6e;
+    --panel:#ffffff;
+    --accent-bg:#fbf3ea;
+  }
+  *{box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact;color-adjust:exact;}
+  body{
+    margin:0;
+    font-family:"Hiragino Kaku Gothic ProN","Yu Gothic",-apple-system,BlinkMacSystemFont,sans-serif;
+    background:#f3efe6;
+    color:var(--text);
+  }
+  .app{max-width:1800px;margin:0 auto;padding:28px 20px 80px;}
+  .app-header{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:22px;flex-wrap:wrap;gap:8px;}
+  .app-header h1{font-size:22px;margin:0;letter-spacing:.04em;}
+  .app-header h1 span{color:var(--ink);}
+  .app-header p{margin:4px 0 0;color:var(--muted);font-size:12.5px;}
+
+  .tabs{display:flex;gap:6px;margin-bottom:20px;}
+  .tab{
+    padding:9px 18px;border:1px solid var(--line);background:var(--panel);
+    border-radius:8px;cursor:pointer;font-size:14px;color:var(--muted);
+  }
+  .tab.active{background:var(--ink);border-color:var(--ink);color:#fff;font-weight:600;}
+
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:26px;}
+
+  .field-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px 22px;}
+  .field{display:flex;flex-direction:column;gap:5px;}
+  .field.full{grid-column:1 / -1;}
+  .field label{font-size:12.5px;color:var(--muted);font-weight:600;}
+  .field input, .field select, .field textarea{
+    border:1px solid #d8d1c2;border-radius:7px;padding:9px 10px;font-size:14px;
+    font-family:inherit;background:#fffefb;color:var(--text);
+  }
+  .locked-field{background:#f0ece0 !important;color:var(--muted);cursor:not-allowed;opacity:1 !important;}
+  .field input:focus, .field select:focus, .field textarea:focus{
+    outline:none;border-color:var(--ink);box-shadow:0 0 0 3px rgba(165,42,32,.1);
+  }
+  .field textarea{resize:vertical;min-height:64px;}
+  .form-title{font-size:15px;font-weight:700;margin-bottom:16px;color:var(--ink);}
+  .list-toolbar{margin-bottom:14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
+  .search-wrap{position:relative;width:100%;max-width:320px;}
+  #year-filter{
+    border:1px solid #d8d1c2;border-radius:7px;padding:9px 12px;
+    font-size:13.5px;font-family:inherit;background:#fffefb;color:var(--text);
+  }
+  #year-filter:focus{outline:none;border-color:var(--ink);box-shadow:0 0 0 3px rgba(165,42,32,.1);}
+  .list-toolbar input{
+    width:100%;max-width:320px;border:1px solid #d8d1c2;border-radius:7px;padding:9px 34px 9px 12px;
+    font-size:13.5px;font-family:inherit;background:#fffefb;color:var(--text);box-sizing:border-box;
+  }
+  .list-toolbar input:focus{outline:none;border-color:var(--ink);box-shadow:0 0 0 3px rgba(165,42,32,.1);}
+  .search-clear-btn{
+    position:absolute;right:6px;top:50%;transform:translateY(-50%);
+    width:22px;height:22px;border-radius:50%;background:#e8e1d2;color:var(--muted);
+    font-size:15px;line-height:1;display:flex;align-items:center;justify-content:center;padding:0;
+  }
+  .search-clear-btn:hover{background:var(--ink);color:#fff;}
+  .icon-btn.edit:hover{background:#e8e1d2;}
+  .checkbox-row{display:flex;align-items:center;gap:8px;grid-column:1/-1;}
+  .checkbox-row input{width:16px;height:16px;}
+  .checkbox-row label{font-size:13px;color:var(--text);font-weight:500;}
+
+  .actions-row{margin-top:22px;display:flex;justify-content:space-between;align-items:center;gap:10px;}
+  .actions-row-right{display:flex;gap:10px;}
+  .btn-danger{
+    padding:10px 18px;border-radius:8px;font-size:14px;font-weight:600;
+    background:#fff;border:1px solid #c94f3c;color:#c94f3c;cursor:pointer;
+  }
+  .btn-danger:hover{background:#c94f3c;color:#fff;}
+  button{font-family:inherit;cursor:pointer;border:none;}
+  .btn-primary{
+    background:var(--ink);color:#fff;padding:11px 26px;border-radius:8px;font-size:14.5px;font-weight:600;
+  }
+  .btn-primary:hover{background:var(--ink-dark);}
+  .btn-secondary{background:#f1ece1;color:var(--text);padding:11px 20px;border-radius:8px;font-size:14px;}
+  .btn-secondary:hover{background:#e8e1d2;}
+
+  table{width:100%;border-collapse:collapse;font-size:13.5px;}
+  .table-scroll{overflow-x:auto;max-width:100%;}
+  .sticky-actions{position:sticky;right:0;background:var(--panel);box-shadow:-6px 0 6px -6px rgba(0,0,0,.15);}
+  tr:hover .sticky-actions{background:var(--accent-bg);}
+  th{text-align:left;color:var(--muted);font-weight:600;font-size:12px;padding:8px 10px;border-bottom:2px solid var(--line);white-space:nowrap;}
+  td{padding:10px;border-bottom:1px solid var(--line);vertical-align:top;white-space:nowrap;}
+  tr:hover td{background:var(--accent-bg);}
+  .subject-cell{white-space:nowrap;}
+  .searchable{cursor:pointer;}
+  .searchable:hover{text-decoration:underline;color:var(--ink);}
+  .amt{font-variant-numeric:tabular-nums;font-weight:600;text-align:right;}
+  .total-row{background:var(--accent-bg,#f7f2e7);}
+  .total-row td{padding:12px 10px;border-top:2px solid var(--ink);border-bottom:none;font-weight:700;}
+  .total-label{text-align:right;color:var(--muted);font-weight:600;}
+  #list-total{font-size:15px;color:var(--ink);}
+  .row-actions{display:flex;gap:6px;white-space:nowrap;}
+  .icon-btn{background:#f1ece1;padding:6px 12px;border-radius:6px;font-size:12.5px;color:var(--text);}
+  .icon-btn.print{background:var(--ink);color:#fff;}
+  .icon-btn.print:hover{background:var(--ink-dark);}
+  .icon-btn.del:hover{background:#f4d9d5;}
+  .empty{color:var(--muted);text-align:center;padding:40px 0;font-size:13.5px;}
+  .loading{color:var(--muted);text-align:center;padding:40px 0;font-size:13.5px;}
+  .toast{
+    position:fixed;bottom:24px;left:50%;transform:translateX(-50%);
+    background:var(--ink-dark);color:#fff;padding:11px 22px;border-radius:8px;font-size:13.5px;
+    opacity:0;pointer-events:none;transition:opacity .25s, transform .25s;
+  }
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(-4px);}
+
+  /* ===== Print form overlay ===== */
+  #print-overlay{
+    display:none;position:fixed;inset:0;background:rgba(30,25,20,.55);z-index:50;
+    align-items:center;justify-content:center;overflow:auto;padding:30px 16px;
+  }
+  #print-overlay.show{display:flex;}
+  #print-overlay > div{
+    width:100%;display:flex;flex-direction:column;align-items:center;
+  }
+  .print-toolbar{
+    max-width:1050px;margin:0 auto 14px;display:flex;justify-content:flex-end;gap:10px;
+  }
+  .print-toolbar button{padding:10px 20px;border-radius:8px;font-size:14px;font-weight:600;}
+  .print-toolbar .go{background:var(--ink);color:#fff;}
+  .print-toolbar .close{background:#fff;color:var(--text);}
+
+  .sheet-frame{overflow:hidden;margin:0 auto;}
+  .sheet{
+    width:242mm;background:#fff;margin:0 auto;padding:22px;
+    font-family:"Hiragino Mincho ProN","Yu Mincho","YuMincho","Noto Serif JP",serif;color:var(--ink);
+    border:1px solid #ddd;box-sizing:border-box;
+  }
+  .sheet-inner{border:1.5px solid var(--ink);width:220mm;}
+  .user-input{font-family:"Meiryo UI","Meiryo",sans-serif;color:#000;font-weight:400;}
+  .num{font-family:"Meiryo UI","Meiryo",sans-serif;color:#000;font-weight:400;}
+  .row{display:flex;border-bottom:1.5px solid var(--ink);}
+  .row:last-child{border-bottom:none;}
+  .cell{border-right:1.5px solid var(--ink);padding:7px 10px;position:relative;}
+  .cell:last-child{border-right:none;}
+  .label-col{
+    writing-mode:vertical-rl;text-align:center;font-weight:700;font-size:12px;
+    letter-spacing:.15em;flex:0 0 34px;display:flex;align-items:center;justify-content:center;
+    border-right:1.5px solid var(--ink);
+  }
+  .plan-row .label-col, .subject-row .label-col{
+    flex:0 0 10mm;box-sizing:border-box;
+    border-right:2px double var(--ink);
+  }
+
+  /* stamp box */
+  .stampbox-wrap{display:flex;justify-content:flex-end;padding:0 20% 2px 0;}
+  .stampbox{border:1.5px solid var(--ink);display:flex;}
+  .stampbox .sc{width:13mm;border-right:1.5px solid var(--ink);text-align:center;box-sizing:border-box;}
+  .stampbox .sc:last-child{border-right:none;}
+  .stampbox .sc .h{font-size:10px;font-weight:700;border-bottom:1.5px solid var(--ink);height:20px;line-height:20px;box-sizing:border-box;font-family:"HG正楷書体-PRO","HGSeikaishotaiPRO","Hiragino Mincho ProN",serif;}
+  .stampbox .sc .b{height:14mm;box-sizing:border-box;}
+
+  .title-row{display:flex;align-items:baseline;gap:2px;padding:6px 4px 1px;margin:0 auto 0;width:170mm;border-bottom:1.5px solid var(--ink);white-space:nowrap;}
+  .title-row h2{font-size:23px;letter-spacing:normal;word-spacing:.32em;margin:0;font-weight:700;font-family:"Hiragino Mincho ProN","Yu Mincho","YuMincho","Noto Serif JP",serif;white-space:nowrap;}
+  .title-row .meta{font-size:9px;display:flex;align-items:flex-end;gap:8px;line-height:1.25;white-space:nowrap;}
+  .title-row .meta .lbl{writing-mode:horizontal-tb;text-align:center;}
+  .title-row .meta .lbl-v{writing-mode:vertical-rl;text-align:center;letter-spacing:.05em;}
+  .title-row .meta .bracket{font-size:14px;}
+  .bracket{font-weight:700;}
+
+  .submit-date{text-align:right;font-size:13px;padding:6px 0 0;white-space:nowrap;width:220mm;margin:0;box-sizing:border-box;font-family:"MS Mincho","MS 明朝","Hiragino Mincho ProN",serif;}
+  .rl{letter-spacing:.1em;font-family:"MS Mincho","MS 明朝","Hiragino Mincho ProN",serif;}
+  .num{letter-spacing:0;padding:0 2px;font-variant-numeric:tabular-nums;}
+  .suffix{letter-spacing:0;font-family:"MS Mincho","MS 明朝","Hiragino Mincho ProN",serif;}
+
+  .plan-row .cell{flex:1;font-size:13.5px;display:flex;align-items:center;justify-content:center;gap:4px;white-space:nowrap;}
+  .plan-row .cell:first-of-type{border-right:2px double var(--ink);}
+
+  .subject-row .subject-val{flex:0 0 130mm;width:130mm;box-sizing:border-box;font-size:15px;font-weight:400;display:flex;align-items:center;padding-left:14px;border-right:2px double var(--ink);}
+  .subject-row .budget-label{flex:0 0 32px;writing-mode:vertical-rl;text-align:center;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;letter-spacing:.1em;border-right:2px double var(--ink);}
+  .subject-row .budget-val{flex:1;display:flex;align-items:center;justify-content:center;font-size:14.5px;font-weight:400;}
+
+  .cost-row{align-items:stretch;height:13.5mm;box-sizing:border-box;overflow:hidden;}
+  .plan-row{height:10.5mm;box-sizing:border-box;}
+  .subject-row{height:16mm;box-sizing:border-box;}
+  .cost-row .label-col{
+    flex:0 0 auto;width:40mm;font-size:13px;box-sizing:border-box;
+    writing-mode:horizontal-tb;letter-spacing:.4em;padding:0 6px;white-space:nowrap;
+    border-right:2px double var(--ink);
+  }
+  .digit-wrap{display:flex;flex-direction:column;justify-content:center;flex:0 0 100mm;width:100mm;box-sizing:border-box;border-right:2px double var(--ink);}
+  .digit-heads{display:flex;height:13px;}
+  .digit-heads div{
+    width:10mm;text-align:right;padding-right:3px;box-sizing:border-box;font-size:9px;line-height:13px;
+    background-image:repeating-linear-gradient(to bottom, var(--ink) 0 1.5px, transparent 1.5px 5.5px);
+    background-size:1px 100%;background-position:right top;background-repeat:no-repeat;
+  }
+  .digit-heads div:last-child{background-image:none;}
+  .digit-cells{display:flex;}
+  .digit-cells div{
+    width:10mm;height:37px;text-align:center;font-size:19px;font-weight:400;line-height:37px;font-variant-numeric:tabular-nums;box-sizing:border-box;
+    background-image:repeating-linear-gradient(to bottom, var(--ink) 0 1.5px, transparent 1.5px 5.5px);
+    background-size:1px 100%;background-position:right top;background-repeat:no-repeat;
+  }
+  .digit-cells div:last-child{background-image:none;}
+  .cost-note{flex:1;display:flex;align-items:center;justify-content:center;font-size:13px;padding-left:12px;letter-spacing:.15em;}
+
+  .text-block-row .label-col{flex:0 0 34px;}
+  .text-block{flex:1;padding:2px 14px 4px 28px;font-size:13.5px;line-height:2;white-space:pre-wrap;box-sizing:border-box;display:flex;align-items:flex-start;}
+  .text-block-row .text-block{
+    background-image:
+      repeating-linear-gradient(to right, var(--ink) 0 1.5px, transparent 1.5px 5.5px),
+      repeating-linear-gradient(to right, var(--ink) 0 1.5px, transparent 1.5px 5.5px),
+      repeating-linear-gradient(to right, var(--ink) 0 1.5px, transparent 1.5px 5.5px);
+    background-size:100% 1px;
+    background-repeat:no-repeat;
+    background-position:0 25%, 0 50%, 0 75%;
+  }
+  .text-block-row{height:33mm;box-sizing:border-box;}
+  .remarks-row{height:49mm;box-sizing:border-box;}
+  .remarks-row .text-block{
+    background-image:
+      repeating-linear-gradient(to right, var(--ink) 0 1.5px, transparent 1.5px 5.5px),
+      repeating-linear-gradient(to right, var(--ink) 0 1.5px, transparent 1.5px 5.5px),
+      repeating-linear-gradient(to right, var(--ink) 0 1.5px, transparent 1.5px 5.5px),
+      repeating-linear-gradient(to right, var(--ink) 0 1.5px, transparent 1.5px 5.5px),
+      repeating-linear-gradient(to right, var(--ink) 0 1.5px, transparent 1.5px 5.5px);
+    background-size:100% 1px;
+    background-repeat:no-repeat;
+    background-position:0 16.6667%, 0 33.3333%, 0 50%, 0 66.6667%, 0 83.3333%;
+  }
+  .remarks-row .label-col{flex:0 0 34px;}
+  .remarks-row .label-col .rl-main{display:block;}
+  .remarks-row .label-col .rl-sub{display:flex;flex-direction:row;align-items:center;margin-top:8px;}
+  .remarks-row .label-col .rl-sub-cols{display:flex;flex-direction:column;}
+  .remarks-row .label-col .rl-sub-col{font-size:9px;font-weight:500;letter-spacing:.05em;line-height:1.2;}
+  .remarks-row .label-col .rl-sub-bracket{font-size:15px;line-height:1;display:block;transform:scaleX(2.2);}
+  .remarks-row .label-col .rl-main{font-size:14px;font-weight:700;}
+  .sheet-footer{width:220mm;text-align:right;font-size:11px;color:var(--ink);padding:6px 4px 0;letter-spacing:.05em;box-sizing:border-box;}
+
+
+  @media print{
+    *{-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important;color-adjust:exact !important;}
+    html, body{height:auto !important;margin:0 !important;padding:0 !important;overflow:visible !important;background:#fff !important;}
+    .app{display:none !important;}
+    .toast{display:none !important;}
+    #print-overlay{
+      display:flex !important;position:static !important;inset:auto;
+      background:#fff;padding:0 !important;
+      align-items:flex-start;justify-content:center;
+      width:100%;height:162mm;min-height:162mm;
+      overflow:visible !important;
+    }
+    .print-toolbar{display:none;}
+    #print-overlay > div{
+      display:block !important;width:auto !important;
+    }
+    .sheet-frame{
+      width:225.4mm !important;height:auto !important;overflow:visible !important;margin:0 !important;margin-left:24.5mm !important;margin-top:6mm !important;
+    }
+    .sheet{
+      border:none !important;width:245mm !important;margin:0 auto !important;padding:0 !important;
+      zoom:0.92;
+    }
+    @page{size:257mm 182mm;margin:10mm;}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="app-header">
+    <div>
+      <h1><span>予想経費</span>申請書システム</h1>
+      <p>入力した内容を原紙レイアウトのまま印刷できます</p>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" data-tab="new" onclick="switchTab('new')">新規申請</button>
+    <button class="tab" data-tab="list" onclick="switchTab('list')">申請一覧・印刷</button>
+    <button class="tab" data-tab="project1" onclick="switchTab('project1')">おやさとやかた乾隅棟関係工事</button>
+  </div>
+
+  <!-- NEW REQUEST -->
+  <div class="panel" id="tab-new">
+    <div class="form-title" id="form-mode-title">新規申請</div>
+    <div class="field-grid">
+      <div class="field">
+        <label>科目</label>
+        <select id="f-category">
+          <option value="">選択してください</option>
+          <option value="本部">本部</option>
+          <option value="教庁">教庁</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>予算年度</label>
+        <input type="number" id="f-budget-year" placeholder="例）2026" min="2000" max="2100" step="1">
+      </div>
+
+      <div class="field">
+        <label>提出部署</label>
+        <select id="f-department"><option value="">読み込み中…</option></select>
+      </div>
+      <div class="field"></div>
+
+      <div class="field">
+        <label>担当</label>
+        <input type="text" id="f-assignee" list="assignee-list" placeholder="例）名前・部署名">
+        <datalist id="assignee-list"></datalist>
+      </div>
+      <div class="field">
+        <label>PDF No.</label>
+        <input type="text" id="f-pdf-no" placeholder="例）2026026">
+      </div>
+
+      <div class="field">
+        <label>提出年月日</label>
+        <input type="date" id="f-submit-date">
+      </div>
+      <div class="field"></div>
+
+      <div class="field">
+        <label>着工予定日</label>
+        <input type="date" id="f-start-date">
+      </div>
+      <div class="field">
+        <label>終了予定日</label>
+        <input type="date" id="f-end-date">
+      </div>
+
+      <div class="field full">
+        <label>主題</label>
+        <input type="text" id="f-subject" placeholder="例）殿内(3号・4号・6号・7号便所)ウォシュレット電源工事">
+      </div>
+
+      <div class="field">
+        <label>予算科目</label>
+        <input type="text" id="f-budget" placeholder="例）本部営繕費">
+      </div>
+      <div class="field">
+        <label>予想の総経費（円）</label>
+        <input type="number" id="f-cost" min="0" step="1" placeholder="例）7678000">
+      </div>
+
+      <div class="checkbox-row">
+        <input type="checkbox" id="f-estimate">
+        <label for="f-estimate">見積書・明細書は別紙添付する</label>
+      </div>
+
+      <div class="field full">
+        <label>実施の概要</label>
+        <textarea id="f-overview" placeholder="工事・購入等の内容を記入"></textarea>
+      </div>
+      <div class="field full">
+        <label>予備（変更等使用時に・原紙印刷欄）</label>
+        <textarea id="f-remarks" placeholder="変更等があった場合の記録欄"></textarea>
+      </div>
+
+      <div class="field">
+        <label>会計提出日</label>
+        <input type="date" id="f-acc-submit">
+      </div>
+      <div class="field">
+        <label>会計承認日</label>
+        <input type="date" id="f-acc-approve">
+      </div>
+
+      <div class="field full">
+        <label>備考（一覧用メモ・印刷には出ません）</label>
+        <input type="text" id="f-list-note" placeholder="例）水道課予算">
+      </div>
+    </div>
+
+    <div class="actions-row">
+      <button class="btn-danger" id="delete-btn" onclick="deleteFromForm()" style="display:none;">この申請を削除</button>
+      <div class="actions-row-right">
+        <button class="btn-secondary" onclick="resetForm()">クリア</button>
+        <button class="btn-primary" id="save-btn" onclick="saveRequest()">保存する</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- LIST -->
+  <div class="panel" id="tab-list" style="display:none;">
+    <div class="list-toolbar">
+      <div class="search-wrap">
+        <input type="text" id="search-box" placeholder="科目・部署・主題・担当で検索" oninput="renderList()">
+        <button type="button" id="search-clear" class="search-clear-btn" onclick="clearSearch()" aria-label="検索解除" style="display:none;">×</button>
+      </div>
+      <select id="year-filter" onchange="renderList()">
+        <option value="">すべての年度</option>
+      </select>
+    </div>
+    <div class="table-scroll">
+    <table>
+      <thead>
+        <tr>
+          <th>年度</th>
+          <th>提出日</th>
+          <th>科目</th>
+          <th>提出部署</th>
+          <th>主題</th>
+          <th class="amt">金額</th>
+          <th>担当</th>
+          <th>会計提出</th>
+          <th>会計承認</th>
+          <th>PDF No.</th>
+          <th class="sticky-actions"></th>
+        </tr>
+      </thead>
+      <tbody id="list-body">
+        <tr><td colspan="11" class="loading">読み込み中…</td></tr>
+      </tbody>
+      <tfoot>
+        <tr class="total-row">
+          <td colspan="5" class="total-label">合計</td>
+          <td id="list-total" class="amt"></td>
+          <td colspan="5"></td>
+        </tr>
+      </tfoot>
+    </table>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- PRINT OVERLAY -->
+<div id="print-overlay">
+  <div>
+    <div class="print-toolbar">
+      <button class="close" onclick="closePrint()">閉じる</button>
+      <button class="go" onclick="window.print()">この内容で印刷</button>
+    </div>
+    <div class="sheet-frame" id="sheet-frame">
+    <div class="sheet">
+      <div class="stampbox-wrap">
+        <div class="stampbox">
+          <div class="sc"><div class="h">部長</div><div class="b"></div></div>
+          <div class="sc"><div class="h">次長</div><div class="b"></div></div>
+          <div class="sc"><div class="h">課長</div><div class="b"></div></div>
+          <div class="sc"><div class="h"></div><div class="b"></div></div>
+          <div class="sc"><div class="h"></div><div class="b"></div></div>
+        </div>
+      </div>
+
+      <div class="title-row">
+        <h2>予 想 経 費 申 請 書</h2>
+        <span class="fw-gap">　</span>
+        <div class="meta">
+          <span class="lbl">提出<br>部署</span> <span class="bracket" id="p-department">（　　　　　　　　　　　　　　）</span>
+          <span class="lbl-v">部長印</span> <span class="bracket">（　　　　）</span>
+        </div>
+      </div>
+      <div class="submit-date" id="p-submit-date">令和 年 月 日提出</div>
+
+      <div class="sheet-inner" style="margin-top:8px;">
+        <div class="row plan-row">
+          <div class="label-col">予定</div>
+          <div class="cell" style="flex:2;">
+            <span id="p-start-date">令和　　　年　　　　月　　　　日　　着 工 予 定</span>
+          </div>
+          <div class="cell" style="flex:2;">
+            <span id="p-end-date">令和　　　年　　　　月　　　　日　　終 了 予 定</span>
+          </div>
+        </div>
+
+        <div class="row subject-row">
+          <div class="label-col">主題</div>
+          <div class="subject-val user-input" id="p-subject">&nbsp;</div>
+          <div class="budget-label">予算科目</div>
+          <div class="budget-val user-input" id="p-budget">&nbsp;</div>
+        </div>
+
+        <div class="row cost-row">
+          <div class="label-col">予想の総経費</div>
+          <div class="digit-wrap">
+            <div class="digit-heads">
+              <div></div><div>億</div><div>千</div><div>百</div><div>十</div><div>万</div><div>千</div><div>百</div><div>十</div><div>円</div>
+            </div>
+            <div class="digit-cells user-input" id="p-cost-cells"></div>
+          </div>
+          <div class="cost-note">見積書　明細書は　別紙添付</div>
+        </div>
+
+        <div class="row text-block-row">
+          <div class="label-col">実施の概要</div>
+          <div class="text-block user-input" id="p-overview"></div>
+        </div>
+
+        <div class="row text-block-row remarks-row">
+          <div class="label-col">
+            <span class="rl-main">予備</span>
+            <span class="rl-sub"><span class="rl-sub-bracket">（</span><span class="rl-sub-cols"><span class="rl-sub-col">時に使用</span><span class="rl-sub-col">変更等の</span></span><span class="rl-sub-bracket">）</span></span>
+          </div>
+          <div class="text-block user-input" id="p-remarks"></div>
+        </div>
+      </div>
+      <div class="sheet-footer">182.　10　(50×10)</div>
+    </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const SUPABASE_URL = "https://zhxuntrhxnrssqpvcmvl.supabase.co";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpoeHVudHJoeG5yc3NxcHZjbXZsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIyNDcyNjYsImV4cCI6MjA5NzgyMzI2Nn0.l3pwvKZVVJqDA4HORqt-Op-cTvVF3bkX1ovWgAuSO58";
+
+// URLに ?dept=部署名 が付いている場合、その部署専用モードで動作する
+// (例: expense_form.html?dept=電気課 )
+const LOCKED_DEPARTMENT = new URLSearchParams(window.location.search).get('dept') || null;
+
+async function sb(path, opts={}){
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+    ...opts,
+    headers:{
+      "apikey": SUPABASE_KEY,
+      "Authorization": `Bearer ${SUPABASE_KEY}`,
+      "Content-Type":"application/json",
+      ...(opts.headers||{})
+    }
+  });
+  if(!res.ok){
+    const t = await res.text().catch(()=> "");
+    throw new Error(`Supabase error ${res.status}: ${t}`);
+  }
+  if(res.status===204) return null;
+  return res.json();
+}
+
+function showToast(msg, duration=2200){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._hideTimer);
+  t._hideTimer = setTimeout(()=>t.classList.remove('show'), duration);
+}
+
+function switchTab(name){
+  document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active', b.dataset.tab===name));
+  document.getElementById('tab-new').style.display = name==='new' ? 'block':'none';
+  document.getElementById('tab-list').style.display = (name==='list' || name==='project1') ? 'block':'none';
+  if(name==='list' || name==='project1'){
+    const doFilter = () => {
+      document.getElementById('search-box').value = name==='project1' ? 'おやさとやかた乾隅棟' : '';
+      renderList();
+    };
+    loadList().then(doFilter);
+  }
+}
+
+let editingId = null;
+let editingSnapshotUpdatedAt = null;
+
+function resetForm(){
+  ['f-submit-date','f-start-date','f-end-date','f-subject','f-budget','f-cost','f-overview','f-remarks',
+   'f-category','f-assignee','f-acc-submit','f-acc-approve','f-pdf-no','f-list-note','f-budget-year'].forEach(id=>{
+    document.getElementById(id).value = '';
+  });
+  document.getElementById('f-department').value = LOCKED_DEPARTMENT || '';
+  document.getElementById('f-estimate').checked = false;
+  document.getElementById('f-submit-date').value = new Date().toISOString().slice(0,10);
+  editingId = null;
+  editingSnapshotUpdatedAt = null;
+  document.getElementById('form-mode-title').textContent = '新規申請';
+  document.getElementById('save-btn').textContent = '保存する';
+  document.getElementById('delete-btn').style.display = 'none';
+}
+
+async function loadOptions(){
+  try{
+    if(LOCKED_DEPARTMENT){
+      const dSel = document.getElementById('f-department');
+      dSel.innerHTML = `<option value="${LOCKED_DEPARTMENT}">${LOCKED_DEPARTMENT}</option>`;
+      dSel.value = LOCKED_DEPARTMENT;
+      dSel.disabled = true;
+      dSel.classList.add('locked-field');
+
+      const assignees = await sb(`expense_requests?select=assignee&assignee=not.is.null&department=eq.${encodeURIComponent(LOCKED_DEPARTMENT)}`);
+      const uniqueAssignees = [...new Set(assignees.map(a=>a.assignee).filter(Boolean))].sort();
+      document.getElementById('assignee-list').innerHTML = uniqueAssignees.map(a=>`<option value="${a}"></option>`).join('');
+      return;
+    }
+
+    const [deps, assignees] = await Promise.all([
+      sb('departments?select=name&order=sort_order.asc'),
+      sb('expense_requests?select=assignee&assignee=not.is.null')
+    ]);
+    const dSel = document.getElementById('f-department');
+    dSel.innerHTML = '<option value="">選択してください</option>' + deps.map(d=>`<option value="${d.name}">${d.name}</option>`).join('');
+
+    const uniqueAssignees = [...new Set(assignees.map(a=>a.assignee).filter(Boolean))].sort();
+    document.getElementById('assignee-list').innerHTML = uniqueAssignees.map(a=>`<option value="${a}"></option>`).join('');
+  }catch(e){
+    showToast('選択肢の読み込みに失敗しました');
+    console.error(e);
+  }
+}
+
+async function saveRequest(){
+  const subject = document.getElementById('f-subject').value.trim();
+  if(!subject){ showToast('主題を入力してください'); return; }
+
+  const payload = {
+    category: document.getElementById('f-category').value || null,
+    budget_year: document.getElementById('f-budget-year').value ? Number(document.getElementById('f-budget-year').value) : null,
+    department: document.getElementById('f-department').value || null,
+    assignee: document.getElementById('f-assignee').value || null,
+    pdf_no: document.getElementById('f-pdf-no').value || null,
+    submit_date: document.getElementById('f-submit-date').value || null,
+    start_date: document.getElementById('f-start-date').value || null,
+    end_date: document.getElementById('f-end-date').value || null,
+    subject,
+    budget_category: document.getElementById('f-budget').value || null,
+    total_cost: document.getElementById('f-cost').value ? Number(document.getElementById('f-cost').value) : null,
+    has_estimate_attached: document.getElementById('f-estimate').checked,
+    overview: document.getElementById('f-overview').value || null,
+    remarks: document.getElementById('f-remarks').value || null,
+    accounting_submit_date: document.getElementById('f-acc-submit').value || null,
+    accounting_approve_date: document.getElementById('f-acc-approve').value || null,
+    list_note: document.getElementById('f-list-note').value || null
+  };
+
+  try{
+    if(editingId){
+      // 衝突検知: 編集開始後に他の人が更新していないか確認
+      const latest = await sb(`expense_requests?id=eq.${editingId}&select=updated_at,subject`);
+      const latestRow = latest && latest[0];
+      if(!latestRow){
+        showToast('この申請はすでに削除されています', 5000);
+        return;
+      }
+      const serverUpdatedAt = latestRow.updated_at || null;
+      if(editingSnapshotUpdatedAt !== serverUpdatedAt){
+        const ok = confirm(
+          `この申請は編集を開始した後に他の人によって更新されています（現在の主題：「${latestRow.subject}」）。\n\n` +
+          `このまま上書きして保存しますか？\n` +
+          `（キャンセルすると保存されません。最新の内容を確認してからやり直してください）`
+        );
+        if(!ok) return;
+      }
+      await sb(`expense_requests?id=eq.${editingId}`, {
+        method:'PATCH',
+        headers:{ 'Prefer':'return=minimal' },
+        body: JSON.stringify({...payload, updated_at: new Date().toISOString()})
+      });
+      showToast('更新しました');
+    }else{
+      await sb('expense_requests', {
+        method:'POST',
+        headers:{ 'Prefer':'return=minimal' },
+        body: JSON.stringify(payload)
+      });
+      showToast('保存しました');
+    }
+    resetForm();
+    switchTab('list');
+  }catch(e){
+    showToast('保存に失敗しました: ' + e.message, 8000);
+    console.error(e);
+  }
+}
+
+let cachedList = [];
+
+function fiscalYear(dateStr){
+  if(!dateStr) return null;
+  const d = new Date(dateStr+'T00:00:00');
+  const y = d.getFullYear();
+  const m = d.getMonth()+1; // 1-12
+  return m >= 4 ? y : y - 1; // 4月始まりの年度
+}
+
+function effectiveYear(r){
+  return r.budget_year || fiscalYear(r.submit_date);
+}
+
+function populateYearFilter(){
+  const sel = document.getElementById('year-filter');
+  const current = sel.value;
+  const years = [...new Set(cachedList.map(effectiveYear).filter(y => y !== null))].sort((a,b)=>b-a);
+  sel.innerHTML = '<option value="">すべての年度</option>' + years.map(y => `<option value="${y}">${toReiwaYearLabel(y)}年度</option>`).join('');
+  if(years.includes(Number(current))) sel.value = current;
+}
+
+async function loadList(){
+  const body = document.getElementById('list-body');
+  body.innerHTML = '<tr><td colspan="11" class="loading">読み込み中…</td></tr>';
+  try{
+    const deptFilter = LOCKED_DEPARTMENT ? `&department=eq.${encodeURIComponent(LOCKED_DEPARTMENT)}` : '';
+    const rows = await sb(`expense_requests?select=*${deptFilter}&order=submit_date.desc.nullslast,created_at.desc`);
+    cachedList = rows;
+    populateYearFilter();
+    renderList();
+  }catch(e){
+    body.innerHTML = '<tr><td colspan="11" class="empty">読み込みに失敗しました</td></tr>';
+    console.error(e);
+  }
+}
+
+function renderList(){
+  const body = document.getElementById('list-body');
+  const q = (document.getElementById('search-box').value || '').trim().toLowerCase();
+  document.getElementById('search-clear').style.display = q ? 'flex' : 'none';
+  const yearFilter = document.getElementById('year-filter').value;
+  let rows = q
+    ? cachedList.filter(r => (r.subject||'').toLowerCase().includes(q) || (r.assignee||'').toLowerCase().includes(q) || (r.category||'').toLowerCase().includes(q) || (r.department||'').toLowerCase().includes(q))
+    : cachedList;
+  if(yearFilter){
+    rows = rows.filter(r => effectiveYear(r) === Number(yearFilter));
+  }
+
+  if(!rows.length){
+    body.innerHTML = '<tr><td colspan="11" class="empty">該当する申請はありません</td></tr>';
+    document.getElementById('list-total').textContent = '¥0';
+    return;
+  }
+  const total = rows.reduce((sum, r) => sum + (Number(r.total_cost) || 0), 0);
+  document.getElementById('list-total').textContent = '¥' + total.toLocaleString();
+  body.innerHTML = rows.map(r=>`
+      <tr>
+        <td>${toReiwaYearLabel(r.budget_year ? r.budget_year : fiscalYear(r.submit_date)) ?? '—'}</td>
+        <td>${fmtEraShort(r.submit_date)}</td>
+        <td class="searchable" onclick="searchByValue('${escapeHtml(r.category||'')}')">${r.category || '—'}</td>
+        <td class="searchable" onclick="searchByValue('${escapeHtml(r.department||'')}')">${escapeHtml(r.department||'') || '—'}</td>
+        <td class="subject-cell">${escapeHtml(r.subject)}</td>
+        <td class="amt">${r.total_cost ? '¥'+Number(r.total_cost).toLocaleString() : '—'}</td>
+        <td class="searchable" onclick="searchByValue('${escapeHtml(r.assignee||'')}')">${r.assignee || '—'}</td>
+        <td>${fmtEraShort(r.accounting_submit_date)}</td>
+        <td>${fmtEraShort(r.accounting_approve_date)}</td>
+        <td>${r.pdf_no || '—'}</td>
+        <td class="sticky-actions">
+          <div class="row-actions">
+            <button class="icon-btn print" onclick="openPrint('${r.id}')">印刷</button>
+            <button class="icon-btn edit" onclick="editRequest('${r.id}')">編集</button>
+          </div>
+        </td>
+      </tr>
+    `).join('');
+}
+
+function clearSearch(){
+  document.getElementById('search-box').value = '';
+  renderList();
+  document.getElementById('search-box').focus();
+}
+
+function searchByValue(value){
+  document.getElementById('search-box').value = value;
+  renderList();
+}
+
+function escapeHtml(s){
+  return (s||'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function editRequest(id){
+  const r = cachedList.find(x=>x.id===id);
+  if(!r) return;
+  editingId = id;
+  editingSnapshotUpdatedAt = r.updated_at || null;
+  document.getElementById('f-category').value = r.category || '';
+  document.getElementById('f-budget-year').value = r.budget_year || '';
+  document.getElementById('f-department').value = r.department || '';
+  document.getElementById('f-assignee').value = r.assignee || '';
+  document.getElementById('f-pdf-no').value = r.pdf_no || '';
+  document.getElementById('f-submit-date').value = r.submit_date || '';
+  document.getElementById('f-start-date').value = r.start_date || '';
+  document.getElementById('f-end-date').value = r.end_date || '';
+  document.getElementById('f-subject').value = r.subject || '';
+  document.getElementById('f-budget').value = r.budget_category || '';
+  document.getElementById('f-cost').value = r.total_cost || '';
+  document.getElementById('f-estimate').checked = !!r.has_estimate_attached;
+  document.getElementById('f-overview').value = r.overview || '';
+  document.getElementById('f-remarks').value = r.remarks || '';
+  document.getElementById('f-acc-submit').value = r.accounting_submit_date || '';
+  document.getElementById('f-acc-approve').value = r.accounting_approve_date || '';
+  document.getElementById('f-list-note').value = r.list_note || '';
+
+  document.getElementById('form-mode-title').textContent = `編集中：${r.subject}`;
+  document.getElementById('save-btn').textContent = '更新する';
+  document.getElementById('delete-btn').style.display = 'inline-block';
+  switchTab('new');
+}
+
+async function deleteRequest(id){
+  if(!confirm('この申請を削除しますか？')) return;
+  try{
+    await sb(`expense_requests?id=eq.${id}`, { method:'DELETE' });
+    showToast('削除しました');
+    loadList();
+  }catch(e){
+    showToast('削除に失敗しました');
+    console.error(e);
+  }
+}
+
+async function deleteFromForm(){
+  if(!editingId) return;
+  if(!confirm('この申請を削除しますか？')) return;
+  try{
+    await sb(`expense_requests?id=eq.${editingId}`, { method:'DELETE' });
+    showToast('削除しました');
+    resetForm();
+    switchTab('list');
+  }catch(e){
+    showToast('削除に失敗しました');
+    console.error(e);
+  }
+}
+
+function toReiwaParts(dateStr){
+  if(!dateStr) return null;
+  const d = new Date(dateStr+'T00:00:00');
+  const reiwaStart = new Date('2019-05-01T00:00:00');
+  if(d < reiwaStart) return { y:null, m: d.getMonth()+1, dd: d.getDate(), eraLabel: `${d.getFullYear()}年` };
+  const y = d.getFullYear() - 2018;
+  return { y, m: d.getMonth()+1, dd: d.getDate(), eraLabel: '令和' };
+}
+
+function toReiwaYearLabel(year){
+  if(year === null || year === undefined) return null;
+  const y = Number(year) - 2018;
+  return y >= 1 ? `R${y}` : String(year);
+}
+
+function fmtEraShort(dateStr){
+  const p = toReiwaParts(dateStr);
+  if(!p) return '—';
+  if(p.eraLabel === '令和') return `R${p.y}.${p.m}.${p.dd}`;
+  return `${dateStr.slice(0,4)}.${p.m}.${p.dd}`; // 令和より前は西暦のまま
+}
+
+function escapeHtml2(s){
+  return (s||'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+// Builds a spaced line like 令和[8]年[8]月[17]日提出 where kanji segments
+// get even letter-spacing and the inserted numbers stay tight/unspaced.
+function fmtReiwaLine(dateStr, suffixHtml, tight){
+  const p = toReiwaParts(dateStr);
+  const gap1 = tight ? ' ' : '　　　';
+  const gap2 = tight ? ' ' : '　　　　';
+  if(!p){
+    return `<span class="rl">令和</span>${gap1}<span class="rl">年</span>${gap2}<span class="rl">月</span>${gap2}<span class="rl">日</span><span class="suffix">${suffixHtml}</span>`;
+  }
+  const yearPart = p.eraLabel === '令和'
+    ? `<span class="rl">令和</span> <span class="num">${p.y}</span> <span class="rl">年</span>`
+    : `<span class="num">${p.eraLabel}</span>`;
+  return `${yearPart}${gap2}<span class="num"> ${p.m} </span><span class="rl">月</span>${gap2}<span class="num"> ${p.dd} </span><span class="rl">日</span><span class="suffix">${suffixHtml}</span>`;
+}
+
+function digitCells(amount){
+  const n = Math.floor(Number(amount)||0);
+  if(!n) return Array(10).fill('');
+  const str = String(Math.min(n,9999999999)).padStart(10,'0');
+  const firstNonZero = str.split('').findIndex(c=>c!=='0');
+  return str.split('').map((c,i)=> i<firstNonZero ? '' : c);
+}
+
+function openPrint(id){
+  const r = cachedList.find(x=>x.id===id);
+  if(!r) return;
+
+  document.getElementById('p-department').textContent = `（${r.department || '　　　　　　　　　　　　　　'}）`;
+  document.getElementById('p-submit-date').innerHTML = fmtReiwaLine(r.submit_date, '提出', true);
+  document.getElementById('p-start-date').innerHTML = fmtReiwaLine(r.start_date, '　　着 工 予 定');
+  document.getElementById('p-end-date').innerHTML = fmtReiwaLine(r.end_date, '　　終 了 予 定');
+  document.getElementById('p-subject').textContent = r.subject || '';
+  document.getElementById('p-budget').textContent = r.budget_category || '';
+  document.getElementById('p-overview').textContent = r.overview || '';
+  document.getElementById('p-remarks').textContent = r.remarks || '';
+
+  const cells = digitCells(r.total_cost);
+  document.getElementById('p-cost-cells').innerHTML = cells.map(c=>`<div>${c}</div>`).join('');
+
+  document.getElementById('print-overlay').classList.add('show');
+  fitSheetToScreen();
+}
+
+function fitSheetToScreen(){
+  const frame = document.getElementById('sheet-frame');
+  const sheet = document.querySelector('.sheet');
+  if(!sheet || !frame) return;
+  sheet.style.transform = '';
+  sheet.style.transformOrigin = '';
+  frame.style.width = '';
+  frame.style.height = '';
+  // measure natural size, then scale to fit the viewport with some side padding
+  const naturalWidth = sheet.offsetWidth;
+  const naturalHeight = sheet.offsetHeight;
+  const available = window.innerWidth - 32; // matches overlay's 16px side padding
+  if(naturalWidth > available){
+    const scale = available / naturalWidth;
+    sheet.style.transform = `scale(${scale})`;
+    sheet.style.transformOrigin = 'top left';
+    // shrink the frame to the actual visual (scaled) size so flex centering
+    // uses the real on-screen footprint instead of the unscaled layout size
+    frame.style.width = `${naturalWidth * scale}px`;
+    frame.style.height = `${naturalHeight * scale}px`;
+  } else {
+    frame.style.width = `${naturalWidth}px`;
+    frame.style.height = `${naturalHeight}px`;
+  }
+}
+
+window.addEventListener('resize', () => {
+  if(document.getElementById('print-overlay').classList.contains('show')) fitSheetToScreen();
+});
+
+function closePrint(){
+  document.getElementById('print-overlay').classList.remove('show');
+}
+
+document.getElementById('f-submit-date').value = new Date().toISOString().slice(0,10);
+loadOptions();
+
+if(LOCKED_DEPARTMENT){
+  // 部署固定モード: 管理者専用の3つ目のタブを非表示にし、タイトルに部署名を表示
+  const project1Tab = document.querySelector('.tab[data-tab="project1"]');
+  if(project1Tab) project1Tab.remove();
+  const h1 = document.querySelector('.app-header h1');
+  if(h1) h1.innerHTML = `<span>予想経費</span>申請書システム（${LOCKED_DEPARTMENT}）`;
+  document.title = `予想経費申請書（${LOCKED_DEPARTMENT}）`;
+}
+
+document.getElementById('f-category').addEventListener('change', (e)=>{
+  const budgetField = document.getElementById('f-budget');
+  if(!budgetField.value || budgetField.value === '本部営繕費' || budgetField.value === '教庁営繕費'){
+    budgetField.value = e.target.value === '本部' ? '本部営繕費' : e.target.value === '教庁' ? '教庁営繕費' : '';
+  }
+});
+</script>
+</body>
+</html>
