@@ -191,7 +191,7 @@
   .title-row .meta .lbl-v{writing-mode:vertical-rl;text-align:center;letter-spacing:.05em;}
   .title-row .meta .bracket{font-size:14px;}
   .bracket{font-weight:700;}
-  #p-department{font-family:"Meiryo UI","Meiryo",sans-serif;color:#000;}
+  #p-department{font-family:"Meiryo UI","Meiryo",sans-serif;color:#000;font-weight:400;}
 
   .submit-date{text-align:right;font-size:13px;padding:6px 0 0;white-space:nowrap;width:220mm;margin:0;box-sizing:border-box;font-family:"MS Mincho","MS 明朝","Hiragino Mincho ProN",serif;}
   .rl{letter-spacing:.1em;font-family:"MS Mincho","MS 明朝","Hiragino Mincho ProN",serif;}
@@ -494,7 +494,7 @@
         <h2>予 想 経 費 申 請 書</h2>
         <span class="fw-gap">　</span>
         <div class="meta">
-          <span class="lbl">提出<br>部署</span> <span class="bracket" id="p-department">（　　　　　　　　　　　　　　）</span>
+          <span class="lbl">提出<br>部署</span> <span class="bracket">（<span id="p-department">　　　　　　　　　　　　　　</span>）</span>
           <span class="lbl-v">部長印</span> <span class="bracket">（　　　　）</span>
         </div>
       </div>
@@ -956,7 +956,7 @@ function openPrint(id){
   const r = cachedList.find(x=>x.id===id);
   if(!r) return;
 
-  document.getElementById('p-department').textContent = r.department ? `（営繕部${r.department}）` : `（　　　　　　　　　　　　　　）`;
+  document.getElementById('p-department').textContent = r.department ? `営繕部${r.department}` : '　　　　　　　　　　　　　　';
   document.getElementById('p-submit-date').innerHTML = fmtReiwaLine(r.submit_date, '提出', true);
   document.getElementById('p-start-date').innerHTML = fmtReiwaLine(r.start_date, '　　着 工 予 定');
   document.getElementById('p-end-date').innerHTML = fmtReiwaLine(r.end_date, '　　終 了 予 定');
