@@ -33,6 +33,22 @@
     border-radius:8px;cursor:pointer;font-size:14px;color:var(--muted);
   }
   .tab.active{background:var(--ink);border-color:var(--ink);color:#fff;font-weight:600;}
+  .tab-add{background:transparent;border:1px dashed #c7bda6;color:var(--muted);font-weight:600;}
+  .tab-add:hover{border-color:var(--ink);color:var(--ink);}
+
+  .modal-overlay{
+    display:none;position:fixed;inset:0;background:rgba(30,25,20,.55);z-index:60;
+    align-items:center;justify-content:center;padding:20px;
+  }
+  .modal-overlay.show{display:flex;}
+  .modal-box{
+    background:var(--panel);border-radius:12px;padding:26px;max-width:460px;width:100%;
+    box-shadow:0 10px 40px rgba(0,0,0,.2);
+  }
+  .modal-box h3{margin:0 0 6px;color:var(--ink);font-size:16px;}
+  .modal-desc{margin:0 0 18px;color:var(--muted);font-size:13px;}
+  .modal-box .field{margin-bottom:14px;}
+  .modal-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:8px;}
 
   .panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:26px;}
 
@@ -286,7 +302,7 @@
   <div class="tabs">
     <button class="tab active" data-tab="new" onclick="switchTab('new')">新規申請</button>
     <button class="tab" data-tab="list" onclick="switchTab('list')">申請一覧・印刷</button>
-    <button class="tab" data-tab="project1" onclick="switchTab('project1')">おやさとやかた乾隅棟関係工事</button>
+    <span id="project-tabs-container"></span>
   </div>
 
   <!-- NEW REQUEST -->
@@ -434,6 +450,26 @@
 
 <div class="toast" id="toast"></div>
 
+<!-- ADD PROJECT TAB MODAL -->
+<div id="add-tab-overlay" class="modal-overlay">
+  <div class="modal-box">
+    <h3>新しいタブを増設</h3>
+    <p class="modal-desc">特定の工事・案件だけを絞り込んで見られるタブを追加します。</p>
+    <div class="field">
+      <label>タブに表示する名前</label>
+      <input type="text" id="new-tab-label" placeholder="例）〇〇会館改修工事">
+    </div>
+    <div class="field">
+      <label>絞り込むキーワード（主題にこの文字を含む申請だけが表示されます）</label>
+      <input type="text" id="new-tab-keyword" placeholder="例）〇〇会館">
+    </div>
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeAddTabModal()">キャンセル</button>
+      <button class="btn-primary" onclick="submitAddTab()">追加する</button>
+    </div>
+  </div>
+</div>
+
 <!-- PRINT OVERLAY -->
 <div id="print-overlay">
   <div>
@@ -519,6 +555,19 @@ const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 // (例: expense_form.html?dept=電気課 )
 const LOCKED_DEPARTMENT = new URLSearchParams(window.location.search).get('dept') || null;
 
+// 特定の工事・案件だけを絞り込んで見られる管理者用タブの一覧。
+// Supabaseの project_tabs テーブルから読み込む(画面の「＋タブ追加」ボタンで増やせる)。
+let PROJECT_TABS = [];
+
+async function loadProjectTabs(){
+  try{
+    PROJECT_TABS = await sb('project_tabs?select=id,label,keyword&order=sort_order.asc,created_at.asc');
+  }catch(e){
+    console.error('project_tabsの読み込みに失敗しました', e);
+    PROJECT_TABS = [];
+  }
+}
+
 async function sb(path, opts={}){
   const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
     ...opts,
@@ -545,13 +594,48 @@ function showToast(msg, duration=2200){
   t._hideTimer = setTimeout(()=>t.classList.remove('show'), duration);
 }
 
+function openAddTabModal(){
+  document.getElementById('new-tab-label').value = '';
+  document.getElementById('new-tab-keyword').value = '';
+  document.getElementById('add-tab-overlay').classList.add('show');
+}
+
+function closeAddTabModal(){
+  document.getElementById('add-tab-overlay').classList.remove('show');
+}
+
+async function submitAddTab(){
+  const label = document.getElementById('new-tab-label').value.trim();
+  const keyword = document.getElementById('new-tab-keyword').value.trim();
+  if(!label || !keyword){
+    showToast('タブの名前とキーワードの両方を入力してください');
+    return;
+  }
+  try{
+    await sb('project_tabs', {
+      method:'POST',
+      headers:{ 'Prefer':'return=minimal' },
+      body: JSON.stringify({ label, keyword, sort_order: PROJECT_TABS.length })
+    });
+    closeAddTabModal();
+    showToast('タブを追加しました');
+    await loadProjectTabs();
+    renderProjectTabs();
+  }catch(e){
+    showToast('タブの追加に失敗しました: ' + e.message, 6000);
+    console.error(e);
+  }
+}
+
 function switchTab(name){
   document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active', b.dataset.tab===name));
   document.getElementById('tab-new').style.display = name==='new' ? 'block':'none';
-  document.getElementById('tab-list').style.display = (name==='list' || name==='project1') ? 'block':'none';
-  if(name==='list' || name==='project1'){
+  const projectTab = PROJECT_TABS.find(t => t.id === name);
+  const isListLike = name==='list' || !!projectTab;
+  document.getElementById('tab-list').style.display = isListLike ? 'block':'none';
+  if(isListLike){
     const doFilter = () => {
-      document.getElementById('search-box').value = name==='project1' ? 'おやさとやかた乾隅棟' : '';
+      document.getElementById('search-box').value = projectTab ? projectTab.keyword : '';
       renderList();
     };
     loadList().then(doFilter);
@@ -924,13 +1008,22 @@ function closePrint(){
 document.getElementById('f-submit-date').value = new Date().toISOString().slice(0,10);
 loadOptions();
 
+function renderProjectTabs(){
+  const container = document.getElementById('project-tabs-container');
+  if(!container) return;
+  container.innerHTML = PROJECT_TABS.map(t =>
+    `<button class="tab" data-tab="${t.id}" onclick="switchTab('${t.id}')">${escapeHtml(t.label)}</button>`
+  ).join('') + `<button type="button" class="tab tab-add" onclick="openAddTabModal()">＋ タブ増設</button>`;
+}
+
 if(LOCKED_DEPARTMENT){
-  // 部署固定モード: 管理者専用の3つ目のタブを非表示にし、タイトルに部署名を表示
-  const project1Tab = document.querySelector('.tab[data-tab="project1"]');
-  if(project1Tab) project1Tab.remove();
+  // 部署固定モード: 管理者専用のタブ群(PROJECT_TABS)は表示せず、タイトルに部署名を表示
   const h1 = document.querySelector('.app-header h1');
   if(h1) h1.innerHTML = `<span>予想経費</span>申請書システム（${LOCKED_DEPARTMENT}）`;
   document.title = `予想経費申請書（${LOCKED_DEPARTMENT}）`;
+}else{
+  // 管理者モード: SupabaseからPROJECT_TABSを読み込んでタブボタンを自動生成
+  loadProjectTabs().then(renderProjectTabs);
 }
 
 document.getElementById('f-category').addEventListener('change', (e)=>{
