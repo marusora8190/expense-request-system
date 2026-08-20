@@ -69,6 +69,9 @@
     outline:none;border-color:var(--ink);box-shadow:0 0 0 3px rgba(165,42,32,.1);
   }
   .field textarea{resize:vertical;min-height:64px;}
+  .pdf-current-note{font-size:12.5px;color:var(--muted);margin-top:2px;}
+  .pdf-current-note a{color:var(--ink);text-decoration:underline;}
+  .pdf-current-note button{margin-left:8px;color:#c94f3c;background:none;border:none;text-decoration:underline;cursor:pointer;font-size:12.5px;padding:0;}
   .form-title{font-size:15px;font-weight:700;margin-bottom:16px;color:var(--ink);}
   .list-toolbar{margin-bottom:14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
   .search-wrap{position:relative;width:100%;max-width:320px;}
@@ -117,7 +120,8 @@
   th{text-align:left;color:var(--muted);font-weight:600;font-size:12px;padding:8px 10px;border-bottom:2px solid var(--line);white-space:nowrap;}
   td{padding:10px;border-bottom:1px solid var(--line);vertical-align:top;white-space:nowrap;}
   tr:hover td{background:var(--accent-bg);}
-  .subject-cell{white-space:nowrap;max-width:200px;overflow:hidden;text-overflow:ellipsis;}
+  .subject-cell{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;width:100%;}
+  table th:not(:nth-child(3)), table td:not(:nth-child(3)):not(.sticky-actions){white-space:nowrap;width:1%;}
   .category-cell{writing-mode:vertical-rl;text-orientation:upright;text-align:center;width:1.6em;letter-spacing:.1em;}
   .searchable{cursor:pointer;}
   .searchable:hover{text-decoration:underline;color:var(--ink);}
@@ -127,7 +131,7 @@
   .total-label{text-align:right;color:var(--muted);font-weight:600;}
   #list-total{font-size:15px;color:var(--ink);}
   .row-actions{display:flex;gap:4px;white-space:nowrap;}
-  .icon-btn{background:#f1ece1;padding:6px 3px;border-radius:6px;font-size:11.5px;color:var(--text);writing-mode:vertical-rl;text-orientation:upright;letter-spacing:.05em;}
+  .icon-btn{background:#f1ece1;padding:6px 3px;border-radius:6px;font-size:11.5px;color:var(--text);writing-mode:vertical-rl;text-orientation:upright;letter-spacing:.05em;display:inline-block;text-decoration:none;box-sizing:border-box;}
   .icon-btn.print{background:var(--ink);color:#fff;}
   .icon-btn.print:hover{background:var(--ink-dark);}
   .icon-btn.pdf{background:#e9e2d0;color:var(--text);writing-mode:horizontal-tb;padding:6px 8px;}
@@ -349,7 +353,11 @@
         <label>PDF No.</label>
         <input type="text" id="f-pdf-no" placeholder="例）2026026">
       </div>
-      <div class="field"></div>
+      <div class="field">
+        <label>PDFファイル（見積書など）</label>
+        <input type="file" id="f-pdf-file" accept="application/pdf">
+        <div id="f-pdf-current" class="pdf-current-note"></div>
+      </div>
 
       <div class="field">
         <label>提出年月日</label>
@@ -596,6 +604,43 @@ async function sb(path, opts={}){
   return res.json();
 }
 
+const PDF_BUCKET = 'expense-pdfs';
+
+async function uploadPdfFile(file){
+  // ファイル名の衝突を避けるため、日時+元のファイル名でパスを作る
+  const safeName = file.name.replace(/[^\w.\-一-龠ぁ-んァ-ヶー]/g, '_');
+  const path = `${Date.now()}_${safeName}`;
+  const res = await fetch(`${SUPABASE_URL}/storage/v1/object/${PDF_BUCKET}/${encodeURIComponent(path)}`, {
+    method: 'POST',
+    headers:{
+      "apikey": SUPABASE_KEY,
+      "Authorization": `Bearer ${SUPABASE_KEY}`,
+      "Content-Type": file.type || 'application/pdf'
+    },
+    body: file
+  });
+  if(!res.ok){
+    const t = await res.text().catch(()=> "");
+    throw new Error(`PDFのアップロードに失敗しました (${res.status}): ${t}`);
+  }
+  return `${SUPABASE_URL}/storage/v1/object/public/${PDF_BUCKET}/${path}`;
+}
+
+async function deletePdfFileByUrl(url){
+  if(!url) return;
+  const marker = `/storage/v1/object/public/${PDF_BUCKET}/`;
+  const idx = url.indexOf(marker);
+  if(idx === -1) return;
+  const path = url.slice(idx + marker.length);
+  await fetch(`${SUPABASE_URL}/storage/v1/object/${PDF_BUCKET}/${path}`, {
+    method: 'DELETE',
+    headers:{
+      "apikey": SUPABASE_KEY,
+      "Authorization": `Bearer ${SUPABASE_KEY}`
+    }
+  }).catch(()=>{}); // 削除に失敗しても保存処理自体は止めない
+}
+
 function showToast(msg, duration=2200){
   const t = document.getElementById('toast');
   t.textContent = msg;
@@ -654,6 +699,7 @@ function switchTab(name){
 
 let editingId = null;
 let editingSnapshotUpdatedAt = null;
+let editingPdfUrl = null;
 
 function resetForm(){
   document.getElementById('f-budget').dataset.autoFilled = '0';
@@ -663,9 +709,12 @@ function resetForm(){
   });
   document.getElementById('f-department').value = LOCKED_DEPARTMENT || '';
   document.getElementById('f-estimate').checked = false;
+  document.getElementById('f-pdf-file').value = '';
+  document.getElementById('f-pdf-current').innerHTML = '';
   document.getElementById('f-submit-date').value = new Date().toISOString().slice(0,10);
   editingId = null;
   editingSnapshotUpdatedAt = null;
+  editingPdfUrl = null;
   document.getElementById('form-mode-title').textContent = '新規申請';
   document.getElementById('save-btn').textContent = '保存する';
   document.getElementById('delete-btn').style.display = 'none';
@@ -709,6 +758,9 @@ async function saveRequest(){
   const subject = document.getElementById('f-subject').value.trim();
   if(!subject){ showToast('主題を入力してください'); return; }
 
+  const pdfFileInput = document.getElementById('f-pdf-file');
+  const pdfFile = pdfFileInput.files[0] || null;
+
   const payload = {
     category: document.getElementById('f-category').value || null,
     budget_year: document.getElementById('f-budget-year').value ? Number(document.getElementById('f-budget-year').value) : null,
@@ -731,6 +783,16 @@ async function saveRequest(){
   };
 
   try{
+    // PDFファイルが新しく選択されていればアップロード
+    if(pdfFile){
+      showToast('PDFをアップロード中…', 10000);
+      payload.pdf_url = await uploadPdfFile(pdfFile);
+      // 編集中で、以前のPDFがあれば差し替えのため削除しておく
+      if(editingId && editingPdfUrl && editingPdfUrl !== payload.pdf_url){
+        await deletePdfFileByUrl(editingPdfUrl);
+      }
+    }
+
     if(editingId){
       // 衝突検知: 編集開始後に他の人が更新していないか確認
       const latest = await sb(`expense_requests?id=eq.${editingId}&select=updated_at,subject`);
@@ -837,7 +899,10 @@ function renderList(){
         <td>${fmtEraShort(r.accounting_approve_date)}</td>
         <td class="sticky-actions">
           <div class="row-actions">
-            <button class="icon-btn pdf" onclick="copyPdfNo('${escapeHtml(r.pdf_no||'')}')" title="PDF No.: ${escapeHtml(r.pdf_no||'—')}（クリックでコピー）">PDF</button>
+            ${r.pdf_url
+              ? `<a class="icon-btn pdf" href="${r.pdf_url}" target="_blank" rel="noopener" title="PDFファイルを開く（PDF No.: ${escapeHtml(r.pdf_no||'—')}）">PDF</a>`
+              : `<button class="icon-btn pdf" onclick="copyPdfNo('${escapeHtml(r.pdf_no||'')}')" title="PDFファイル未添付。PDF No.: ${escapeHtml(r.pdf_no||'—')}（クリックで番号をコピー）">PDF</button>`
+            }
             <button class="icon-btn print" onclick="openPrint('${r.id}')">印刷</button>
             <button class="icon-btn edit" onclick="editRequest('${r.id}')">編集</button>
           </div>
@@ -871,6 +936,36 @@ function escapeHtml(s){
   return (s||'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 
+function renderCurrentPdfNote(){
+  const note = document.getElementById('f-pdf-current');
+  if(editingPdfUrl){
+    note.innerHTML = `現在のファイル: <a href="${editingPdfUrl}" target="_blank" rel="noopener">開いて確認</a>` +
+      `<button type="button" onclick="removeCurrentPdf()">削除</button>`;
+  }else{
+    note.innerHTML = '';
+  }
+}
+
+async function removeCurrentPdf(){
+  if(!editingPdfUrl) return;
+  if(!confirm('添付されているPDFファイルを削除しますか？（この操作は保存すると確定します）')) return;
+  try{
+    await deletePdfFileByUrl(editingPdfUrl);
+    if(editingId){
+      await sb(`expense_requests?id=eq.${editingId}`, {
+        method:'PATCH',
+        headers:{ 'Prefer':'return=minimal' },
+        body: JSON.stringify({ pdf_url: null })
+      });
+    }
+    editingPdfUrl = null;
+    renderCurrentPdfNote();
+    showToast('PDFファイルを削除しました');
+  }catch(e){
+    showToast('PDFファイルの削除に失敗しました: ' + e.message, 6000);
+  }
+}
+
 function editRequest(id){
   const r = cachedList.find(x=>x.id===id);
   if(!r) return;
@@ -883,6 +978,9 @@ function editRequest(id){
   document.getElementById('f-assignee-department').value = r.assignee_department || '';
   document.getElementById('f-assignee').value = r.assignee || '';
   document.getElementById('f-pdf-no').value = r.pdf_no || '';
+  document.getElementById('f-pdf-file').value = '';
+  editingPdfUrl = r.pdf_url || null;
+  renderCurrentPdfNote();
   document.getElementById('f-submit-date').value = r.submit_date || '';
   document.getElementById('f-start-date').value = r.start_date || '';
   document.getElementById('f-end-date').value = r.end_date || '';
