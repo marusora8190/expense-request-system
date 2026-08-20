@@ -211,7 +211,8 @@
   .title-row .meta .lbl-v{writing-mode:vertical-rl;text-align:center;letter-spacing:.05em;}
   .title-row .meta .bracket{font-size:20px;}
   .bracket{font-weight:700;}
-  #p-department{font-family:"Meiryo UI","Meiryo",sans-serif;color:#000;font-weight:400;font-size:14.5px;vertical-align:middle;}
+  #p-department{font-family:"Meiryo UI","Meiryo",sans-serif;color:#000;font-weight:400;font-size:14.5px;}
+  .dept-bracket{display:inline-flex;align-items:center;}
 
   .submit-date{text-align:right;font-size:13px;padding:6px 0 0;white-space:nowrap;width:220mm;margin:0;box-sizing:border-box;font-family:"MS Mincho","MS 明朝","Hiragino Mincho ProN",serif;}
   .rl{letter-spacing:.1em;font-family:"MS Mincho","MS 明朝","Hiragino Mincho ProN",serif;}
@@ -523,7 +524,7 @@
         <h2>予 想 経 費 申 請 書</h2>
         <span class="fw-gap">　</span>
         <div class="meta">
-          <span class="lbl">提出<br>部署</span> <span class="bracket">（<span id="p-department">　　　　　　　　　　　　　　</span>）</span>
+          <span class="lbl">提出<br>部署</span> <span class="bracket dept-bracket">（<span id="p-department">　　　　　　　　　　　　　　</span>）</span>
           <span class="lbl-v-wrap"><span class="lbl-v">部長印</span></span> <span class="bracket">（　　　　）</span>
         </div>
       </div>
@@ -1141,17 +1142,22 @@ function openPrint(id){
 function fitSheetToScreen(){
   const frame = document.getElementById('sheet-frame');
   const sheet = document.querySelector('.sheet');
+  const toolbar = document.querySelector('.print-toolbar');
   if(!sheet || !frame) return;
   sheet.style.transform = '';
   sheet.style.transformOrigin = '';
   frame.style.width = '';
   frame.style.height = '';
-  // measure natural size, then scale to fit the viewport with some side padding
+  // measure natural size, then scale to fit the viewport (both width and height)
   const naturalWidth = sheet.offsetWidth;
   const naturalHeight = sheet.offsetHeight;
-  const available = window.innerWidth - 32; // matches overlay's 16px side padding
-  if(naturalWidth > available){
-    const scale = available / naturalWidth;
+  const toolbarHeight = toolbar ? toolbar.offsetHeight + 14 : 0; // 14px = toolbar's own margin-bottom
+  const availableWidth = window.innerWidth - 32; // matches overlay's 16px side padding
+  const availableHeight = window.innerHeight - 60 - toolbarHeight; // 60px = overlay's top+bottom padding
+  const widthScale = naturalWidth > availableWidth ? availableWidth / naturalWidth : 1;
+  const heightScale = naturalHeight > availableHeight ? availableHeight / naturalHeight : 1;
+  const scale = Math.min(widthScale, heightScale, 1);
+  if(scale < 1){
     sheet.style.transform = `scale(${scale})`;
     sheet.style.transformOrigin = 'top left';
     // shrink the frame to the actual visual (scaled) size so flex centering
