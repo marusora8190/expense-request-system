@@ -325,12 +325,8 @@
     <div class="form-title" id="form-mode-title">新規申請</div>
     <div class="field-grid field-grid-3col">
       <div class="field">
-        <label>科目</label>
-        <input type="text" id="f-category" list="category-list" placeholder="例）本部">
-        <datalist id="category-list">
-          <option value="本部"></option>
-          <option value="教庁"></option>
-        </datalist>
+        <label>予算科目</label>
+        <input type="text" id="f-budget" placeholder="例）本部営繕費">
       </div>
       <div class="field">
         <label>予算年度</label>
@@ -381,10 +377,6 @@
         <input type="text" id="f-subject" placeholder="例）殿内(3号・4号・6号・7号便所)ウォシュレット電源工事">
       </div>
 
-      <div class="field">
-        <label>予算科目</label>
-        <input type="text" id="f-budget" placeholder="例）本部営繕費">
-      </div>
       <div class="field">
         <label>予想の総経費（円）</label>
         <input type="number" id="f-cost" min="0" step="1" placeholder="例）7678000">
@@ -708,7 +700,7 @@ let editingPdfUrl = null;
 function resetForm(){
   document.getElementById('f-budget').dataset.autoFilled = '0';
   ['f-submit-date','f-start-date','f-end-date','f-subject','f-budget','f-cost','f-overview','f-remarks',
-   'f-category','f-assignee','f-assignee-department','f-acc-submit','f-acc-approve','f-pdf-no','f-list-note','f-budget-year'].forEach(id=>{
+   'f-assignee','f-assignee-department','f-acc-submit','f-acc-approve','f-pdf-no','f-list-note','f-budget-year'].forEach(id=>{
     document.getElementById(id).value = '';
   });
   document.getElementById('f-department').value = LOCKED_DEPARTMENT || '';
@@ -769,7 +761,6 @@ async function saveRequest(){
   const pdfFile = pdfFileInput.files[0] || null;
 
   const payload = {
-    category: document.getElementById('f-category').value || null,
     budget_year: document.getElementById('f-budget-year').value ? Number(document.getElementById('f-budget-year').value) : null,
     department: document.getElementById('f-department').value || null,
     assignee_department: document.getElementById('f-assignee-department').value || null,
@@ -907,7 +898,7 @@ function renderList(){
   document.getElementById('search-clear').style.display = q ? 'flex' : 'none';
   const yearFilter = document.getElementById('year-filter').value;
   let rows = q
-    ? cachedList.filter(r => (r.subject||'').toLowerCase().includes(q) || (r.assignee||'').toLowerCase().includes(q) || (r.category||'').toLowerCase().includes(q) || (r.department||'').toLowerCase().includes(q) || (r.assignee_department||'').toLowerCase().includes(q))
+    ? cachedList.filter(r => (r.subject||'').toLowerCase().includes(q) || (r.assignee||'').toLowerCase().includes(q) || (r.category||'').toLowerCase().includes(q) || (r.department||'').toLowerCase().includes(q) || (r.assignee_department||'').toLowerCase().includes(q) || (r.budget_category||'').toLowerCase().includes(q))
     : cachedList;
   if(yearFilter){
     rows = rows.filter(r => effectiveYear(r) === Number(yearFilter));
@@ -923,7 +914,7 @@ function renderList(){
   body.innerHTML = rows.map(r=>`
       <tr>
         <td>${fmtEraShort(r.submit_date)}</td>
-        <td class="searchable category-cell" onclick="searchByValue('${escapeHtml(r.category||'')}')" title="${escapeHtml(r.category||'')}">${r.category ? escapeHtml(r.category.charAt(0)) : '—'}</td>
+        <td class="searchable category-cell" onclick="searchByValue('${escapeHtml(r.budget_category||'')}')" title="${escapeHtml(r.budget_category||'')}">${r.budget_category ? escapeHtml(r.budget_category.charAt(0)) : '—'}</td>
         <td class="subject-cell" title="${escapeHtml(r.subject)}">${escapeHtml(r.subject)}</td>
         <td class="amt">${r.total_cost ? '¥'+Number(r.total_cost).toLocaleString() : '—'}</td>
         <td class="searchable" onclick="searchByValue('${escapeHtml(r.assignee||'')}')">${r.assignee || '—'}</td>
@@ -1004,7 +995,6 @@ function editRequest(id){
   editingId = id;
   editingSnapshotUpdatedAt = r.updated_at || null;
   document.getElementById('f-budget').dataset.autoFilled = '0';
-  document.getElementById('f-category').value = r.category || '';
   document.getElementById('f-budget-year').value = r.budget_year || '';
   document.getElementById('f-department').value = r.department || '';
   document.getElementById('f-assignee-department').value = r.assignee_department || '';
@@ -1185,20 +1175,6 @@ if(LOCKED_DEPARTMENT){
   loadProjectTabs().then(renderProjectTabs);
 }
 
-document.getElementById('f-category').addEventListener('input', (e)=>{
-  const budgetField = document.getElementById('f-budget');
-  const val = e.target.value.trim();
-  // 予算科目が空、または科目からの自動反映のままなら、入力した文字をそのまま反映する
-  // (すでに独自の内容に書き換えられている場合は上書きしない)
-  if(!budgetField.value || budgetField.dataset.autoFilled === '1'){
-    budgetField.value = val;
-    budgetField.dataset.autoFilled = '1';
-  }
-});
-document.getElementById('f-budget').addEventListener('input', ()=>{
-  // ユーザーが予算科目欄を直接編集したら、以後は科目変更で上書きしない
-  document.getElementById('f-budget').dataset.autoFilled = '0';
-});
 document.getElementById('f-submit-date').addEventListener('change', ()=>{
   // 提出年月日が変わると年度が変わる可能性があるので、PDF No.を再計算する
   suggestNextPdfNo();
