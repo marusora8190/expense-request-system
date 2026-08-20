@@ -123,10 +123,11 @@
   td{padding:4px 10px;border-bottom:1px solid var(--line);vertical-align:middle;white-space:nowrap;}
   tr:hover td{background:var(--accent-bg);}
   .subject-cell{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-  .assignee-cell{font-size:11px;font-weight:400;color:#000;min-width:100px;}
+  .assignee-cell{font-size:14px;font-weight:400;color:#000;min-width:180px;}
   table th:not(:nth-child(3)), table td:not(:nth-child(3)):not(.sticky-actions){white-space:nowrap;}
-  .category-cell{text-align:center;width:1em;writing-mode:vertical-rl;text-orientation:upright;padding-left:4px;padding-right:4px;font-size:10px;font-weight:400;color:#000;}
-  .date-cell{font-size:10px;font-weight:400;color:#000;}
+  .category-cell{text-align:center;padding-left:2px !important;padding-right:2px !important;width:18px !important;color:#000;font-size:10px;font-weight:400;}
+  .category-cell-inner{display:block;writing-mode:vertical-rl;text-orientation:upright;font-size:10px;font-weight:400;color:#000;width:14px;overflow:hidden;margin:0 auto;}
+  .date-cell{font-size:10px;font-weight:400;color:#000;width:64px;min-width:64px;max-width:64px;}
   .searchable{cursor:pointer;}
   .searchable:hover{text-decoration:underline;color:var(--ink);}
   .amt{font-variant-numeric:tabular-nums;font-weight:600;text-align:right;}
@@ -442,7 +443,7 @@
     <table>
       <colgroup>
         <col style="width:58px;">
-        <col style="width:44px;">
+        <col style="width:18px;">
         <col style="width:70%;">
         <col style="width:100px;">
         <col style="width:110px;">
@@ -452,13 +453,13 @@
       </colgroup>
       <thead>
         <tr>
-          <th>提出日</th>
-          <th>科目</th>
+          <th class="date-cell">提出日</th>
+          <th class="category-cell"><span class="category-cell-inner">科目</span></th>
           <th>主題</th>
           <th class="amt">金額</th>
-          <th>担当</th>
-          <th>会計提出</th>
-          <th>会計承認</th>
+          <th class="assignee-cell">担当</th>
+          <th class="date-cell">会計提出</th>
+          <th class="date-cell">会計承認</th>
           <th class="sticky-actions"></th>
         </tr>
       </thead>
@@ -933,7 +934,7 @@ function renderList(){
   body.innerHTML = rows.map(r=>`
       <tr>
         <td class="date-cell">${fmtEraShort(r.submit_date)}</td>
-        <td class="searchable category-cell" onclick="searchByValue('${escapeHtml(r.budget_category||'')}')" title="${escapeHtml(r.budget_category||'')}">${r.budget_category ? escapeHtml(r.budget_category.charAt(0)) : '—'}</td>
+        <td class="searchable category-cell" onclick="searchByValue('${escapeHtml(r.budget_category||'')}')" title="${escapeHtml(r.budget_category||'')}"><span class="category-cell-inner">${r.budget_category ? escapeHtml(r.budget_category.charAt(0)) : '—'}</span></td>
         <td class="subject-cell" title="${escapeHtml(r.subject)}">${escapeHtml(r.subject)}</td>
         <td class="amt">${r.total_cost ? '¥'+Number(r.total_cost).toLocaleString() : '—'}</td>
         <td class="searchable assignee-cell" onclick="searchByValue('${escapeHtml(r.assignee||'')}')">${r.assignee || '—'}</td>
