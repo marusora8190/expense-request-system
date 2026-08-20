@@ -112,7 +112,7 @@
   .btn-secondary:hover{background:#e8e1d2;}
 
   table{width:100%;border-collapse:collapse;font-size:13.5px;}
-  .table-scroll{overflow-x:auto;overflow-y:auto;max-width:100%;max-height:65vh;}
+  .table-scroll{overflow-x:auto;overflow-y:auto;max-width:100%;max-height:75vh;}
   .table-scroll thead th{position:sticky;top:0;background:var(--panel);z-index:5;}
   .sticky-actions{position:sticky;right:0;background:var(--panel);box-shadow:-6px 0 6px -6px rgba(0,0,0,.15);z-index:4;}
   thead .sticky-actions{z-index:6;}
@@ -691,6 +691,8 @@ function switchTab(name){
   const projectTab = PROJECT_TABS.find(t => t.id === name);
   const isListLike = name==='list' || !!projectTab;
   document.getElementById('tab-list').style.display = isListLike ? 'block':'none';
+  // 一覧表示中はタイトル部分を隠して、テーブルを縦に広く見られるようにする
+  document.querySelector('.app-header').style.display = isListLike ? 'none' : 'flex';
   if(isListLike){
     const doFilter = () => {
       document.getElementById('search-box').value = projectTab ? projectTab.keyword : '';
