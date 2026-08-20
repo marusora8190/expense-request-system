@@ -169,11 +169,11 @@
   .label-col{
     writing-mode:vertical-rl;text-align:center;font-weight:700;font-size:12px;
     letter-spacing:.15em;flex:0 0 34px;display:flex;align-items:center;justify-content:center;
-    border-right:1.5px solid var(--ink);
+    border-right:0.75px solid var(--ink);
   }
   .plan-row .label-col, .subject-row .label-col{
     flex:0 0 10mm;box-sizing:border-box;
-    border-right:2px double var(--ink);
+    border-right:0.75px solid var(--ink);
   }
 
   /* stamp box */
@@ -181,15 +181,16 @@
   .stampbox{border:1.5px solid var(--ink);display:flex;}
   .stampbox .sc{width:13mm;border-right:1.5px solid var(--ink);text-align:center;box-sizing:border-box;}
   .stampbox .sc:last-child{border-right:none;}
-  .stampbox .sc .h{font-size:10px;font-weight:700;border-bottom:1.5px solid var(--ink);height:20px;line-height:20px;box-sizing:border-box;font-family:"HG正楷書体-PRO","HGSeikaishotaiPRO","Hiragino Mincho ProN",serif;}
+  .stampbox .sc .h{font-size:13px;font-weight:400;border-bottom:1.5px solid var(--ink);height:20px;line-height:20px;box-sizing:border-box;font-family:"HG正楷書体-PRO","HGSeikaishotaiPRO","Hiragino Mincho ProN",serif;}
   .stampbox .sc .b{height:14mm;box-sizing:border-box;}
 
-  .title-row{display:flex;align-items:baseline;gap:2px;padding:6px 4px 1px;margin:0 auto 0;width:170mm;border-bottom:1.5px solid var(--ink);white-space:nowrap;}
+  .title-row{display:flex;align-items:center;gap:2px;padding:6px 4px 1px;margin:0 auto 0;width:170mm;border-bottom:1.5px solid var(--ink);white-space:nowrap;}
   .title-row h2{font-size:23px;letter-spacing:normal;word-spacing:.32em;margin:0;font-weight:700;font-family:"Hiragino Mincho ProN","Yu Mincho","YuMincho","Noto Serif JP",serif;white-space:nowrap;}
-  .title-row .meta{font-size:9px;display:flex;align-items:flex-end;gap:8px;line-height:1.25;white-space:nowrap;}
+  .title-row .meta{font-size:9px;display:flex;align-items:center;gap:8px;line-height:1.25;white-space:nowrap;}
   .title-row .meta .lbl{writing-mode:horizontal-tb;text-align:center;}
+  .title-row .meta .lbl-v-wrap{display:inline-block;}
   .title-row .meta .lbl-v{writing-mode:vertical-rl;text-align:center;letter-spacing:.05em;}
-  .title-row .meta .bracket{font-size:14px;}
+  .title-row .meta .bracket{font-size:20px;}
   .bracket{font-weight:700;}
   #p-department{font-family:"Meiryo UI","Meiryo",sans-serif;color:#000;font-weight:400;}
 
@@ -199,10 +200,10 @@
   .suffix{letter-spacing:0;font-family:"MS Mincho","MS 明朝","Hiragino Mincho ProN",serif;}
 
   .plan-row .cell{flex:1;font-size:13.5px;display:flex;align-items:center;justify-content:center;gap:4px;white-space:nowrap;}
-  .plan-row .cell:first-of-type{border-right:2px double var(--ink);}
+  .plan-row .cell:first-of-type{border-right:0.75px solid var(--ink);}
 
-  .subject-row .subject-val{flex:0 0 130mm;width:130mm;box-sizing:border-box;font-size:15px;font-weight:400;display:flex;align-items:center;padding-left:14px;border-right:2px double var(--ink);}
-  .subject-row .budget-label{flex:0 0 32px;writing-mode:vertical-rl;text-align:center;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;letter-spacing:.1em;border-right:2px double var(--ink);}
+  .subject-row .subject-val{flex:0 0 130mm;width:130mm;box-sizing:border-box;font-size:15px;font-weight:400;display:flex;align-items:center;padding-left:14px;border-right:0.75px solid var(--ink);}
+  .subject-row .budget-label{flex:0 0 32px;writing-mode:vertical-rl;text-align:center;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;letter-spacing:.1em;border-right:0.75px solid var(--ink);}
   .subject-row .budget-val{flex:1;display:flex;align-items:center;justify-content:center;font-size:14.5px;font-weight:400;}
 
   .cost-row{align-items:stretch;height:13.5mm;box-sizing:border-box;overflow:hidden;}
@@ -211,9 +212,9 @@
   .cost-row .label-col{
     flex:0 0 auto;width:40mm;font-size:13px;box-sizing:border-box;
     writing-mode:horizontal-tb;letter-spacing:.4em;padding:0 6px;white-space:nowrap;
-    border-right:2px double var(--ink);
+    border-right:0.75px solid var(--ink);
   }
-  .digit-wrap{display:flex;flex-direction:column;justify-content:center;flex:0 0 100mm;width:100mm;box-sizing:border-box;border-right:2px double var(--ink);}
+  .digit-wrap{display:flex;flex-direction:column;justify-content:center;flex:0 0 100mm;width:100mm;box-sizing:border-box;border-right:0.75px solid var(--ink);}
   .digit-heads{display:flex;height:13px;}
   .digit-heads div{
     width:10mm;text-align:right;padding-right:3px;box-sizing:border-box;font-size:9px;line-height:13px;
@@ -223,7 +224,7 @@
   .digit-heads div:last-child{background-image:none;}
   .digit-cells{display:flex;}
   .digit-cells div{
-    width:10mm;height:37px;text-align:center;font-size:19px;font-weight:400;line-height:37px;font-variant-numeric:tabular-nums;box-sizing:border-box;
+    width:10mm;height:37px;text-align:center;font-size:24px;font-weight:400;line-height:37px;font-variant-numeric:tabular-nums;box-sizing:border-box;
     background-image:repeating-linear-gradient(to bottom, var(--ink) 0 1.5px, transparent 1.5px 5.5px);
     background-size:1px 100%;background-position:right top;background-repeat:no-repeat;
   }
@@ -259,7 +260,7 @@
   .remarks-row .label-col .rl-sub{display:flex;flex-direction:row;align-items:center;margin-top:8px;}
   .remarks-row .label-col .rl-sub-cols{display:flex;flex-direction:column;}
   .remarks-row .label-col .rl-sub-col{font-size:9px;font-weight:500;letter-spacing:.05em;line-height:1.2;}
-  .remarks-row .label-col .rl-sub-bracket{font-size:15px;line-height:1;display:block;transform:scaleX(2.2);}
+  .remarks-row .label-col .rl-sub-bracket{font-size:11px;line-height:1;display:block;transform:scaleX(2.2);}
   .remarks-row .label-col .rl-main{font-size:14px;font-weight:700;}
   .sheet-footer{width:220mm;text-align:right;font-size:11px;color:var(--ink);padding:6px 4px 0;letter-spacing:.05em;box-sizing:border-box;}
 
@@ -482,9 +483,9 @@
     <div class="sheet">
       <div class="stampbox-wrap">
         <div class="stampbox">
-          <div class="sc"><div class="h">部長</div><div class="b"></div></div>
-          <div class="sc"><div class="h">次長</div><div class="b"></div></div>
-          <div class="sc"><div class="h">課長</div><div class="b"></div></div>
+          <div class="sc"><div class="h">部 長</div><div class="b"></div></div>
+          <div class="sc"><div class="h">次 長</div><div class="b"></div></div>
+          <div class="sc"><div class="h">課 長</div><div class="b"></div></div>
           <div class="sc"><div class="h"></div><div class="b"></div></div>
           <div class="sc"><div class="h"></div><div class="b"></div></div>
         </div>
@@ -495,7 +496,7 @@
         <span class="fw-gap">　</span>
         <div class="meta">
           <span class="lbl">提出<br>部署</span> <span class="bracket">（<span id="p-department">　　　　　　　　　　　　　　</span>）</span>
-          <span class="lbl-v">部長印</span> <span class="bracket">（　　　　）</span>
+          <span class="lbl-v-wrap"><span class="lbl-v">部長印</span></span> <span class="bracket">（　　　　）</span>
         </div>
       </div>
       <div class="submit-date" id="p-submit-date">令和 年 月 日提出</div>
