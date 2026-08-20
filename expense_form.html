@@ -118,11 +118,11 @@
   thead .sticky-actions{z-index:6;}
   tr:hover .sticky-actions{background:var(--accent-bg);}
   th{text-align:left;color:var(--muted);font-weight:600;font-size:12px;padding:8px 10px;border-bottom:2px solid var(--line);white-space:nowrap;}
-  td{padding:10px;border-bottom:1px solid var(--line);vertical-align:top;white-space:nowrap;}
+  td{padding:6px 10px;border-bottom:1px solid var(--line);vertical-align:middle;white-space:nowrap;}
   tr:hover td{background:var(--accent-bg);}
   .subject-cell{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;width:100%;}
   table th:not(:nth-child(3)), table td:not(:nth-child(3)):not(.sticky-actions){white-space:nowrap;width:1%;}
-  .category-cell{writing-mode:vertical-rl;text-orientation:upright;text-align:center;width:1.6em;letter-spacing:.1em;}
+  .category-cell{text-align:center;width:1.6em;}
   .searchable{cursor:pointer;}
   .searchable:hover{text-decoration:underline;color:var(--ink);}
   .amt{font-variant-numeric:tabular-nums;font-weight:600;text-align:right;}
@@ -716,6 +716,7 @@ function resetForm(){
   document.getElementById('f-estimate').checked = false;
   document.getElementById('f-pdf-file').value = '';
   document.getElementById('f-pdf-current').innerHTML = '';
+  document.getElementById('f-pdf-no').dataset.userEdited = '0';
   document.getElementById('f-submit-date').value = new Date().toISOString().slice(0,10);
   editingId = null;
   editingSnapshotUpdatedAt = null;
@@ -723,6 +724,7 @@ function resetForm(){
   document.getElementById('form-mode-title').textContent = '新規申請';
   document.getElementById('save-btn').textContent = '保存する';
   document.getElementById('delete-btn').style.display = 'none';
+  suggestNextPdfNo();
 }
 
 async function loadOptions(){
@@ -847,6 +849,31 @@ function fiscalYear(dateStr){
   return m >= 4 ? y : y - 1; // 4月始まりの年度
 }
 
+async function suggestNextPdfNo(){
+  // 提出年月日を元に年度を出し、「年度+3桁連番」(例:2026001)の次の番号を自動計算する
+  const submitDate = document.getElementById('f-submit-date').value;
+  const fy = fiscalYear(submitDate) ?? fiscalYear(new Date().toISOString().slice(0,10));
+  if(!fy) return;
+  try{
+    const rows = await sb(`expense_requests?select=pdf_no&pdf_no=like.${fy}*`);
+    let maxSeq = 0;
+    rows.forEach(r=>{
+      const m = /^(\d{4})(\d{3})$/.exec((r.pdf_no||'').trim());
+      if(m && Number(m[1]) === fy){
+        maxSeq = Math.max(maxSeq, Number(m[2]));
+      }
+    });
+    const next = String(maxSeq + 1).padStart(3, '0');
+    const field = document.getElementById('f-pdf-no');
+    // ユーザーが手動で書き換えていなければ、自動採番した値を入れる
+    if(field.dataset.userEdited !== '1'){
+      field.value = `${fy}${next}`;
+    }
+  }catch(e){
+    console.error('PDF No.の自動採番に失敗しました', e);
+  }
+}
+
 function effectiveYear(r){
   return r.budget_year || fiscalYear(r.submit_date);
 }
@@ -864,7 +891,7 @@ async function loadList(){
   body.innerHTML = '<tr><td colspan="8" class="loading">読み込み中…</td></tr>';
   try{
     const deptFilter = LOCKED_DEPARTMENT ? `&department=eq.${encodeURIComponent(LOCKED_DEPARTMENT)}` : '';
-    const rows = await sb(`expense_requests?select=*${deptFilter}&order=submit_date.desc.nullslast,created_at.desc`);
+    const rows = await sb(`expense_requests?select=*${deptFilter}&order=submit_date.desc.nullslast,pdf_no.desc.nullslast,created_at.desc`);
     cachedList = rows;
     populateYearFilter();
     renderList();
@@ -896,7 +923,7 @@ function renderList(){
   body.innerHTML = rows.map(r=>`
       <tr>
         <td>${fmtEraShort(r.submit_date)}</td>
-        <td class="searchable category-cell" onclick="searchByValue('${escapeHtml(r.category||'')}')">${r.category || '—'}</td>
+        <td class="searchable category-cell" onclick="searchByValue('${escapeHtml(r.category||'')}')" title="${escapeHtml(r.category||'')}">${r.category ? escapeHtml(r.category.charAt(0)) : '—'}</td>
         <td class="subject-cell" title="${escapeHtml(r.subject)}">${escapeHtml(r.subject)}</td>
         <td class="amt">${r.total_cost ? '¥'+Number(r.total_cost).toLocaleString() : '—'}</td>
         <td class="searchable" onclick="searchByValue('${escapeHtml(r.assignee||'')}')">${r.assignee || '—'}</td>
@@ -983,6 +1010,7 @@ function editRequest(id){
   document.getElementById('f-assignee-department').value = r.assignee_department || '';
   document.getElementById('f-assignee').value = r.assignee || '';
   document.getElementById('f-pdf-no').value = r.pdf_no || '';
+  document.getElementById('f-pdf-no').dataset.userEdited = '1';
   document.getElementById('f-pdf-file').value = '';
   editingPdfUrl = r.pdf_url || null;
   renderCurrentPdfNote();
@@ -1136,6 +1164,7 @@ function closePrint(){
 
 document.getElementById('f-submit-date').value = new Date().toISOString().slice(0,10);
 loadOptions();
+suggestNextPdfNo();
 
 function renderProjectTabs(){
   const container = document.getElementById('project-tabs-container');
@@ -1168,6 +1197,14 @@ document.getElementById('f-category').addEventListener('input', (e)=>{
 document.getElementById('f-budget').addEventListener('input', ()=>{
   // ユーザーが予算科目欄を直接編集したら、以後は科目変更で上書きしない
   document.getElementById('f-budget').dataset.autoFilled = '0';
+});
+document.getElementById('f-submit-date').addEventListener('change', ()=>{
+  // 提出年月日が変わると年度が変わる可能性があるので、PDF No.を再計算する
+  suggestNextPdfNo();
+});
+document.getElementById('f-pdf-no').addEventListener('input', ()=>{
+  // ユーザーがPDF No.を直接編集したら、以後は自動採番で上書きしない
+  document.getElementById('f-pdf-no').dataset.userEdited = '1';
 });
 </script>
 </body>
