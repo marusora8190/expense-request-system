@@ -118,6 +118,7 @@
   td{padding:10px;border-bottom:1px solid var(--line);vertical-align:top;white-space:nowrap;}
   tr:hover td{background:var(--accent-bg);}
   .subject-cell{white-space:nowrap;max-width:200px;overflow:hidden;text-overflow:ellipsis;}
+  .category-cell{writing-mode:vertical-rl;text-orientation:upright;text-align:center;width:1.6em;letter-spacing:.1em;}
   .searchable{cursor:pointer;}
   .searchable:hover{text-decoration:underline;color:var(--ink);}
   .amt{font-variant-numeric:tabular-nums;font-weight:600;text-align:right;}
@@ -129,6 +130,8 @@
   .icon-btn{background:#f1ece1;padding:6px 3px;border-radius:6px;font-size:11.5px;color:var(--text);writing-mode:vertical-rl;text-orientation:upright;letter-spacing:.05em;}
   .icon-btn.print{background:var(--ink);color:#fff;}
   .icon-btn.print:hover{background:var(--ink-dark);}
+  .icon-btn.pdf{background:#e9e2d0;color:var(--text);writing-mode:horizontal-tb;padding:6px 8px;}
+  .icon-btn.pdf:hover{background:#ddd2b3;}
   .icon-btn.del:hover{background:#f4d9d5;}
   .empty{color:var(--muted);text-align:center;padding:40px 0;font-size:13.5px;}
   .loading{color:var(--muted);text-align:center;padding:40px 0;font-size:13.5px;}
@@ -430,22 +433,18 @@
     <table>
       <thead>
         <tr>
-          <th>年度</th>
           <th>提出日</th>
           <th>科目</th>
-          <th>提出部署</th>
           <th>主題</th>
           <th class="amt">金額</th>
-          <th>担当者部署</th>
           <th>担当</th>
           <th>会計提出</th>
           <th>会計承認</th>
-          <th>PDF No.</th>
           <th class="sticky-actions"></th>
         </tr>
       </thead>
       <tbody id="list-body">
-        <tr><td colspan="12" class="loading">読み込み中…</td></tr>
+        <tr><td colspan="8" class="loading">読み込み中…</td></tr>
       </tbody>
       <tfoot>
         <tr class="total-row">
@@ -795,7 +794,7 @@ function populateYearFilter(){
 
 async function loadList(){
   const body = document.getElementById('list-body');
-  body.innerHTML = '<tr><td colspan="12" class="loading">読み込み中…</td></tr>';
+  body.innerHTML = '<tr><td colspan="8" class="loading">読み込み中…</td></tr>';
   try{
     const deptFilter = LOCKED_DEPARTMENT ? `&department=eq.${encodeURIComponent(LOCKED_DEPARTMENT)}` : '';
     const rows = await sb(`expense_requests?select=*${deptFilter}&order=submit_date.desc.nullslast,created_at.desc`);
@@ -803,7 +802,7 @@ async function loadList(){
     populateYearFilter();
     renderList();
   }catch(e){
-    body.innerHTML = '<tr><td colspan="12" class="empty">読み込みに失敗しました</td></tr>';
+    body.innerHTML = '<tr><td colspan="8" class="empty">読み込みに失敗しました</td></tr>';
     console.error(e);
   }
 }
@@ -821,7 +820,7 @@ function renderList(){
   }
 
   if(!rows.length){
-    body.innerHTML = '<tr><td colspan="12" class="empty">該当する申請はありません</td></tr>';
+    body.innerHTML = '<tr><td colspan="8" class="empty">該当する申請はありません</td></tr>';
     document.getElementById('list-total').textContent = '¥0';
     return;
   }
@@ -829,25 +828,32 @@ function renderList(){
   document.getElementById('list-total').textContent = '¥' + total.toLocaleString();
   body.innerHTML = rows.map(r=>`
       <tr>
-        <td>${toReiwaYearLabel(r.budget_year ? r.budget_year : fiscalYear(r.submit_date)) ?? '—'}</td>
         <td>${fmtEraShort(r.submit_date)}</td>
-        <td class="searchable" onclick="searchByValue('${escapeHtml(r.category||'')}')">${r.category || '—'}</td>
-        <td class="searchable" onclick="searchByValue('${escapeHtml(r.department||'')}')">${escapeHtml(r.department||'') || '—'}</td>
+        <td class="searchable category-cell" onclick="searchByValue('${escapeHtml(r.category||'')}')">${r.category || '—'}</td>
         <td class="subject-cell" title="${escapeHtml(r.subject)}">${escapeHtml(r.subject)}</td>
         <td class="amt">${r.total_cost ? '¥'+Number(r.total_cost).toLocaleString() : '—'}</td>
-        <td class="searchable" onclick="searchByValue('${escapeHtml(r.assignee_department||'')}')">${escapeHtml(r.assignee_department||'') || '—'}</td>
         <td class="searchable" onclick="searchByValue('${escapeHtml(r.assignee||'')}')">${r.assignee || '—'}</td>
         <td>${fmtEraShort(r.accounting_submit_date)}</td>
         <td>${fmtEraShort(r.accounting_approve_date)}</td>
-        <td>${r.pdf_no || '—'}</td>
         <td class="sticky-actions">
           <div class="row-actions">
+            <button class="icon-btn pdf" onclick="copyPdfNo('${escapeHtml(r.pdf_no||'')}')" title="PDF No.: ${escapeHtml(r.pdf_no||'—')}（クリックでコピー）">PDF</button>
             <button class="icon-btn print" onclick="openPrint('${r.id}')">印刷</button>
             <button class="icon-btn edit" onclick="editRequest('${r.id}')">編集</button>
           </div>
         </td>
       </tr>
     `).join('');
+}
+
+async function copyPdfNo(pdfNo){
+  if(!pdfNo){ showToast('PDF No.が入力されていません'); return; }
+  try{
+    await navigator.clipboard.writeText(pdfNo);
+    showToast(`PDF No.「${pdfNo}」をコピーしました`);
+  }catch(e){
+    showToast(`PDF No.: ${pdfNo}`);
+  }
 }
 
 function clearSearch(){
