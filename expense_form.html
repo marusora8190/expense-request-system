@@ -123,10 +123,10 @@
   td{padding:4px 10px;border-bottom:1px solid var(--line);vertical-align:middle;white-space:nowrap;}
   tr:hover td{background:var(--accent-bg);}
   .subject-cell{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;width:100%;}
-  .assignee-cell{font-size:12px;font-weight:400;color:var(--muted);}
+  .assignee-cell{font-size:10px;font-weight:400;color:#000;}
   table th:not(:nth-child(3)), table td:not(:nth-child(3)):not(.sticky-actions){white-space:nowrap;width:1%;}
-  .category-cell{text-align:center;width:1em;writing-mode:vertical-rl;text-orientation:upright;padding-left:4px;padding-right:4px;font-size:12px;font-weight:400;color:var(--muted);}
-  .date-cell{font-size:12px;font-weight:400;color:var(--muted);}
+  .category-cell{text-align:center;width:1em;writing-mode:vertical-rl;text-orientation:upright;padding-left:4px;padding-right:4px;font-size:10px;font-weight:400;color:#000;}
+  .date-cell{font-size:10px;font-weight:400;color:#000;}
   .searchable{cursor:pointer;}
   .searchable:hover{text-decoration:underline;color:var(--ink);}
   .amt{font-variant-numeric:tabular-nums;font-weight:600;text-align:right;}
@@ -386,7 +386,7 @@
 
       <div class="field">
         <label>予想の総経費（円）</label>
-        <input type="number" id="f-cost" min="0" step="1" placeholder="例）7678000">
+        <input type="text" inputmode="numeric" id="f-cost" placeholder="例）7,678,000">
       </div>
 
       <div class="checkbox-row">
@@ -780,7 +780,7 @@ async function saveRequest(){
     end_date: document.getElementById('f-end-date').value || null,
     subject,
     budget_category: document.getElementById('f-budget').value || null,
-    total_cost: document.getElementById('f-cost').value ? Number(document.getElementById('f-cost').value) : null,
+    total_cost: document.getElementById('f-cost').value ? Number(document.getElementById('f-cost').value.replace(/,/g, '')) : null,
     has_estimate_attached: document.getElementById('f-estimate').checked,
     overview: document.getElementById('f-overview').value || null,
     remarks: document.getElementById('f-remarks').value || null,
@@ -1018,7 +1018,7 @@ function editRequest(id){
   document.getElementById('f-end-date').value = r.end_date || '';
   document.getElementById('f-subject').value = r.subject || '';
   document.getElementById('f-budget').value = r.budget_category || '';
-  document.getElementById('f-cost').value = r.total_cost || '';
+  document.getElementById('f-cost').value = r.total_cost ? Number(r.total_cost).toLocaleString() : '';
   document.getElementById('f-estimate').checked = !!r.has_estimate_attached;
   document.getElementById('f-overview').value = r.overview || '';
   document.getElementById('f-remarks').value = r.remarks || '';
@@ -1192,6 +1192,17 @@ document.getElementById('f-submit-date').addEventListener('change', ()=>{
 document.getElementById('f-pdf-no').addEventListener('input', ()=>{
   // ユーザーがPDF No.を直接編集したら、以後は自動採番で上書きしない
   document.getElementById('f-pdf-no').dataset.userEdited = '1';
+});
+document.getElementById('f-cost').addEventListener('input', (e)=>{
+  // 数字以外を除去し、3桁ごとにカンマを入れる(カーソル位置は末尾からの距離で維持)
+  const el = e.target;
+  const before = el.value;
+  const posFromEnd = before.length - el.selectionStart;
+  const digitsOnly = before.replace(/[^\d]/g, '');
+  const formatted = digitsOnly ? Number(digitsOnly).toLocaleString() : '';
+  el.value = formatted;
+  const newPos = Math.max(0, formatted.length - posFromEnd);
+  el.setSelectionRange(newPos, newPos);
 });
 </script>
 </body>
