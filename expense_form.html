@@ -123,8 +123,10 @@
   td{padding:4px 10px;border-bottom:1px solid var(--line);vertical-align:middle;white-space:nowrap;}
   tr:hover td{background:var(--accent-bg);}
   .subject-cell{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;width:100%;}
+  .assignee-cell{font-size:12px;font-weight:400;color:var(--muted);}
   table th:not(:nth-child(3)), table td:not(:nth-child(3)):not(.sticky-actions){white-space:nowrap;width:1%;}
-  .category-cell{text-align:center;width:1em;writing-mode:vertical-rl;text-orientation:upright;padding-left:4px;padding-right:4px;}
+  .category-cell{text-align:center;width:1em;writing-mode:vertical-rl;text-orientation:upright;padding-left:4px;padding-right:4px;font-size:12px;font-weight:400;color:var(--muted);}
+  .date-cell{font-size:12px;font-weight:400;color:var(--muted);}
   .searchable{cursor:pointer;}
   .searchable:hover{text-decoration:underline;color:var(--ink);}
   .amt{font-variant-numeric:tabular-nums;font-weight:600;text-align:right;}
@@ -333,7 +335,7 @@
       </div>
       <div class="field">
         <label>予算年度</label>
-        <input type="number" id="f-budget-year" placeholder="例）2026" min="2000" max="2100" step="1">
+        <input type="number" id="f-budget-year" placeholder="例）2026" min="2020" max="2050" step="1" autocomplete="off">
       </div>
 
       <div class="field">
@@ -714,7 +716,9 @@ function resetForm(){
   document.getElementById('f-pdf-current').innerHTML = '';
   document.getElementById('f-pdf-no').dataset.userEdited = '0';
   document.getElementById('f-submit-date').value = new Date().toISOString().slice(0,10);
-  document.getElementById('f-budget-year').value = fiscalYear(new Date().toISOString().slice(0,10));
+  const currentFY = fiscalYear(new Date().toISOString().slice(0,10));
+  document.getElementById('f-budget-year').value = currentFY;
+  document.getElementById('f-budget-year').min = currentFY;
   editingId = null;
   editingSnapshotUpdatedAt = null;
   editingPdfUrl = null;
@@ -918,20 +922,19 @@ function renderList(){
   document.getElementById('list-total').textContent = '¥' + total.toLocaleString();
   body.innerHTML = rows.map(r=>`
       <tr>
-        <td>${fmtEraShort(r.submit_date)}</td>
+        <td class="date-cell">${fmtEraShort(r.submit_date)}</td>
         <td class="searchable category-cell" onclick="searchByValue('${escapeHtml(r.budget_category||'')}')" title="${escapeHtml(r.budget_category||'')}">${r.budget_category ? escapeHtml(r.budget_category.charAt(0)) : '—'}</td>
         <td class="subject-cell" title="${escapeHtml(r.subject)}">${escapeHtml(r.subject)}</td>
         <td class="amt">${r.total_cost ? '¥'+Number(r.total_cost).toLocaleString() : '—'}</td>
-        <td class="searchable" onclick="searchByValue('${escapeHtml(r.assignee||'')}')">${r.assignee || '—'}</td>
-        <td>${fmtEraShort(r.accounting_submit_date)}</td>
-        <td>${fmtEraShort(r.accounting_approve_date)}</td>
+        <td class="searchable assignee-cell" onclick="searchByValue('${escapeHtml(r.assignee||'')}')">${r.assignee || '—'}</td>
+        <td class="date-cell">${fmtEraShort(r.accounting_submit_date)}</td>
+        <td class="date-cell">${fmtEraShort(r.accounting_approve_date)}</td>
         <td class="sticky-actions">
           <div class="row-actions">
             <button class="icon-btn edit" onclick="editRequest('${r.id}')">編集</button>
             <button class="icon-btn print" onclick="openPrint('${r.id}')">印刷</button>
             ${r.pdf_url
-              ? `<a class="icon-btn pdf pdf-attached" href="${r.pdf_url}" target="_blank" rel="noopener" title="PDFファイルを開く（印刷・保存はブラウザのPDF表示画面から。PDF No.: ${escapeHtml(r.pdf_no||'—')}）">PDF</a>
-                 <a class="icon-btn dl" href="${r.pdf_url}?download=${escapeHtml(r.pdf_no||'expense')}.pdf" title="PDFファイルをダウンロード">DL</a>`
+              ? `<a class="icon-btn pdf pdf-attached" href="${r.pdf_url}" target="_blank" rel="noopener" title="PDFファイルを開く（印刷・保存はブラウザのPDF表示画面から。PDF No.: ${escapeHtml(r.pdf_no||'—')}）">PDF</a>`
               : `<button class="icon-btn pdf pdf-none" onclick="copyPdfNo('${escapeHtml(r.pdf_no||'')}')" title="PDFファイル未添付。PDF No.: ${escapeHtml(r.pdf_no||'—')}（クリックで番号をコピー）">PDF</button>`
             }
           </div>
@@ -1160,6 +1163,7 @@ function closePrint(){
 
 document.getElementById('f-submit-date').value = new Date().toISOString().slice(0,10);
 document.getElementById('f-budget-year').value = fiscalYear(new Date().toISOString().slice(0,10));
+document.getElementById('f-budget-year').min = fiscalYear(new Date().toISOString().slice(0,10));
 loadOptions();
 suggestNextPdfNo();
 
