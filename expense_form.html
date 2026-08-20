@@ -113,7 +113,7 @@
   .btn-secondary{background:#f1ece1;color:var(--text);padding:11px 20px;border-radius:8px;font-size:14px;}
   .btn-secondary:hover{background:#e8e1d2;}
 
-  table{width:100%;border-collapse:collapse;font-size:13.5px;font-weight:600;}
+  table{width:100%;border-collapse:collapse;font-size:13.5px;font-weight:600;table-layout:fixed;}
   .table-scroll{overflow-x:auto;overflow-y:auto;max-width:100%;max-height:75vh;}
   .table-scroll thead th{position:sticky;top:0;background:var(--panel);z-index:5;}
   .sticky-actions{position:sticky;right:0;background:var(--panel);box-shadow:-6px 0 6px -6px rgba(0,0,0,.15);z-index:4;}
@@ -122,9 +122,9 @@
   th{text-align:left;color:var(--muted);font-weight:600;font-size:12px;padding:8px 10px;border-bottom:2px solid var(--line);white-space:nowrap;}
   td{padding:4px 10px;border-bottom:1px solid var(--line);vertical-align:middle;white-space:nowrap;}
   tr:hover td{background:var(--accent-bg);}
-  .subject-cell{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;width:100%;}
-  .assignee-cell{font-size:10px;font-weight:400;color:#000;}
-  table th:not(:nth-child(3)), table td:not(:nth-child(3)):not(.sticky-actions){white-space:nowrap;width:1%;}
+  .subject-cell{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .assignee-cell{font-size:11px;font-weight:400;color:#000;min-width:100px;}
+  table th:not(:nth-child(3)), table td:not(:nth-child(3)):not(.sticky-actions){white-space:nowrap;}
   .category-cell{text-align:center;width:1em;writing-mode:vertical-rl;text-orientation:upright;padding-left:4px;padding-right:4px;font-size:10px;font-weight:400;color:#000;}
   .date-cell{font-size:10px;font-weight:400;color:#000;}
   .searchable{cursor:pointer;}
@@ -440,6 +440,16 @@
     </div>
     <div class="table-scroll">
     <table>
+      <colgroup>
+        <col style="width:58px;">
+        <col style="width:44px;">
+        <col style="width:70%;">
+        <col style="width:100px;">
+        <col style="width:110px;">
+        <col style="width:58px;">
+        <col style="width:58px;">
+        <col style="width:130px;">
+      </colgroup>
       <thead>
         <tr>
           <th>提出日</th>
