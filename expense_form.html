@@ -718,6 +718,7 @@ function resetForm(){
   document.getElementById('f-pdf-current').innerHTML = '';
   document.getElementById('f-pdf-no').dataset.userEdited = '0';
   document.getElementById('f-submit-date').value = new Date().toISOString().slice(0,10);
+  document.getElementById('f-budget-year').value = fiscalYear(new Date().toISOString().slice(0,10));
   editingId = null;
   editingSnapshotUpdatedAt = null;
   editingPdfUrl = null;
@@ -1163,6 +1164,7 @@ function closePrint(){
 }
 
 document.getElementById('f-submit-date').value = new Date().toISOString().slice(0,10);
+document.getElementById('f-budget-year').value = fiscalYear(new Date().toISOString().slice(0,10));
 loadOptions();
 suggestNextPdfNo();
 
