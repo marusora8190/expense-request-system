@@ -192,7 +192,7 @@
   .title-row .meta .lbl-v{writing-mode:vertical-rl;text-align:center;letter-spacing:.05em;}
   .title-row .meta .bracket{font-size:20px;}
   .bracket{font-weight:700;}
-  #p-department{font-family:"Meiryo UI","Meiryo",sans-serif;color:#000;font-weight:400;font-size:14.5px;}
+  #p-department{font-family:"Meiryo UI","Meiryo",sans-serif;color:#000;font-weight:400;font-size:14.5px;vertical-align:middle;}
 
   .submit-date{text-align:right;font-size:13px;padding:6px 0 0;white-space:nowrap;width:220mm;margin:0;box-sizing:border-box;font-family:"MS Mincho","MS 明朝","Hiragino Mincho ProN",serif;}
   .rl{letter-spacing:.1em;font-family:"MS Mincho","MS 明朝","Hiragino Mincho ProN",serif;}
@@ -313,11 +313,11 @@
     <div class="field-grid">
       <div class="field">
         <label>科目</label>
-        <select id="f-category">
-          <option value="">選択してください</option>
-          <option value="本部">本部</option>
-          <option value="教庁">教庁</option>
-        </select>
+        <input type="text" id="f-category" list="category-list" placeholder="例）本部">
+        <datalist id="category-list">
+          <option value="本部"></option>
+          <option value="教庁"></option>
+        </datalist>
       </div>
       <div class="field">
         <label>予算年度</label>
@@ -331,6 +331,11 @@
       <div class="field"></div>
 
       <div class="field">
+        <label>担当者部署</label>
+        <input type="text" id="f-assignee-department" list="assignee-department-list" placeholder="例）電気課">
+        <datalist id="assignee-department-list"></datalist>
+      </div>
+      <div class="field">
         <label>担当</label>
         <input type="text" id="f-assignee" list="assignee-list" placeholder="例）名前・部署名">
         <datalist id="assignee-list"></datalist>
@@ -339,6 +344,7 @@
         <label>PDF No.</label>
         <input type="text" id="f-pdf-no" placeholder="例）2026026">
       </div>
+      <div class="field"></div>
 
       <div class="field">
         <label>提出年月日</label>
@@ -428,6 +434,7 @@
           <th>提出部署</th>
           <th>主題</th>
           <th class="amt">金額</th>
+          <th>担当者部署</th>
           <th>担当</th>
           <th>会計提出</th>
           <th>会計承認</th>
@@ -436,7 +443,7 @@
         </tr>
       </thead>
       <tbody id="list-body">
-        <tr><td colspan="11" class="loading">読み込み中…</td></tr>
+        <tr><td colspan="12" class="loading">読み込み中…</td></tr>
       </tbody>
       <tfoot>
         <tr class="total-row">
@@ -648,8 +655,9 @@ let editingId = null;
 let editingSnapshotUpdatedAt = null;
 
 function resetForm(){
+  document.getElementById('f-budget').dataset.autoFilled = '0';
   ['f-submit-date','f-start-date','f-end-date','f-subject','f-budget','f-cost','f-overview','f-remarks',
-   'f-category','f-assignee','f-acc-submit','f-acc-approve','f-pdf-no','f-list-note','f-budget-year'].forEach(id=>{
+   'f-category','f-assignee','f-assignee-department','f-acc-submit','f-acc-approve','f-pdf-no','f-list-note','f-budget-year'].forEach(id=>{
     document.getElementById(id).value = '';
   });
   document.getElementById('f-department').value = LOCKED_DEPARTMENT || '';
@@ -674,6 +682,9 @@ async function loadOptions(){
       const assignees = await sb(`expense_requests?select=assignee&assignee=not.is.null&department=eq.${encodeURIComponent(LOCKED_DEPARTMENT)}`);
       const uniqueAssignees = [...new Set(assignees.map(a=>a.assignee).filter(Boolean))].sort();
       document.getElementById('assignee-list').innerHTML = uniqueAssignees.map(a=>`<option value="${a}"></option>`).join('');
+
+      const deps = await sb('departments?select=name&order=sort_order.asc');
+      document.getElementById('assignee-department-list').innerHTML = deps.map(d=>`<option value="${d.name}"></option>`).join('');
       return;
     }
 
@@ -683,6 +694,7 @@ async function loadOptions(){
     ]);
     const dSel = document.getElementById('f-department');
     dSel.innerHTML = '<option value="">選択してください</option>' + deps.map(d=>`<option value="${d.name}">${d.name}</option>`).join('');
+    document.getElementById('assignee-department-list').innerHTML = deps.map(d=>`<option value="${d.name}"></option>`).join('');
 
     const uniqueAssignees = [...new Set(assignees.map(a=>a.assignee).filter(Boolean))].sort();
     document.getElementById('assignee-list').innerHTML = uniqueAssignees.map(a=>`<option value="${a}"></option>`).join('');
@@ -700,6 +712,7 @@ async function saveRequest(){
     category: document.getElementById('f-category').value || null,
     budget_year: document.getElementById('f-budget-year').value ? Number(document.getElementById('f-budget-year').value) : null,
     department: document.getElementById('f-department').value || null,
+    assignee_department: document.getElementById('f-assignee-department').value || null,
     assignee: document.getElementById('f-assignee').value || null,
     pdf_no: document.getElementById('f-pdf-no').value || null,
     submit_date: document.getElementById('f-submit-date').value || null,
@@ -780,7 +793,7 @@ function populateYearFilter(){
 
 async function loadList(){
   const body = document.getElementById('list-body');
-  body.innerHTML = '<tr><td colspan="11" class="loading">読み込み中…</td></tr>';
+  body.innerHTML = '<tr><td colspan="12" class="loading">読み込み中…</td></tr>';
   try{
     const deptFilter = LOCKED_DEPARTMENT ? `&department=eq.${encodeURIComponent(LOCKED_DEPARTMENT)}` : '';
     const rows = await sb(`expense_requests?select=*${deptFilter}&order=submit_date.desc.nullslast,created_at.desc`);
@@ -788,7 +801,7 @@ async function loadList(){
     populateYearFilter();
     renderList();
   }catch(e){
-    body.innerHTML = '<tr><td colspan="11" class="empty">読み込みに失敗しました</td></tr>';
+    body.innerHTML = '<tr><td colspan="12" class="empty">読み込みに失敗しました</td></tr>';
     console.error(e);
   }
 }
@@ -799,14 +812,14 @@ function renderList(){
   document.getElementById('search-clear').style.display = q ? 'flex' : 'none';
   const yearFilter = document.getElementById('year-filter').value;
   let rows = q
-    ? cachedList.filter(r => (r.subject||'').toLowerCase().includes(q) || (r.assignee||'').toLowerCase().includes(q) || (r.category||'').toLowerCase().includes(q) || (r.department||'').toLowerCase().includes(q))
+    ? cachedList.filter(r => (r.subject||'').toLowerCase().includes(q) || (r.assignee||'').toLowerCase().includes(q) || (r.category||'').toLowerCase().includes(q) || (r.department||'').toLowerCase().includes(q) || (r.assignee_department||'').toLowerCase().includes(q))
     : cachedList;
   if(yearFilter){
     rows = rows.filter(r => effectiveYear(r) === Number(yearFilter));
   }
 
   if(!rows.length){
-    body.innerHTML = '<tr><td colspan="11" class="empty">該当する申請はありません</td></tr>';
+    body.innerHTML = '<tr><td colspan="12" class="empty">該当する申請はありません</td></tr>';
     document.getElementById('list-total').textContent = '¥0';
     return;
   }
@@ -820,6 +833,7 @@ function renderList(){
         <td class="searchable" onclick="searchByValue('${escapeHtml(r.department||'')}')">${escapeHtml(r.department||'') || '—'}</td>
         <td class="subject-cell">${escapeHtml(r.subject)}</td>
         <td class="amt">${r.total_cost ? '¥'+Number(r.total_cost).toLocaleString() : '—'}</td>
+        <td class="searchable" onclick="searchByValue('${escapeHtml(r.assignee_department||'')}')">${escapeHtml(r.assignee_department||'') || '—'}</td>
         <td class="searchable" onclick="searchByValue('${escapeHtml(r.assignee||'')}')">${r.assignee || '—'}</td>
         <td>${fmtEraShort(r.accounting_submit_date)}</td>
         <td>${fmtEraShort(r.accounting_approve_date)}</td>
@@ -854,9 +868,11 @@ function editRequest(id){
   if(!r) return;
   editingId = id;
   editingSnapshotUpdatedAt = r.updated_at || null;
+  document.getElementById('f-budget').dataset.autoFilled = '0';
   document.getElementById('f-category').value = r.category || '';
   document.getElementById('f-budget-year').value = r.budget_year || '';
   document.getElementById('f-department').value = r.department || '';
+  document.getElementById('f-assignee-department').value = r.assignee_department || '';
   document.getElementById('f-assignee').value = r.assignee || '';
   document.getElementById('f-pdf-no').value = r.pdf_no || '';
   document.getElementById('f-submit-date').value = r.submit_date || '';
@@ -1028,11 +1044,19 @@ if(LOCKED_DEPARTMENT){
   loadProjectTabs().then(renderProjectTabs);
 }
 
-document.getElementById('f-category').addEventListener('change', (e)=>{
+document.getElementById('f-category').addEventListener('input', (e)=>{
   const budgetField = document.getElementById('f-budget');
-  if(!budgetField.value || budgetField.value === '本部営繕費' || budgetField.value === '教庁営繕費'){
-    budgetField.value = e.target.value === '本部' ? '本部営繕費' : e.target.value === '教庁' ? '教庁営繕費' : '';
+  const val = e.target.value.trim();
+  // 予算科目が空、または科目からの自動反映のままなら、入力した文字をそのまま反映する
+  // (すでに独自の内容に書き換えられている場合は上書きしない)
+  if(!budgetField.value || budgetField.dataset.autoFilled === '1'){
+    budgetField.value = val;
+    budgetField.dataset.autoFilled = '1';
   }
+});
+document.getElementById('f-budget').addEventListener('input', ()=>{
+  // ユーザーが予算科目欄を直接編集したら、以後は科目変更で上書きしない
+  document.getElementById('f-budget').dataset.autoFilled = '0';
 });
 </script>
 </body>
