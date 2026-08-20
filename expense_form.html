@@ -54,6 +54,7 @@
 
   .field-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px 22px;}
   .field-grid-3col{grid-template-columns:1fr 1fr 1fr;}
+  .field-grid-5col{grid-template-columns:1fr 1fr 1fr 1fr 1fr;margin-bottom:16px;}
   .field{display:flex;flex-direction:column;gap:5px;}
   .field.full{grid-column:1 / -1;}
   .field label{font-size:12.5px;color:var(--muted);font-weight:600;}
@@ -112,18 +113,18 @@
   .btn-secondary{background:#f1ece1;color:var(--text);padding:11px 20px;border-radius:8px;font-size:14px;}
   .btn-secondary:hover{background:#e8e1d2;}
 
-  table{width:100%;border-collapse:collapse;font-size:13.5px;}
+  table{width:100%;border-collapse:collapse;font-size:13.5px;font-weight:600;}
   .table-scroll{overflow-x:auto;overflow-y:auto;max-width:100%;max-height:75vh;}
   .table-scroll thead th{position:sticky;top:0;background:var(--panel);z-index:5;}
   .sticky-actions{position:sticky;right:0;background:var(--panel);box-shadow:-6px 0 6px -6px rgba(0,0,0,.15);z-index:4;}
   thead .sticky-actions{z-index:6;}
   tr:hover .sticky-actions{background:var(--accent-bg);}
   th{text-align:left;color:var(--muted);font-weight:600;font-size:12px;padding:8px 10px;border-bottom:2px solid var(--line);white-space:nowrap;}
-  td{padding:6px 10px;border-bottom:1px solid var(--line);vertical-align:middle;white-space:nowrap;}
+  td{padding:4px 10px;border-bottom:1px solid var(--line);vertical-align:middle;white-space:nowrap;}
   tr:hover td{background:var(--accent-bg);}
   .subject-cell{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;width:100%;}
   table th:not(:nth-child(3)), table td:not(:nth-child(3)):not(.sticky-actions){white-space:nowrap;width:1%;}
-  .category-cell{text-align:center;width:1.6em;}
+  .category-cell{text-align:center;width:1em;writing-mode:vertical-rl;text-orientation:upright;padding-left:4px;padding-right:4px;}
   .searchable{cursor:pointer;}
   .searchable:hover{text-decoration:underline;color:var(--ink);}
   .amt{font-variant-numeric:tabular-nums;font-weight:600;text-align:right;}
@@ -132,14 +133,16 @@
   .total-label{text-align:right;color:var(--muted);font-weight:600;}
   #list-total{font-size:15px;color:var(--ink);}
   .row-actions{display:flex;gap:4px;white-space:nowrap;}
-  .icon-btn{background:#f1ece1;padding:6px 3px;border-radius:6px;font-size:11.5px;color:var(--text);writing-mode:vertical-rl;text-orientation:upright;letter-spacing:.05em;display:inline-block;text-decoration:none;box-sizing:border-box;}
+  .icon-btn{background:#f1ece1;padding:3px 7px;border-radius:5px;font-size:10px;color:var(--text);writing-mode:horizontal-tb;display:inline-block;text-decoration:none;box-sizing:border-box;line-height:1.6;}
   .icon-btn.print{background:var(--ink);color:#fff;}
   .icon-btn.print:hover{background:var(--ink-dark);}
-  .icon-btn.pdf{writing-mode:horizontal-tb;padding:6px 8px;}
+  .icon-btn.pdf{}
   .icon-btn.pdf-attached{background:#3f7d5c;color:#fff;}
   .icon-btn.pdf-attached:hover{background:#2f5f45;}
   .icon-btn.pdf-none{background:#e5e0d5;color:var(--muted);}
   .icon-btn.pdf-none:hover{background:#d8d1c0;}
+  .icon-btn.dl{background:#e9e2d0;color:var(--text);}
+  .icon-btn.dl:hover{background:#ddd2b3;}
   .icon-btn.del:hover{background:#f4d9d5;}
   .empty{color:var(--muted);text-align:center;padding:40px 0;font-size:13.5px;}
   .loading{color:var(--muted);text-align:center;padding:40px 0;font-size:13.5px;}
@@ -321,9 +324,9 @@
   </div>
 
   <!-- NEW REQUEST -->
-  <div class="panel" id="tab-new" style="max-width:980px;">
+  <div class="panel" id="tab-new">
     <div class="form-title" id="form-mode-title">新規申請</div>
-    <div class="field-grid field-grid-3col">
+    <div class="field-grid field-grid-5col">
       <div class="field">
         <label>予算科目</label>
         <input type="text" id="f-budget" placeholder="例）本部営繕費">
@@ -371,7 +374,9 @@
         <label>終了予定日</label>
         <input type="date" id="f-end-date">
       </div>
+    </div>
 
+    <div class="field-grid field-grid-3col">
       <div class="field full">
         <label>主題</label>
         <input type="text" id="f-subject" placeholder="例）殿内(3号・4号・6号・7号便所)ウォシュレット電源工事">
@@ -922,12 +927,13 @@ function renderList(){
         <td>${fmtEraShort(r.accounting_approve_date)}</td>
         <td class="sticky-actions">
           <div class="row-actions">
+            <button class="icon-btn edit" onclick="editRequest('${r.id}')">編集</button>
+            <button class="icon-btn print" onclick="openPrint('${r.id}')">印刷</button>
             ${r.pdf_url
-              ? `<a class="icon-btn pdf pdf-attached" href="${r.pdf_url}" target="_blank" rel="noopener" title="PDFファイルを開く（PDF No.: ${escapeHtml(r.pdf_no||'—')}）">PDF</a>`
+              ? `<a class="icon-btn pdf pdf-attached" href="${r.pdf_url}" target="_blank" rel="noopener" title="PDFファイルを開く（印刷・保存はブラウザのPDF表示画面から。PDF No.: ${escapeHtml(r.pdf_no||'—')}）">PDF</a>
+                 <a class="icon-btn dl" href="${r.pdf_url}?download=${escapeHtml(r.pdf_no||'expense')}.pdf" title="PDFファイルをダウンロード">DL</a>`
               : `<button class="icon-btn pdf pdf-none" onclick="copyPdfNo('${escapeHtml(r.pdf_no||'')}')" title="PDFファイル未添付。PDF No.: ${escapeHtml(r.pdf_no||'—')}（クリックで番号をコピー）">PDF</button>`
             }
-            <button class="icon-btn print" onclick="openPrint('${r.id}')">印刷</button>
-            <button class="icon-btn edit" onclick="editRequest('${r.id}')">編集</button>
           </div>
         </td>
       </tr>
