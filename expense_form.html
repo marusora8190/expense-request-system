@@ -284,8 +284,8 @@
     background-repeat:no-repeat;
     background-position:0 25%, 0 50%, 0 75%;
   }
-  .text-block-row{height:33mm;box-sizing:border-box;}
-  .remarks-row{height:49mm;box-sizing:border-box;}
+  .text-block-row{height:35mm;box-sizing:border-box;}
+  .remarks-row{height:52mm;box-sizing:border-box;}
   .remarks-row .text-block{
     background-image:
       repeating-linear-gradient(to right, var(--ink) 0 1.5px, transparent 1.5px 5.5px),
@@ -1270,9 +1270,11 @@ function downloadPdf(){
   const prevTransform = sheet.style.transform;
   const prevTransformOrigin = sheet.style.transformOrigin;
   const prevBorder = sheet.style.border;
+  const prevPadding = sheet.style.padding;
   sheet.style.transform = '';
   sheet.style.transformOrigin = '';
   sheet.style.border = 'none'; // 画面プレビュー用の薄い枠線がPDFに写り込まないよう一時的に消す
+  sheet.style.padding = '0'; // 画面表示用の余白も一時的に除去し、印刷時と同じ余白でキャプチャする
 
   // transform解除がレイアウトに反映されるのを一拍待ってから計測・キャプチャする
   return new Promise((resolve) => {
@@ -1306,6 +1308,7 @@ function downloadPdf(){
           sheet.style.transform = prevTransform;
           sheet.style.transformOrigin = prevTransformOrigin;
           sheet.style.border = prevBorder;
+          sheet.style.padding = prevPadding;
           btn.disabled = false;
           btn.textContent = prevLabel;
         });
