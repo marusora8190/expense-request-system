@@ -72,7 +72,7 @@
   }
   .field textarea{resize:vertical;min-height:64px;}
   .field-hint{font-size:11.5px;color:var(--muted);margin-top:4px;}
-  #f-subject{min-height:40px;height:40px;resize:vertical;line-height:1.4;}
+  #f-subject{min-height:62px;height:62px;resize:vertical;line-height:1.4;}
   .pdf-current-note{font-size:13px;color:#000;margin-bottom:6px;}
   .pdf-current-note:empty{display:none;}
   .pdf-current-note .pdf-attached-badge{display:inline-flex;align-items:center;gap:6px;background:#eef7f0;border:1px solid #9fcfae;border-radius:6px;padding:6px 10px;}
@@ -183,6 +183,9 @@
   .print-toolbar button{padding:10px 20px;border-radius:8px;font-size:14px;font-weight:600;}
   .print-toolbar .go{background:var(--ink);color:#fff;}
   .print-toolbar .close{background:#fff;color:var(--text);}
+  .print-toolbar .pdf{background:#2f6f4e;color:#fff;}
+  .print-toolbar .pdf:hover{background:#255a3f;}
+  .print-toolbar .pdf:disabled{opacity:.6;cursor:wait;}
 
   .sheet-frame{overflow:hidden;margin:0 auto;}
   .sheet{
@@ -520,6 +523,7 @@
   <div>
     <div class="print-toolbar">
       <button class="close" onclick="closePrint()">閉じる</button>
+      <button class="pdf" id="pdf-download-btn" onclick="downloadPdf()">PDFダウンロード</button>
       <button class="go" onclick="window.print()">この内容で印刷</button>
     </div>
     <div class="sheet-frame" id="sheet-frame">
@@ -592,6 +596,8 @@
   </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/html-to-image@1.11.13/dist/html-to-image.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 <script>
 const SUPABASE_URL = "https://zhxuntrhxnrssqpvcmvl.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpoeHVudHJoeG5yc3NxcHZjbXZsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIyNDcyNjYsImV4cCI6MjA5NzgyMzI2Nn0.l3pwvKZVVJqDA4HORqt-Op-cTvVF3bkX1ovWgAuSO58";
@@ -1198,6 +1204,46 @@ window.addEventListener('resize', () => {
 
 function closePrint(){
   document.getElementById('print-overlay').classList.remove('show');
+}
+
+function downloadPdf(){
+  const btn = document.getElementById('pdf-download-btn');
+  const sheet = document.querySelector('#print-overlay .sheet');
+  if(!sheet || !window.htmlToImage || !window.jspdf){
+    alert('PDF作成の準備ができていません。少し待ってからもう一度お試しください。');
+    return;
+  }
+  const prevLabel = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = '作成中…';
+
+  htmlToImage.toCanvas(sheet, { pixelRatio: 4, backgroundColor: '#ffffff' })
+    .then(canvas => {
+      const pxPerMm = 96 / 25.4;
+      const rect = sheet.getBoundingClientRect();
+      const widthMm = rect.width / pxPerMm;
+      const heightMm = rect.height / pxPerMm;
+      const pageWidthMm = 257, pageHeightMm = 182;
+      const marginX = Math.max(0, (pageWidthMm - widthMm) / 2);
+      const marginY = Math.max(0, (pageHeightMm - heightMm) / 2);
+
+      const { jsPDF } = window.jspdf;
+      const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: [pageWidthMm, pageHeightMm] });
+      const imgData = canvas.toDataURL('image/png');
+      pdf.addImage(imgData, 'PNG', marginX, marginY, widthMm, heightMm);
+
+      const subjectText = (document.getElementById('p-subject').textContent || '予想経費申請書').trim();
+      const fname = (subjectText.slice(0, 30) || '予想経費申請書') + '.pdf';
+      pdf.save(fname);
+    })
+    .catch(err => {
+      console.error(err);
+      alert('PDFの作成に失敗しました。時間をおいてもう一度お試しください。');
+    })
+    .finally(() => {
+      btn.disabled = false;
+      btn.textContent = prevLabel;
+    });
 }
 
 document.getElementById('f-submit-date').value = new Date().toISOString().slice(0,10);
