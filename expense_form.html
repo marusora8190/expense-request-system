@@ -21,7 +21,7 @@
     background:#f3efe6;
     color:var(--text);
   }
-  .app{max-width:1100px;margin:0 auto;padding:28px 20px 80px;}
+  .app{max-width:1800px;margin:0 auto;padding:28px 20px 80px;}
   .app-header{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:22px;flex-wrap:wrap;gap:8px;}
   .app-header h1{font-size:22px;margin:0;letter-spacing:.04em;}
   .app-header h1 span{color:var(--ink);}
@@ -33,34 +33,84 @@
     border-radius:8px;cursor:pointer;font-size:14px;color:var(--muted);
   }
   .tab.active{background:var(--ink);border-color:var(--ink);color:#fff;font-weight:600;}
+  .tab-add{background:transparent;border:1px dashed #c7bda6;color:var(--muted);font-weight:600;}
+  .tab-add:hover{border-color:var(--ink);color:var(--ink);}
+
+  .modal-overlay{
+    display:none;position:fixed;inset:0;background:rgba(30,25,20,.55);z-index:60;
+    align-items:center;justify-content:center;padding:20px;
+  }
+  .modal-overlay.show{display:flex;}
+  .modal-box{
+    background:var(--panel);border-radius:12px;padding:26px;max-width:460px;width:100%;
+    box-shadow:0 10px 40px rgba(0,0,0,.2);
+  }
+  .modal-box h3{margin:0 0 6px;color:var(--ink);font-size:16px;}
+  .modal-desc{margin:0 0 18px;color:var(--muted);font-size:13px;}
+  .modal-box .field{margin-bottom:14px;}
+  .modal-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:8px;}
 
   .panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:26px;}
 
   .field-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px 22px;}
+  .field-grid-3col{grid-template-columns:1fr 1fr 1fr;}
+  .field-grid-5col{grid-template-columns:1fr 1fr 1fr 1fr 1fr;margin-bottom:16px;}
   .field{display:flex;flex-direction:column;gap:5px;}
   .field.full{grid-column:1 / -1;}
   .field label{font-size:12.5px;color:var(--muted);font-weight:600;}
   .field input, .field select, .field textarea{
     border:1px solid #d8d1c2;border-radius:7px;padding:9px 10px;font-size:14px;
-    font-family:inherit;background:#fffefb;color:var(--text);
+    font-family:inherit;background:#fffefb;color:#000;font-weight:600;
   }
+  .field input::placeholder, .field textarea::placeholder{
+    color:var(--muted);font-weight:400;
+  }
+  .field select:invalid, .field select option[value=""]{color:var(--muted);font-weight:400;}
+  .locked-field{background:#f0ece0 !important;color:#000 !important;cursor:not-allowed;opacity:1 !important;}
   .field input:focus, .field select:focus, .field textarea:focus{
     outline:none;border-color:var(--ink);box-shadow:0 0 0 3px rgba(165,42,32,.1);
   }
   .field textarea{resize:vertical;min-height:64px;}
+  .field-hint{font-size:11.5px;color:var(--muted);margin-top:4px;}
+  #f-subject{min-height:40px;height:40px;resize:vertical;line-height:1.4;}
+  .pdf-current-note{font-size:13px;color:#000;margin-bottom:6px;}
+  .pdf-current-note:empty{display:none;}
+  .pdf-current-note .pdf-attached-badge{display:inline-flex;align-items:center;gap:6px;background:#eef7f0;border:1px solid #9fcfae;border-radius:6px;padding:6px 10px;}
+  .pdf-current-note .pdf-check{color:#2e8b57;font-weight:700;}
+  .pdf-current-note a{color:var(--ink);text-decoration:underline;}
+  .pdf-current-note button{margin-left:4px;color:#c94f3c;background:none;border:none;text-decoration:underline;cursor:pointer;font-size:12.5px;padding:0;}
+  .pdf-file-hint{font-size:11.5px;color:var(--muted);margin-top:4px;}
   .form-title{font-size:15px;font-weight:700;margin-bottom:16px;color:var(--ink);}
-  .list-toolbar{margin-bottom:14px;}
-  .list-toolbar input{
-    width:100%;max-width:320px;border:1px solid #d8d1c2;border-radius:7px;padding:9px 12px;
+  .list-toolbar{margin-bottom:14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
+  .search-wrap{position:relative;width:100%;max-width:320px;}
+  #year-filter{
+    border:1px solid #d8d1c2;border-radius:7px;padding:9px 12px;
     font-size:13.5px;font-family:inherit;background:#fffefb;color:var(--text);
   }
+  #year-filter:focus{outline:none;border-color:var(--ink);box-shadow:0 0 0 3px rgba(165,42,32,.1);}
+  .list-toolbar input{
+    width:100%;max-width:320px;border:1px solid #d8d1c2;border-radius:7px;padding:9px 34px 9px 12px;
+    font-size:13.5px;font-family:inherit;background:#fffefb;color:var(--text);box-sizing:border-box;
+  }
   .list-toolbar input:focus{outline:none;border-color:var(--ink);box-shadow:0 0 0 3px rgba(165,42,32,.1);}
+  .search-clear-btn{
+    position:absolute;right:6px;top:50%;transform:translateY(-50%);
+    width:22px;height:22px;border-radius:50%;background:#e8e1d2;color:var(--muted);
+    font-size:15px;line-height:1;display:flex;align-items:center;justify-content:center;padding:0;
+  }
+  .search-clear-btn:hover{background:var(--ink);color:#fff;}
   .icon-btn.edit:hover{background:#e8e1d2;}
   .checkbox-row{display:flex;align-items:center;gap:8px;grid-column:1/-1;}
   .checkbox-row input{width:16px;height:16px;}
   .checkbox-row label{font-size:13px;color:var(--text);font-weight:500;}
 
-  .actions-row{margin-top:22px;display:flex;justify-content:flex-end;gap:10px;}
+  .actions-row{margin-top:22px;display:flex;justify-content:space-between;align-items:center;gap:10px;}
+  .actions-row-right{display:flex;gap:10px;}
+  .btn-danger{
+    padding:10px 18px;border-radius:8px;font-size:14px;font-weight:600;
+    background:#fff;border:1px solid #c94f3c;color:#c94f3c;cursor:pointer;
+  }
+  .btn-danger:hover{background:#c94f3c;color:#fff;}
   button{font-family:inherit;cursor:pointer;border:none;}
   .btn-primary{
     background:var(--ink);color:#fff;padding:11px 26px;border-radius:8px;font-size:14.5px;font-weight:600;
@@ -69,16 +119,45 @@
   .btn-secondary{background:#f1ece1;color:var(--text);padding:11px 20px;border-radius:8px;font-size:14px;}
   .btn-secondary:hover{background:#e8e1d2;}
 
-  table{width:100%;border-collapse:collapse;font-size:13.5px;}
-  th{text-align:left;color:var(--muted);font-weight:600;font-size:12px;padding:8px 10px;border-bottom:2px solid var(--line);}
-  td{padding:10px;border-bottom:1px solid var(--line);vertical-align:top;}
+  table{width:100%;border-collapse:collapse;font-size:13.5px;font-weight:600;table-layout:fixed;}
+  .table-scroll{overflow-x:auto;overflow-y:auto;max-width:100%;max-height:75vh;}
+  .table-scroll thead th{position:sticky;top:0;background:var(--panel);z-index:5;}
+  .sticky-actions{position:sticky;right:0;background:var(--panel);box-shadow:-6px 0 6px -6px rgba(0,0,0,.15);z-index:4;}
+  thead .sticky-actions{z-index:6;}
+  tr:hover .sticky-actions{background:var(--accent-bg);}
+  th{text-align:center;vertical-align:middle;color:var(--muted);font-weight:600;font-size:12px;padding:8px 10px;border-bottom:2px solid var(--line);white-space:nowrap;}
+  td{padding:4px 10px;border-bottom:1px solid var(--line);vertical-align:middle;white-space:nowrap;}
   tr:hover td{background:var(--accent-bg);}
-  .subject-cell{max-width:280px;}
-  .amt{font-variant-numeric:tabular-nums;font-weight:600;}
-  .row-actions{display:flex;gap:6px;white-space:nowrap;}
-  .icon-btn{background:#f1ece1;padding:6px 12px;border-radius:6px;font-size:12.5px;color:var(--text);}
+  .subject-cell{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .assignee-cell{font-size:13.5px;font-weight:600;color:#000;width:100px;}
+  table th:not(:nth-child(3)), table td:not(:nth-child(3)):not(.sticky-actions){white-space:nowrap;}
+  .category-cell{text-align:center;padding-left:2px !important;padding-right:2px !important;width:24px !important;color:#000;font-size:10px;font-weight:400;}
+  .category-cell-inner{display:block;writing-mode:vertical-rl;text-orientation:upright;font-size:10px;font-weight:400;color:#000;width:14px;overflow:hidden;margin:0 auto;}
+  .date-cell{font-size:10px;font-weight:400;color:#000;width:64px;min-width:64px;max-width:64px;}
+  th.date-cell{text-align:center;}
+  thead th.category-cell{font-size:10px;font-weight:400;color:#000;}
+  thead th.category-cell .category-cell-inner{font-size:10px;font-weight:400;color:#000;}
+  thead th.subject-header{font-size:10px;font-weight:400;color:#000;white-space:nowrap;}
+  thead th.amt{font-size:10px;font-weight:400;color:#000;text-align:center;}
+  thead th.assignee-cell{font-size:10px;font-weight:400;color:#000;}
+  .searchable{cursor:pointer;}
+  .searchable:hover{text-decoration:underline;color:var(--ink);}
+  .amt{font-variant-numeric:tabular-nums;font-weight:600;text-align:right;}
+  .total-row{background:var(--accent-bg,#f7f2e7);}
+  .total-row td{padding:12px 10px;border-top:2px solid var(--ink);border-bottom:none;font-weight:700;}
+  .total-label{text-align:right;color:var(--muted);font-weight:600;}
+  #list-total{font-size:15px;color:var(--ink);}
+  .row-actions{display:flex;gap:4px;white-space:nowrap;}
+  .icon-btn{background:#f1ece1;padding:3px 7px;border-radius:5px;font-size:10px;color:var(--text);writing-mode:horizontal-tb;display:inline-block;text-decoration:none;box-sizing:border-box;line-height:1.6;}
   .icon-btn.print{background:var(--ink);color:#fff;}
   .icon-btn.print:hover{background:var(--ink-dark);}
+  .icon-btn.pdf{}
+  .icon-btn.pdf-attached{background:#3f7d5c;color:#fff;}
+  .icon-btn.pdf-attached:hover{background:#2f5f45;}
+  .icon-btn.pdf-none{background:#e5e0d5;color:var(--muted);}
+  .icon-btn.pdf-none:hover{background:#d8d1c0;}
+  .icon-btn.dl{background:#e9e2d0;color:var(--text);}
+  .icon-btn.dl:hover{background:#ddd2b3;}
   .icon-btn.del:hover{background:#f4d9d5;}
   .empty{color:var(--muted);text-align:center;padding:40px 0;font-size:13.5px;}
   .loading{color:var(--muted);text-align:center;padding:40px 0;font-size:13.5px;}
@@ -95,6 +174,9 @@
     align-items:center;justify-content:center;overflow:auto;padding:30px 16px;
   }
   #print-overlay.show{display:flex;}
+  #print-overlay > div{
+    width:100%;display:flex;flex-direction:column;align-items:center;
+  }
   .print-toolbar{
     max-width:1050px;margin:0 auto 14px;display:flex;justify-content:flex-end;gap:10px;
   }
@@ -102,6 +184,7 @@
   .print-toolbar .go{background:var(--ink);color:#fff;}
   .print-toolbar .close{background:#fff;color:var(--text);}
 
+  .sheet-frame{overflow:hidden;margin:0 auto;}
   .sheet{
     width:242mm;background:#fff;margin:0 auto;padding:22px;
     font-family:"Hiragino Mincho ProN","Yu Mincho","YuMincho","Noto Serif JP",serif;color:var(--ink);
@@ -115,13 +198,13 @@
   .cell{border-right:1.5px solid var(--ink);padding:7px 10px;position:relative;}
   .cell:last-child{border-right:none;}
   .label-col{
-    writing-mode:vertical-rl;text-align:center;font-weight:700;font-size:14px;
+    writing-mode:vertical-rl;text-align:center;font-weight:700;font-size:12px;
     letter-spacing:.15em;flex:0 0 34px;display:flex;align-items:center;justify-content:center;
-    border-right:1.5px solid var(--ink);
+    border-right:0.75px solid var(--ink);
   }
   .plan-row .label-col, .subject-row .label-col{
     flex:0 0 10mm;box-sizing:border-box;
-    border-right:2px double var(--ink);
+    border-right:0.75px solid var(--ink);
   }
 
   /* stamp box */
@@ -129,16 +212,19 @@
   .stampbox{border:1.5px solid var(--ink);display:flex;}
   .stampbox .sc{width:13mm;border-right:1.5px solid var(--ink);text-align:center;box-sizing:border-box;}
   .stampbox .sc:last-child{border-right:none;}
-  .stampbox .sc .h{font-size:11px;font-weight:700;border-bottom:1.5px solid var(--ink);height:20px;line-height:20px;box-sizing:border-box;font-family:"HG正楷書体-PRO","HGSeikaishotaiPRO","Hiragino Mincho ProN",serif;}
+  .stampbox .sc .h{font-size:13px;font-weight:400;border-bottom:1.5px solid var(--ink);height:20px;line-height:20px;box-sizing:border-box;font-family:"HG正楷書体-PRO","HGSeikaishotaiPRO","Hiragino Mincho ProN",serif;}
   .stampbox .sc .b{height:14mm;box-sizing:border-box;}
 
-  .title-row{display:flex;align-items:baseline;gap:2px;padding:6px 4px 1px;margin:0 auto 0;width:170mm;border-bottom:1.5px solid var(--ink);white-space:nowrap;}
+  .title-row{display:flex;align-items:center;gap:2px;padding:6px 4px 1px;margin:0 auto 0;width:170mm;border-bottom:1.5px solid var(--ink);white-space:nowrap;}
   .title-row h2{font-size:23px;letter-spacing:normal;word-spacing:.32em;margin:0;font-weight:700;font-family:"Hiragino Mincho ProN","Yu Mincho","YuMincho","Noto Serif JP",serif;white-space:nowrap;}
-  .title-row .meta{font-size:9px;display:flex;align-items:flex-end;gap:8px;line-height:1.25;white-space:nowrap;}
+  .title-row .meta{font-size:9px;display:flex;align-items:center;gap:8px;line-height:1.25;white-space:nowrap;}
   .title-row .meta .lbl{writing-mode:horizontal-tb;text-align:center;}
+  .title-row .meta .lbl-v-wrap{display:inline-block;}
   .title-row .meta .lbl-v{writing-mode:vertical-rl;text-align:center;letter-spacing:.05em;}
-  .title-row .meta .bracket{font-size:14px;}
+  .title-row .meta .bracket{font-size:20px;}
   .bracket{font-weight:700;}
+  #p-department{font-family:"Meiryo UI","Meiryo",sans-serif;color:#000;font-weight:400;font-size:14.5px;}
+  .dept-bracket{display:inline-flex;align-items:center;}
 
   .submit-date{text-align:right;font-size:13px;padding:6px 0 0;white-space:nowrap;width:220mm;margin:0;box-sizing:border-box;font-family:"MS Mincho","MS 明朝","Hiragino Mincho ProN",serif;}
   .rl{letter-spacing:.1em;font-family:"MS Mincho","MS 明朝","Hiragino Mincho ProN",serif;}
@@ -146,10 +232,10 @@
   .suffix{letter-spacing:0;font-family:"MS Mincho","MS 明朝","Hiragino Mincho ProN",serif;}
 
   .plan-row .cell{flex:1;font-size:13.5px;display:flex;align-items:center;justify-content:center;gap:4px;white-space:nowrap;}
-  .plan-row .cell:first-of-type{border-right:2px double var(--ink);}
+  .plan-row .cell:first-of-type{border-right:0.75px solid var(--ink);}
 
-  .subject-row .subject-val{flex:0 0 130mm;width:130mm;box-sizing:border-box;font-size:15px;font-weight:400;display:flex;align-items:center;padding-left:14px;border-right:2px double var(--ink);}
-  .subject-row .budget-label{flex:0 0 32px;writing-mode:vertical-rl;text-align:center;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;letter-spacing:.1em;border-right:2px double var(--ink);}
+  .subject-row .subject-val{flex:0 0 130mm;width:130mm;box-sizing:border-box;font-size:15px;font-weight:400;display:flex;align-items:center;padding-left:14px;border-right:0.75px solid var(--ink);white-space:pre-wrap;line-height:1.3;}
+  .subject-row .budget-label{flex:0 0 32px;writing-mode:vertical-rl;text-align:center;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;letter-spacing:.1em;border-right:0.75px solid var(--ink);}
   .subject-row .budget-val{flex:1;display:flex;align-items:center;justify-content:center;font-size:14.5px;font-weight:400;}
 
   .cost-row{align-items:stretch;height:13.5mm;box-sizing:border-box;overflow:hidden;}
@@ -158,9 +244,9 @@
   .cost-row .label-col{
     flex:0 0 auto;width:40mm;font-size:13px;box-sizing:border-box;
     writing-mode:horizontal-tb;letter-spacing:.4em;padding:0 6px;white-space:nowrap;
-    border-right:2px double var(--ink);
+    border-right:0.75px solid var(--ink);
   }
-  .digit-wrap{display:flex;flex-direction:column;justify-content:center;flex:0 0 100mm;width:100mm;box-sizing:border-box;border-right:2px double var(--ink);}
+  .digit-wrap{display:flex;flex-direction:column;justify-content:center;flex:0 0 100mm;width:100mm;box-sizing:border-box;border-right:0.75px solid var(--ink);}
   .digit-heads{display:flex;height:13px;}
   .digit-heads div{
     width:10mm;text-align:right;padding-right:3px;box-sizing:border-box;font-size:9px;line-height:13px;
@@ -170,7 +256,7 @@
   .digit-heads div:last-child{background-image:none;}
   .digit-cells{display:flex;}
   .digit-cells div{
-    width:10mm;height:37px;text-align:center;font-size:19px;font-weight:400;line-height:37px;font-variant-numeric:tabular-nums;box-sizing:border-box;
+    width:10mm;height:37px;text-align:center;font-size:24px;font-weight:400;line-height:37px;font-variant-numeric:tabular-nums;box-sizing:border-box;
     background-image:repeating-linear-gradient(to bottom, var(--ink) 0 1.5px, transparent 1.5px 5.5px);
     background-size:1px 100%;background-position:right top;background-repeat:no-repeat;
   }
@@ -203,29 +289,36 @@
   }
   .remarks-row .label-col{flex:0 0 34px;}
   .remarks-row .label-col .rl-main{display:block;}
-  .remarks-row .label-col .rl-sub{display:block;margin-top:8px;}
-  .remarks-row .label-col .rl-main{font-size:16px;font-weight:700;}
-  .remarks-row .label-col .rl-sub{font-size:9px;font-weight:500;letter-spacing:.05em;line-height:1.2;}
-  .sheet-footer{text-align:right;font-size:11px;color:var(--ink);padding:6px 4px 0;letter-spacing:.05em;}
+  .remarks-row .label-col .rl-sub{display:flex;flex-direction:row;align-items:center;margin-top:8px;}
+  .remarks-row .label-col .rl-sub-cols{display:flex;flex-direction:column;}
+  .remarks-row .label-col .rl-sub-col{font-size:9px;font-weight:500;letter-spacing:.05em;line-height:1.2;}
+  .remarks-row .label-col .rl-sub-bracket{font-size:11px;line-height:1;display:block;transform:scaleX(2.2);}
+  .remarks-row .label-col .rl-main{font-size:14px;font-weight:700;}
+  .sheet-footer{width:220mm;text-align:right;font-size:11px;color:var(--ink);padding:6px 4px 0;letter-spacing:.05em;box-sizing:border-box;}
 
 
   @media print{
     *{-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important;color-adjust:exact !important;}
-    html, body{height:auto !important;margin:0 !important;padding:0 !important;overflow:visible !important;}
+    html, body{height:auto !important;margin:0 !important;padding:0 !important;overflow:visible !important;background:#fff !important;}
     .app{display:none !important;}
     .toast{display:none !important;}
     #print-overlay{
       display:flex !important;position:static !important;inset:auto;
       background:#fff;padding:0 !important;
-      align-items:center;justify-content:center;
-      width:100%;height:auto;min-height:0;
+      align-items:flex-start;justify-content:center;
+      width:100%;height:162mm;min-height:162mm;
       overflow:visible !important;
     }
     .print-toolbar{display:none;}
+    #print-overlay > div{
+      display:block !important;width:auto !important;
+    }
+    .sheet-frame{
+      width:auto !important;height:auto !important;overflow:visible !important;margin:0 auto !important;
+    }
     .sheet{
-      border:none !important;width:245mm !important;margin:0 !important;padding:0 !important;
-      transform:scale(.99) !important;transform-origin:center center !important;
-      zoom:1 !important;
+      border:none !important;width:245mm !important;margin:0 auto !important;padding:0 !important;
+      zoom:0.99;
     }
     @page{size:257mm 182mm;margin:3mm;}
   }
@@ -243,40 +336,52 @@
   <div class="tabs">
     <button class="tab active" data-tab="new" onclick="switchTab('new')">新規申請</button>
     <button class="tab" data-tab="list" onclick="switchTab('list')">申請一覧・印刷</button>
+    <span id="project-tabs-container"></span>
   </div>
 
   <!-- NEW REQUEST -->
   <div class="panel" id="tab-new">
     <div class="form-title" id="form-mode-title">新規申請</div>
-    <div class="field-grid">
+    <div class="field-grid field-grid-5col">
       <div class="field">
-        <label>科目</label>
-        <select id="f-category">
-          <option value="">選択してください</option>
-          <option value="本部">本部</option>
-          <option value="教庁">教庁</option>
-        </select>
+        <label>予算科目</label>
+        <input type="text" id="f-budget" placeholder="例）本部営繕費">
       </div>
+      <div class="field">
+        <label>予算年度</label>
+        <input type="number" id="f-budget-year" placeholder="例）2026" min="2020" max="2050" step="1" autocomplete="off">
+      </div>
+
       <div class="field">
         <label>提出部署</label>
         <select id="f-department"><option value="">読み込み中…</option></select>
       </div>
 
       <div class="field">
+        <label>担当者部署</label>
+        <input type="text" id="f-assignee-department" list="assignee-department-list" placeholder="例）電気課">
+        <datalist id="assignee-department-list"></datalist>
+      </div>
+      <div class="field">
         <label>担当</label>
-        <input type="text" id="f-assignee" list="assignee-list" placeholder="例）穀本・電気">
+        <input type="text" id="f-assignee" list="assignee-list" placeholder="例）名前・部署名">
         <datalist id="assignee-list"></datalist>
       </div>
       <div class="field">
         <label>PDF No.</label>
         <input type="text" id="f-pdf-no" placeholder="例）2026026">
       </div>
+      <div class="field">
+        <label>PDFファイル（見積書など）</label>
+        <div id="f-pdf-current" class="pdf-current-note"></div>
+        <input type="file" id="f-pdf-file" accept="application/pdf">
+        <div class="pdf-file-hint">※ 新しいファイルを選ぶと差し替わります。選ばなければ現在のファイルのまま保存されます。</div>
+      </div>
 
       <div class="field">
         <label>提出年月日</label>
         <input type="date" id="f-submit-date">
       </div>
-      <div class="field"></div>
 
       <div class="field">
         <label>着工予定日</label>
@@ -286,19 +391,18 @@
         <label>終了予定日</label>
         <input type="date" id="f-end-date">
       </div>
+    </div>
 
+    <div class="field-grid field-grid-3col">
       <div class="field full">
         <label>主題</label>
-        <input type="text" id="f-subject" placeholder="例）殿内(3号・4号・6号・7号便所)ウォシュレット電源工事">
+        <textarea id="f-subject" rows="1" placeholder="例）殿内(3号・4号・6号・7号便所)ウォシュレット電源工事"></textarea>
+        <div class="field-hint">※ 改行は1回まで（2行まで）入力できます。それ以上は自動的に折り返されます。</div>
       </div>
 
       <div class="field">
-        <label>予算科目</label>
-        <input type="text" id="f-budget" placeholder="例）本部営繕費">
-      </div>
-      <div class="field">
         <label>予想の総経費（円）</label>
-        <input type="number" id="f-cost" min="0" step="1" placeholder="例）7678000">
+        <input type="text" inputmode="numeric" id="f-cost" placeholder="例）7,678,000">
       </div>
 
       <div class="checkbox-row">
@@ -331,38 +435,85 @@
     </div>
 
     <div class="actions-row">
-      <button class="btn-secondary" onclick="resetForm()">クリア</button>
-      <button class="btn-primary" id="save-btn" onclick="saveRequest()">保存する</button>
+      <button class="btn-danger" id="delete-btn" onclick="deleteFromForm()" style="display:none;">この申請を削除</button>
+      <div class="actions-row-right">
+        <button class="btn-secondary" onclick="resetForm()">クリア</button>
+        <button class="btn-primary" id="save-btn" onclick="saveRequest()">保存する</button>
+      </div>
     </div>
   </div>
 
   <!-- LIST -->
   <div class="panel" id="tab-list" style="display:none;">
     <div class="list-toolbar">
-      <input type="text" id="search-box" placeholder="主題・担当で検索" oninput="renderList()">
+      <div class="search-wrap">
+        <input type="text" id="search-box" placeholder="科目・部署・主題・担当で検索" oninput="renderList()">
+        <button type="button" id="search-clear" class="search-clear-btn" onclick="clearSearch()" aria-label="検索解除" style="display:none;">×</button>
+      </div>
+      <select id="year-filter" onchange="renderList()">
+        <option value="">すべての年度</option>
+      </select>
     </div>
+    <div class="table-scroll">
     <table>
+      <colgroup>
+        <col style="width:58px;">
+        <col style="width:24px;">
+        <col style="width:78%;">
+        <col style="width:100px;">
+        <col style="width:100px;">
+        <col style="width:58px;">
+        <col style="width:58px;">
+        <col style="width:130px;">
+      </colgroup>
       <thead>
         <tr>
-          <th>提出日</th>
-          <th>科目</th>
-          <th>主題</th>
-          <th>金額</th>
-          <th>担当</th>
-          <th>会計提出</th>
-          <th>会計承認</th>
-          <th>PDF No.</th>
-          <th></th>
+          <th class="date-cell">作成日</th>
+          <th class="category-cell"><span class="category-cell-inner">科目</span></th>
+          <th class="subject-header">主題</th>
+          <th class="amt">金額</th>
+          <th class="assignee-cell">担当</th>
+          <th class="date-cell">会計提出</th>
+          <th class="date-cell">会計承認</th>
+          <th class="sticky-actions"></th>
         </tr>
       </thead>
       <tbody id="list-body">
-        <tr><td colspan="9" class="loading">読み込み中…</td></tr>
+        <tr><td colspan="8" class="loading">読み込み中…</td></tr>
       </tbody>
+      <tfoot>
+        <tr class="total-row">
+          <td colspan="5" class="total-label">合計</td>
+          <td id="list-total" class="amt"></td>
+          <td colspan="5"></td>
+        </tr>
+      </tfoot>
     </table>
+    </div>
   </div>
 </div>
 
 <div class="toast" id="toast"></div>
+
+<!-- ADD PROJECT TAB MODAL -->
+<div id="add-tab-overlay" class="modal-overlay">
+  <div class="modal-box">
+    <h3>新しいタブを増設</h3>
+    <p class="modal-desc">特定の工事・案件だけを絞り込んで見られるタブを追加します。</p>
+    <div class="field">
+      <label>タブに表示する名前</label>
+      <input type="text" id="new-tab-label" placeholder="例）〇〇会館改修工事">
+    </div>
+    <div class="field">
+      <label>絞り込むキーワード（主題にこの文字を含む申請だけが表示されます）</label>
+      <input type="text" id="new-tab-keyword" placeholder="例）〇〇会館">
+    </div>
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeAddTabModal()">キャンセル</button>
+      <button class="btn-primary" onclick="submitAddTab()">追加する</button>
+    </div>
+  </div>
+</div>
 
 <!-- PRINT OVERLAY -->
 <div id="print-overlay">
@@ -371,12 +522,13 @@
       <button class="close" onclick="closePrint()">閉じる</button>
       <button class="go" onclick="window.print()">この内容で印刷</button>
     </div>
+    <div class="sheet-frame" id="sheet-frame">
     <div class="sheet">
       <div class="stampbox-wrap">
         <div class="stampbox">
-          <div class="sc"><div class="h">部長</div><div class="b"></div></div>
-          <div class="sc"><div class="h">次長</div><div class="b"></div></div>
-          <div class="sc"><div class="h">課長</div><div class="b"></div></div>
+          <div class="sc"><div class="h">部 長</div><div class="b"></div></div>
+          <div class="sc"><div class="h">次 長</div><div class="b"></div></div>
+          <div class="sc"><div class="h">課 長</div><div class="b"></div></div>
           <div class="sc"><div class="h"></div><div class="b"></div></div>
           <div class="sc"><div class="h"></div><div class="b"></div></div>
         </div>
@@ -386,8 +538,8 @@
         <h2>予 想 経 費 申 請 書</h2>
         <span class="fw-gap">　</span>
         <div class="meta">
-          <span class="lbl">提出<br>部署</span> <span class="bracket" id="p-department">（　　　　　　　　　　　　　　）</span>
-          <span class="lbl-v">部長印</span> <span class="bracket">（　　　　）</span>
+          <span class="lbl">提出<br>部署</span> <span class="bracket dept-bracket">（<span id="p-department">　　　　　　　　　　　　　　</span>）</span>
+          <span class="lbl-v-wrap"><span class="lbl-v">部長印</span></span> <span class="bracket">（　　　　）</span>
         </div>
       </div>
       <div class="submit-date" id="p-submit-date">令和 年 月 日提出</div>
@@ -404,7 +556,7 @@
         </div>
 
         <div class="row subject-row">
-          <div class="label-col">主題</div>
+          <div class="label-col">主　題</div>
           <div class="subject-val user-input" id="p-subject">&nbsp;</div>
           <div class="budget-label">予算科目</div>
           <div class="budget-val user-input" id="p-budget">&nbsp;</div>
@@ -428,13 +580,14 @@
 
         <div class="row text-block-row remarks-row">
           <div class="label-col">
-            <span class="rl-main">予備</span>
-            <span class="rl-sub">（時に使用変更等の）</span>
+            <span class="rl-main">予　備</span>
+            <span class="rl-sub"><span class="rl-sub-bracket">（</span><span class="rl-sub-cols"><span class="rl-sub-col">時に使用</span><span class="rl-sub-col">変更等の</span></span><span class="rl-sub-bracket">）</span></span>
           </div>
           <div class="text-block user-input" id="p-remarks"></div>
         </div>
       </div>
       <div class="sheet-footer">182.　10　(50×10)</div>
+    </div>
     </div>
   </div>
 </div>
@@ -442,6 +595,23 @@
 <script>
 const SUPABASE_URL = "https://zhxuntrhxnrssqpvcmvl.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpoeHVudHJoeG5yc3NxcHZjbXZsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIyNDcyNjYsImV4cCI6MjA5NzgyMzI2Nn0.l3pwvKZVVJqDA4HORqt-Op-cTvVF3bkX1ovWgAuSO58";
+
+// URLに ?dept=部署名 が付いている場合、その部署専用モードで動作する
+// (例: expense_form.html?dept=電気課 )
+const LOCKED_DEPARTMENT = new URLSearchParams(window.location.search).get('dept') || null;
+
+// 特定の工事・案件だけを絞り込んで見られる管理者用タブの一覧。
+// Supabaseの project_tabs テーブルから読み込む(画面の「＋タブ追加」ボタンで増やせる)。
+let PROJECT_TABS = [];
+
+async function loadProjectTabs(){
+  try{
+    PROJECT_TABS = await sb('project_tabs?select=id,label,keyword&order=sort_order.asc,created_at.asc');
+  }catch(e){
+    console.error('project_tabsの読み込みに失敗しました', e);
+    PROJECT_TABS = [];
+  }
+}
 
 async function sb(path, opts={}){
   const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
@@ -461,43 +631,154 @@ async function sb(path, opts={}){
   return res.json();
 }
 
-function showToast(msg){
+const PDF_BUCKET = 'expense-pdfs';
+
+async function uploadPdfFile(file){
+  // ファイル名の衝突を避けるため、日時+元のファイル名でパスを作る
+  const safeName = file.name.replace(/[^\w.\-一-龠ぁ-んァ-ヶー]/g, '_');
+  const path = `${Date.now()}_${safeName}`;
+  const res = await fetch(`${SUPABASE_URL}/storage/v1/object/${PDF_BUCKET}/${encodeURIComponent(path)}`, {
+    method: 'POST',
+    headers:{
+      "apikey": SUPABASE_KEY,
+      "Authorization": `Bearer ${SUPABASE_KEY}`,
+      "Content-Type": file.type || 'application/pdf'
+    },
+    body: file
+  });
+  if(!res.ok){
+    const t = await res.text().catch(()=> "");
+    throw new Error(`PDFのアップロードに失敗しました (${res.status}): ${t}`);
+  }
+  return `${SUPABASE_URL}/storage/v1/object/public/${PDF_BUCKET}/${path}`;
+}
+
+async function deletePdfFileByUrl(url){
+  if(!url) return;
+  const marker = `/storage/v1/object/public/${PDF_BUCKET}/`;
+  const idx = url.indexOf(marker);
+  if(idx === -1) return;
+  const path = url.slice(idx + marker.length);
+  await fetch(`${SUPABASE_URL}/storage/v1/object/${PDF_BUCKET}/${path}`, {
+    method: 'DELETE',
+    headers:{
+      "apikey": SUPABASE_KEY,
+      "Authorization": `Bearer ${SUPABASE_KEY}`
+    }
+  }).catch(()=>{}); // 削除に失敗しても保存処理自体は止めない
+}
+
+function showToast(msg, duration=2200){
   const t = document.getElementById('toast');
   t.textContent = msg;
   t.classList.add('show');
-  setTimeout(()=>t.classList.remove('show'), 2200);
+  clearTimeout(t._hideTimer);
+  t._hideTimer = setTimeout(()=>t.classList.remove('show'), duration);
+}
+
+function openAddTabModal(){
+  document.getElementById('new-tab-label').value = '';
+  document.getElementById('new-tab-keyword').value = '';
+  document.getElementById('add-tab-overlay').classList.add('show');
+}
+
+function closeAddTabModal(){
+  document.getElementById('add-tab-overlay').classList.remove('show');
+}
+
+async function submitAddTab(){
+  const label = document.getElementById('new-tab-label').value.trim();
+  const keyword = document.getElementById('new-tab-keyword').value.trim();
+  if(!label || !keyword){
+    showToast('タブの名前とキーワードの両方を入力してください');
+    return;
+  }
+  try{
+    await sb('project_tabs', {
+      method:'POST',
+      headers:{ 'Prefer':'return=minimal' },
+      body: JSON.stringify({ label, keyword, sort_order: PROJECT_TABS.length })
+    });
+    closeAddTabModal();
+    showToast('タブを追加しました');
+    await loadProjectTabs();
+    renderProjectTabs();
+  }catch(e){
+    showToast('タブの追加に失敗しました: ' + e.message, 6000);
+    console.error(e);
+  }
 }
 
 function switchTab(name){
   document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active', b.dataset.tab===name));
   document.getElementById('tab-new').style.display = name==='new' ? 'block':'none';
-  document.getElementById('tab-list').style.display = name==='list' ? 'block':'none';
-  if(name==='list') loadList();
+  const projectTab = PROJECT_TABS.find(t => t.id === name);
+  const isListLike = name==='list' || !!projectTab;
+  document.getElementById('tab-list').style.display = isListLike ? 'block':'none';
+  // 一覧表示中はタイトル部分を隠して、テーブルを縦に広く見られるようにする
+  document.querySelector('.app-header').style.display = isListLike ? 'none' : 'flex';
+  if(isListLike){
+    const doFilter = () => {
+      document.getElementById('search-box').value = projectTab ? projectTab.keyword : '';
+      renderList();
+    };
+    loadList().then(doFilter);
+  }
 }
 
 let editingId = null;
+let editingSnapshotUpdatedAt = null;
+let editingPdfUrl = null;
 
 function resetForm(){
+  document.getElementById('f-budget').dataset.autoFilled = '0';
   ['f-submit-date','f-start-date','f-end-date','f-subject','f-budget','f-cost','f-overview','f-remarks',
-   'f-category','f-assignee','f-acc-submit','f-acc-approve','f-pdf-no','f-list-note'].forEach(id=>{
+   'f-assignee','f-assignee-department','f-acc-submit','f-acc-approve','f-pdf-no','f-list-note','f-budget-year'].forEach(id=>{
     document.getElementById(id).value = '';
   });
-  document.getElementById('f-department').value = '';
+  document.getElementById('f-department').value = LOCKED_DEPARTMENT || '';
   document.getElementById('f-estimate').checked = false;
+  document.getElementById('f-pdf-file').value = '';
+  document.getElementById('f-pdf-current').innerHTML = '';
+  document.getElementById('f-pdf-no').dataset.userEdited = '0';
   document.getElementById('f-submit-date').value = new Date().toISOString().slice(0,10);
+  const currentFY = fiscalYear(new Date().toISOString().slice(0,10));
+  document.getElementById('f-budget-year').value = currentFY;
+  document.getElementById('f-budget-year').min = currentFY;
   editingId = null;
+  editingSnapshotUpdatedAt = null;
+  editingPdfUrl = null;
   document.getElementById('form-mode-title').textContent = '新規申請';
   document.getElementById('save-btn').textContent = '保存する';
+  document.getElementById('delete-btn').style.display = 'none';
+  suggestNextPdfNo();
 }
 
 async function loadOptions(){
   try{
+    if(LOCKED_DEPARTMENT){
+      const dSel = document.getElementById('f-department');
+      dSel.innerHTML = `<option value="${LOCKED_DEPARTMENT}">${LOCKED_DEPARTMENT}</option>`;
+      dSel.value = LOCKED_DEPARTMENT;
+      dSel.disabled = true;
+      dSel.classList.add('locked-field');
+
+      const assignees = await sb(`expense_requests?select=assignee&assignee=not.is.null&department=eq.${encodeURIComponent(LOCKED_DEPARTMENT)}`);
+      const uniqueAssignees = [...new Set(assignees.map(a=>a.assignee).filter(Boolean))].sort();
+      document.getElementById('assignee-list').innerHTML = uniqueAssignees.map(a=>`<option value="${a}"></option>`).join('');
+
+      const deps = await sb('departments?select=name&order=sort_order.asc');
+      document.getElementById('assignee-department-list').innerHTML = deps.map(d=>`<option value="${d.name}"></option>`).join('');
+      return;
+    }
+
     const [deps, assignees] = await Promise.all([
       sb('departments?select=name&order=sort_order.asc'),
       sb('expense_requests?select=assignee&assignee=not.is.null')
     ]);
     const dSel = document.getElementById('f-department');
     dSel.innerHTML = '<option value="">選択してください</option>' + deps.map(d=>`<option value="${d.name}">${d.name}</option>`).join('');
+    document.getElementById('assignee-department-list').innerHTML = deps.map(d=>`<option value="${d.name}"></option>`).join('');
 
     const uniqueAssignees = [...new Set(assignees.map(a=>a.assignee).filter(Boolean))].sort();
     document.getElementById('assignee-list').innerHTML = uniqueAssignees.map(a=>`<option value="${a}"></option>`).join('');
@@ -511,9 +792,13 @@ async function saveRequest(){
   const subject = document.getElementById('f-subject').value.trim();
   if(!subject){ showToast('主題を入力してください'); return; }
 
+  const pdfFileInput = document.getElementById('f-pdf-file');
+  const pdfFile = pdfFileInput.files[0] || null;
+
   const payload = {
-    category: document.getElementById('f-category').value || null,
+    budget_year: document.getElementById('f-budget-year').value ? Number(document.getElementById('f-budget-year').value) : null,
     department: document.getElementById('f-department').value || null,
+    assignee_department: document.getElementById('f-assignee-department').value || null,
     assignee: document.getElementById('f-assignee').value || null,
     pdf_no: document.getElementById('f-pdf-no').value || null,
     submit_date: document.getElementById('f-submit-date').value || null,
@@ -521,7 +806,7 @@ async function saveRequest(){
     end_date: document.getElementById('f-end-date').value || null,
     subject,
     budget_category: document.getElementById('f-budget').value || null,
-    total_cost: document.getElementById('f-cost').value ? Number(document.getElementById('f-cost').value) : null,
+    total_cost: document.getElementById('f-cost').value ? Number(document.getElementById('f-cost').value.replace(/,/g, '')) : null,
     has_estimate_attached: document.getElementById('f-estimate').checked,
     overview: document.getElementById('f-overview').value || null,
     remarks: document.getElementById('f-remarks').value || null,
@@ -531,7 +816,33 @@ async function saveRequest(){
   };
 
   try{
+    // PDFファイルが新しく選択されていればアップロード
+    if(pdfFile){
+      showToast('PDFをアップロード中…', 10000);
+      payload.pdf_url = await uploadPdfFile(pdfFile);
+      // 編集中で、以前のPDFがあれば差し替えのため削除しておく
+      if(editingId && editingPdfUrl && editingPdfUrl !== payload.pdf_url){
+        await deletePdfFileByUrl(editingPdfUrl);
+      }
+    }
+
     if(editingId){
+      // 衝突検知: 編集開始後に他の人が更新していないか確認
+      const latest = await sb(`expense_requests?id=eq.${editingId}&select=updated_at,subject`);
+      const latestRow = latest && latest[0];
+      if(!latestRow){
+        showToast('この申請はすでに削除されています', 5000);
+        return;
+      }
+      const serverUpdatedAt = latestRow.updated_at || null;
+      if(editingSnapshotUpdatedAt !== serverUpdatedAt){
+        const ok = confirm(
+          `この申請は編集を開始した後に他の人によって更新されています（現在の主題：「${latestRow.subject}」）。\n\n` +
+          `このまま上書きして保存しますか？\n` +
+          `（キャンセルすると保存されません。最新の内容を確認してからやり直してください）`
+        );
+        if(!ok) return;
+      }
       await sb(`expense_requests?id=eq.${editingId}`, {
         method:'PATCH',
         headers:{ 'Prefer':'return=minimal' },
@@ -549,22 +860,69 @@ async function saveRequest(){
     resetForm();
     switchTab('list');
   }catch(e){
-    showToast('保存に失敗しました');
+    showToast('保存に失敗しました: ' + e.message, 8000);
     console.error(e);
   }
 }
 
 let cachedList = [];
 
+function fiscalYear(dateStr){
+  if(!dateStr) return null;
+  const d = new Date(dateStr+'T00:00:00');
+  const y = d.getFullYear();
+  const m = d.getMonth()+1; // 1-12
+  return m >= 4 ? y : y - 1; // 4月始まりの年度
+}
+
+async function suggestNextPdfNo(){
+  // 提出年月日を元に年度を出し、「年度+3桁連番」(例:2026001)の次の番号を自動計算する
+  const submitDate = document.getElementById('f-submit-date').value;
+  const fy = fiscalYear(submitDate) ?? fiscalYear(new Date().toISOString().slice(0,10));
+  if(!fy) return;
+  try{
+    const rows = await sb(`expense_requests?select=pdf_no&pdf_no=like.${fy}*`);
+    let maxSeq = 0;
+    rows.forEach(r=>{
+      const m = /^(\d{4})(\d{3})$/.exec((r.pdf_no||'').trim());
+      if(m && Number(m[1]) === fy){
+        maxSeq = Math.max(maxSeq, Number(m[2]));
+      }
+    });
+    const next = String(maxSeq + 1).padStart(3, '0');
+    const field = document.getElementById('f-pdf-no');
+    // ユーザーが手動で書き換えていなければ、自動採番した値を入れる
+    if(field.dataset.userEdited !== '1'){
+      field.value = `${fy}${next}`;
+    }
+  }catch(e){
+    console.error('PDF No.の自動採番に失敗しました', e);
+  }
+}
+
+function effectiveYear(r){
+  return r.budget_year || fiscalYear(r.submit_date);
+}
+
+function populateYearFilter(){
+  const sel = document.getElementById('year-filter');
+  const current = sel.value;
+  const years = [...new Set(cachedList.map(effectiveYear).filter(y => y !== null))].sort((a,b)=>b-a);
+  sel.innerHTML = '<option value="">すべての年度</option>' + years.map(y => `<option value="${y}">${toReiwaYearLabel(y)}年度</option>`).join('');
+  if(years.includes(Number(current))) sel.value = current;
+}
+
 async function loadList(){
   const body = document.getElementById('list-body');
-  body.innerHTML = '<tr><td colspan="9" class="loading">読み込み中…</td></tr>';
+  body.innerHTML = '<tr><td colspan="8" class="loading">読み込み中…</td></tr>';
   try{
-    const rows = await sb('expense_requests?select=*&order=submit_date.desc.nullslast,created_at.desc');
+    const deptFilter = LOCKED_DEPARTMENT ? `&department=eq.${encodeURIComponent(LOCKED_DEPARTMENT)}` : '';
+    const rows = await sb(`expense_requests?select=*${deptFilter}&order=submit_date.desc.nullslast,pdf_no.desc.nullslast,created_at.desc`);
     cachedList = rows;
+    populateYearFilter();
     renderList();
   }catch(e){
-    body.innerHTML = '<tr><td colspan="9" class="empty">読み込みに失敗しました</td></tr>';
+    body.innerHTML = '<tr><td colspan="8" class="empty">読み込みに失敗しました</td></tr>';
     console.error(e);
   }
 }
@@ -572,53 +930,129 @@ async function loadList(){
 function renderList(){
   const body = document.getElementById('list-body');
   const q = (document.getElementById('search-box').value || '').trim().toLowerCase();
-  const rows = q
-    ? cachedList.filter(r => (r.subject||'').toLowerCase().includes(q) || (r.assignee||'').toLowerCase().includes(q))
+  document.getElementById('search-clear').style.display = q ? 'flex' : 'none';
+  const yearFilter = document.getElementById('year-filter').value;
+  let rows = q
+    ? cachedList.filter(r => (r.subject||'').toLowerCase().includes(q) || (r.assignee||'').toLowerCase().includes(q) || (r.category||'').toLowerCase().includes(q) || (r.department||'').toLowerCase().includes(q) || (r.assignee_department||'').toLowerCase().includes(q) || (r.budget_category||'').toLowerCase().includes(q))
     : cachedList;
+  if(yearFilter){
+    rows = rows.filter(r => effectiveYear(r) === Number(yearFilter));
+  }
 
   if(!rows.length){
-    body.innerHTML = '<tr><td colspan="9" class="empty">該当する申請はありません</td></tr>';
+    body.innerHTML = '<tr><td colspan="8" class="empty">該当する申請はありません</td></tr>';
+    document.getElementById('list-total').textContent = '¥0';
     return;
   }
+  const total = rows.reduce((sum, r) => sum + (Number(r.total_cost) || 0), 0);
+  document.getElementById('list-total').textContent = '¥' + total.toLocaleString();
   body.innerHTML = rows.map(r=>`
       <tr>
-        <td>${r.submit_date || '—'}</td>
-        <td>${r.category || '—'}</td>
-        <td class="subject-cell">${escapeHtml(r.subject)}</td>
+        <td class="date-cell">${fmtEraShort(r.submit_date)}</td>
+        <td class="searchable category-cell" onclick="searchByValue('${escapeHtml(r.budget_category||'')}')" title="${escapeHtml(r.budget_category||'')}"><span class="category-cell-inner">${categoryShortLabel(r.budget_category)}</span></td>
+        <td class="subject-cell" title="${escapeHtml(r.subject)}">${escapeHtml((r.subject||'').replace(/\n/g, ' '))}</td>
         <td class="amt">${r.total_cost ? '¥'+Number(r.total_cost).toLocaleString() : '—'}</td>
-        <td>${r.assignee || '—'}</td>
-        <td>${r.accounting_submit_date || '—'}</td>
-        <td>${r.accounting_approve_date || '—'}</td>
-        <td>${r.pdf_no || '—'}</td>
-        <td>
+        <td class="searchable assignee-cell" onclick="searchByValue('${escapeHtml(r.assignee||'')}')">${r.assignee || '—'}</td>
+        <td class="date-cell">${fmtEraShort(r.accounting_submit_date)}</td>
+        <td class="date-cell">${fmtEraShort(r.accounting_approve_date)}</td>
+        <td class="sticky-actions">
           <div class="row-actions">
-            <button class="icon-btn print" onclick="openPrint('${r.id}')">印刷</button>
             <button class="icon-btn edit" onclick="editRequest('${r.id}')">編集</button>
-            <button class="icon-btn del" onclick="deleteRequest('${r.id}')">削除</button>
+            <button class="icon-btn print" onclick="openPrint('${r.id}')">印刷</button>
+            ${r.pdf_url
+              ? `<a class="icon-btn pdf pdf-attached" href="${r.pdf_url}" target="_blank" rel="noopener" title="PDFファイルを開く（印刷・保存はブラウザのPDF表示画面から。PDF No.: ${escapeHtml(r.pdf_no||'—')}）">PDF</a>`
+              : `<button class="icon-btn pdf pdf-none" onclick="copyPdfNo('${escapeHtml(r.pdf_no||'')}')" title="PDFファイル未添付。PDF No.: ${escapeHtml(r.pdf_no||'—')}（クリックで番号をコピー）">PDF</button>`
+            }
           </div>
         </td>
       </tr>
     `).join('');
 }
 
+async function copyPdfNo(pdfNo){
+  if(!pdfNo){ showToast('PDF No.が入力されていません'); return; }
+  try{
+    await navigator.clipboard.writeText(pdfNo);
+    showToast(`PDF No.「${pdfNo}」をコピーしました`);
+  }catch(e){
+    showToast(`PDF No.: ${pdfNo}`);
+  }
+}
+
+function clearSearch(){
+  document.getElementById('search-box').value = '';
+  renderList();
+  document.getElementById('search-box').focus();
+}
+
+function searchByValue(value){
+  document.getElementById('search-box').value = value;
+  renderList();
+}
+
 function escapeHtml(s){
   return (s||'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function categoryShortLabel(budgetCategory){
+  if(!budgetCategory) return '—';
+  const first = budgetCategory.charAt(0);
+  if(first === '本') return '本部';
+  if(first === '教') return '教庁';
+  return escapeHtml(first);
+}
+
+function renderCurrentPdfNote(){
+  const note = document.getElementById('f-pdf-current');
+  if(editingPdfUrl){
+    note.innerHTML = `<span class="pdf-attached-badge"><span class="pdf-check">✓</span> 添付済み: <a href="${editingPdfUrl}" target="_blank" rel="noopener">開いて確認</a>` +
+      `<button type="button" onclick="removeCurrentPdf()">削除</button></span>`;
+  }else{
+    note.innerHTML = '';
+  }
+}
+
+async function removeCurrentPdf(){
+  if(!editingPdfUrl) return;
+  if(!confirm('添付されているPDFファイルを削除しますか？（この操作は保存すると確定します）')) return;
+  try{
+    await deletePdfFileByUrl(editingPdfUrl);
+    if(editingId){
+      await sb(`expense_requests?id=eq.${editingId}`, {
+        method:'PATCH',
+        headers:{ 'Prefer':'return=minimal' },
+        body: JSON.stringify({ pdf_url: null })
+      });
+    }
+    editingPdfUrl = null;
+    renderCurrentPdfNote();
+    showToast('PDFファイルを削除しました');
+  }catch(e){
+    showToast('PDFファイルの削除に失敗しました: ' + e.message, 6000);
+  }
 }
 
 function editRequest(id){
   const r = cachedList.find(x=>x.id===id);
   if(!r) return;
   editingId = id;
-  document.getElementById('f-category').value = r.category || '';
+  editingSnapshotUpdatedAt = r.updated_at || null;
+  document.getElementById('f-budget').dataset.autoFilled = '0';
+  document.getElementById('f-budget-year').value = r.budget_year || '';
   document.getElementById('f-department').value = r.department || '';
+  document.getElementById('f-assignee-department').value = r.assignee_department || '';
   document.getElementById('f-assignee').value = r.assignee || '';
   document.getElementById('f-pdf-no').value = r.pdf_no || '';
+  document.getElementById('f-pdf-no').dataset.userEdited = '1';
+  document.getElementById('f-pdf-file').value = '';
+  editingPdfUrl = r.pdf_url || null;
+  renderCurrentPdfNote();
   document.getElementById('f-submit-date').value = r.submit_date || '';
   document.getElementById('f-start-date').value = r.start_date || '';
   document.getElementById('f-end-date').value = r.end_date || '';
   document.getElementById('f-subject').value = r.subject || '';
   document.getElementById('f-budget').value = r.budget_category || '';
-  document.getElementById('f-cost').value = r.total_cost || '';
+  document.getElementById('f-cost').value = r.total_cost ? Number(r.total_cost).toLocaleString() : '';
   document.getElementById('f-estimate').checked = !!r.has_estimate_attached;
   document.getElementById('f-overview').value = r.overview || '';
   document.getElementById('f-remarks').value = r.remarks || '';
@@ -628,6 +1062,7 @@ function editRequest(id){
 
   document.getElementById('form-mode-title').textContent = `編集中：${r.subject}`;
   document.getElementById('save-btn').textContent = '更新する';
+  document.getElementById('delete-btn').style.display = 'inline-block';
   switchTab('new');
 }
 
@@ -643,6 +1078,20 @@ async function deleteRequest(id){
   }
 }
 
+async function deleteFromForm(){
+  if(!editingId) return;
+  if(!confirm('この申請を削除しますか？')) return;
+  try{
+    await sb(`expense_requests?id=eq.${editingId}`, { method:'DELETE' });
+    showToast('削除しました');
+    resetForm();
+    switchTab('list');
+  }catch(e){
+    showToast('削除に失敗しました');
+    console.error(e);
+  }
+}
+
 function toReiwaParts(dateStr){
   if(!dateStr) return null;
   const d = new Date(dateStr+'T00:00:00');
@@ -650,6 +1099,19 @@ function toReiwaParts(dateStr){
   if(d < reiwaStart) return { y:null, m: d.getMonth()+1, dd: d.getDate(), eraLabel: `${d.getFullYear()}年` };
   const y = d.getFullYear() - 2018;
   return { y, m: d.getMonth()+1, dd: d.getDate(), eraLabel: '令和' };
+}
+
+function toReiwaYearLabel(year){
+  if(year === null || year === undefined) return null;
+  const y = Number(year) - 2018;
+  return y >= 1 ? `R${y}` : String(year);
+}
+
+function fmtEraShort(dateStr){
+  const p = toReiwaParts(dateStr);
+  if(!p) return '—';
+  if(p.eraLabel === '令和') return `R${p.y}.${p.m}.${p.dd}`;
+  return `${dateStr.slice(0,4)}.${p.m}.${p.dd}`; // 令和より前は西暦のまま
 }
 
 function escapeHtml2(s){
@@ -683,7 +1145,7 @@ function openPrint(id){
   const r = cachedList.find(x=>x.id===id);
   if(!r) return;
 
-  document.getElementById('p-department').textContent = `（${r.department || '　　　　　　　　　　　　　　'}）`;
+  document.getElementById('p-department').textContent = r.department ? `営繕部${r.department}` : '　　　　　　　　　　　　　　';
   document.getElementById('p-submit-date').innerHTML = fmtReiwaLine(r.submit_date, '提出', true);
   document.getElementById('p-start-date').innerHTML = fmtReiwaLine(r.start_date, '　　着 工 予 定');
   document.getElementById('p-end-date').innerHTML = fmtReiwaLine(r.end_date, '　　終 了 予 定');
@@ -700,14 +1162,33 @@ function openPrint(id){
 }
 
 function fitSheetToScreen(){
+  const frame = document.getElementById('sheet-frame');
   const sheet = document.querySelector('.sheet');
-  if(!sheet) return;
-  sheet.style.zoom = '';
+  const toolbar = document.querySelector('.print-toolbar');
+  if(!sheet || !frame) return;
+  sheet.style.transform = '';
+  sheet.style.transformOrigin = '';
+  frame.style.width = '';
+  frame.style.height = '';
+  // measure natural size, then scale to fit the viewport (both width and height)
   const naturalWidth = sheet.offsetWidth;
-  const available = window.innerWidth - 32; // matches overlay's 16px side padding
-  if(naturalWidth > available){
-    const scale = available / naturalWidth;
-    sheet.style.zoom = scale;
+  const naturalHeight = sheet.offsetHeight;
+  const toolbarHeight = toolbar ? toolbar.offsetHeight + 14 : 0; // 14px = toolbar's own margin-bottom
+  const availableWidth = window.innerWidth - 32; // matches overlay's 16px side padding
+  const availableHeight = window.innerHeight - 60 - toolbarHeight; // 60px = overlay's top+bottom padding
+  const widthScale = naturalWidth > availableWidth ? availableWidth / naturalWidth : 1;
+  const heightScale = naturalHeight > availableHeight ? availableHeight / naturalHeight : 1;
+  const scale = Math.min(widthScale, heightScale, 1);
+  if(scale < 1){
+    sheet.style.transform = `scale(${scale})`;
+    sheet.style.transformOrigin = 'top left';
+    // shrink the frame to the actual visual (scaled) size so flex centering
+    // uses the real on-screen footprint instead of the unscaled layout size
+    frame.style.width = `${naturalWidth * scale}px`;
+    frame.style.height = `${naturalHeight * scale}px`;
+  } else {
+    frame.style.width = `${naturalWidth}px`;
+    frame.style.height = `${naturalHeight}px`;
   }
 }
 
@@ -720,13 +1201,60 @@ function closePrint(){
 }
 
 document.getElementById('f-submit-date').value = new Date().toISOString().slice(0,10);
+document.getElementById('f-budget-year').value = fiscalYear(new Date().toISOString().slice(0,10));
+document.getElementById('f-budget-year').min = fiscalYear(new Date().toISOString().slice(0,10));
 loadOptions();
+suggestNextPdfNo();
 
-document.getElementById('f-category').addEventListener('change', (e)=>{
-  const budgetField = document.getElementById('f-budget');
-  if(!budgetField.value || budgetField.value === '本部営繕費' || budgetField.value === '教庁営繕費'){
-    budgetField.value = e.target.value === '本部' ? '本部営繕費' : e.target.value === '教庁' ? '教庁営繕費' : '';
+function renderProjectTabs(){
+  const container = document.getElementById('project-tabs-container');
+  if(!container) return;
+  container.innerHTML = PROJECT_TABS.map(t =>
+    `<button class="tab" data-tab="${t.id}" onclick="switchTab('${t.id}')">${escapeHtml(t.label)}</button>`
+  ).join('') + `<button type="button" class="tab tab-add" onclick="openAddTabModal()">＋ タブ増設</button>`;
+}
+
+if(LOCKED_DEPARTMENT){
+  // 部署固定モード: 管理者専用のタブ群(PROJECT_TABS)は表示せず、タイトルに部署名を表示
+  const h1 = document.querySelector('.app-header h1');
+  if(h1) h1.innerHTML = `<span>予想経費</span>申請書システム（${LOCKED_DEPARTMENT}）`;
+  document.title = `予想経費申請書（${LOCKED_DEPARTMENT}）`;
+}else{
+  // 管理者モード: SupabaseからPROJECT_TABSを読み込んでタブボタンを自動生成
+  loadProjectTabs().then(renderProjectTabs);
+}
+
+document.getElementById('f-submit-date').addEventListener('change', ()=>{
+  // 提出年月日が変わると年度が変わる可能性があるので、PDF No.を再計算する
+  suggestNextPdfNo();
+});
+document.getElementById('f-pdf-no').addEventListener('input', ()=>{
+  // ユーザーがPDF No.を直接編集したら、以後は自動採番で上書きしない
+  document.getElementById('f-pdf-no').dataset.userEdited = '1';
+});
+document.getElementById('f-subject').addEventListener('keydown', (e)=>{
+  // 主題の改行は1回まで（2行まで）。すでに改行済みなら2回目のEnterは無視する
+  if(e.key === 'Enter' && (e.target.value.match(/\n/g) || []).length >= 1){
+    e.preventDefault();
   }
+});
+document.getElementById('f-subject').addEventListener('input', (e)=>{
+  // 貼り付け等で改行が2つ以上入った場合は、2行目以降を1行にまとめる
+  const parts = e.target.value.split('\n');
+  if(parts.length > 2){
+    e.target.value = parts[0] + '\n' + parts.slice(1).join(' ');
+  }
+});
+document.getElementById('f-cost').addEventListener('input', (e)=>{
+  // 数字以外を除去し、3桁ごとにカンマを入れる(カーソル位置は末尾からの距離で維持)
+  const el = e.target;
+  const before = el.value;
+  const posFromEnd = before.length - el.selectionStart;
+  const digitsOnly = before.replace(/[^\d]/g, '');
+  const formatted = digitsOnly ? Number(digitsOnly).toLocaleString() : '';
+  el.value = formatted;
+  const newPos = Math.max(0, formatted.length - posFromEnd);
+  el.setSelectionRange(newPos, newPos);
 });
 </script>
 </body>
