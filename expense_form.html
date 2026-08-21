@@ -318,7 +318,7 @@
     }
     .sheet-frame{
       width:auto !important;height:auto !important;overflow:visible !important;margin:0 auto !important;
-      margin-left:5mm !important;
+      transform:translateX(5mm) !important;
     }
     .sheet{
       border:none !important;width:245mm !important;margin:0 auto !important;padding:0 !important;
@@ -1237,7 +1237,7 @@ function downloadPdf(){
         const widthMm = rect.width / pxPerMm;
         const heightMm = rect.height / pxPerMm;
         const pageWidthMm = 257, pageHeightMm = 182;
-        const marginX = Math.max(0, (pageWidthMm - widthMm) / 2);
+        const marginX = Math.max(0, (pageWidthMm - widthMm) / 2) + 5;
         const marginY = Math.max(0, (pageHeightMm - heightMm) / 2);
 
         const { jsPDF } = window.jspdf;
