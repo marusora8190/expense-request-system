@@ -538,6 +538,7 @@
         <li>ダウンロードされたPDFファイルを開き、そこから印刷（送信先・部数の確認など）や、保存・共有を行ってください。</li>
         <li>用紙に印刷する必要が無い場合は、ダウンロードされたPDFファイルをそのまま保存・共有しても構いません。</li>
         <li>確認だけで印刷しない場合は<strong>「閉じる」</strong>ボタンでプレビューを閉じられます。</li>
+        <li>一覧の各行にある<strong>「複写」</strong>ボタンからは、その申請に添付した見積書・明細書などのPDFファイルをそのまま開けます（新しいタブで開くので、そこから印刷・保存ができます）。</li>
       </ol>
 
       <h2 class="help-h2">3. 申請内容を修正・削除する</h2>
@@ -1052,8 +1053,8 @@ function renderList(){
             <button class="icon-btn edit" onclick="editRequest('${r.id}')">編集</button>
             <button class="icon-btn print" onclick="openPrint('${r.id}')">印刷</button>
             ${r.pdf_url
-              ? `<a class="icon-btn pdf pdf-attached" href="${r.pdf_url}" target="_blank" rel="noopener" title="添付の見積書・明細書PDFを開く（印刷・保存はブラウザのPDF表示画面から。PDF No.: ${escapeHtml(r.pdf_no||'—')}）">別紙</a>`
-              : `<button class="icon-btn pdf pdf-none" onclick="copyPdfNo('${escapeHtml(r.pdf_no||'')}')" title="添付の見積書・明細書PDF未添付。PDF No.: ${escapeHtml(r.pdf_no||'—')}（クリックで番号をコピー）">別紙</button>`
+              ? `<a class="icon-btn pdf pdf-attached" href="${r.pdf_url}" target="_blank" rel="noopener" title="添付の見積書・明細書PDFを開く（印刷・保存はブラウザのPDF表示画面から。PDF No.: ${escapeHtml(r.pdf_no||'—')}）">複写</a>`
+              : `<button class="icon-btn pdf pdf-none" onclick="copyPdfNo('${escapeHtml(r.pdf_no||'')}')" title="添付の見積書・明細書PDF未添付。PDF No.: ${escapeHtml(r.pdf_no||'—')}（クリックで番号をコピー）">複写</button>`
             }
           </div>
         </td>
