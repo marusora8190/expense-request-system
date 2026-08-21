@@ -512,6 +512,7 @@
         <li><strong>「新規申請」</strong>タブを開きます。</li>
         <li>科目・提出部署（部署固定URLの場合は自動入力）・担当・各種日付・主題・予算科目・総経費・実施の概要・備考などを入力します。</li>
         <li>見積書・明細書のPDFファイルがあれば添付します。</li>
+        <li><strong>別紙（予算書・見積書・図面等）を添付する場合は、PDFファイルにしてください。</strong>Word・Excel・画像ファイルなどは添付できません。</li>
         <li>入力し終えたら、画面下の<strong>「保存する」</strong>ボタンを押します。</li>
       </ol>
 
@@ -1030,8 +1031,8 @@ function renderList(){
             <button class="icon-btn edit" onclick="editRequest('${r.id}')">編集</button>
             <button class="icon-btn print" onclick="openPrint('${r.id}')">印刷</button>
             ${r.pdf_url
-              ? `<a class="icon-btn pdf pdf-attached" href="${r.pdf_url}" target="_blank" rel="noopener" title="PDFファイルを開く（印刷・保存はブラウザのPDF表示画面から。PDF No.: ${escapeHtml(r.pdf_no||'—')}）">PDF</a>`
-              : `<button class="icon-btn pdf pdf-none" onclick="copyPdfNo('${escapeHtml(r.pdf_no||'')}')" title="PDFファイル未添付。PDF No.: ${escapeHtml(r.pdf_no||'—')}（クリックで番号をコピー）">PDF</button>`
+              ? `<a class="icon-btn pdf pdf-attached" href="${r.pdf_url}" target="_blank" rel="noopener" title="添付の見積書・明細書PDFを開く（印刷・保存はブラウザのPDF表示画面から。PDF No.: ${escapeHtml(r.pdf_no||'—')}）">別紙</a>`
+              : `<button class="icon-btn pdf pdf-none" onclick="copyPdfNo('${escapeHtml(r.pdf_no||'')}')" title="添付の見積書・明細書PDF未添付。PDF No.: ${escapeHtml(r.pdf_no||'—')}（クリックで番号をコピー）">別紙</button>`
             }
           </div>
         </td>
