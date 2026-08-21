@@ -37,6 +37,17 @@
   .tab-add{background:transparent;border:1px dashed #c7bda6;color:var(--muted);font-weight:600;}
   .tab-add:hover{border-color:var(--ink);color:var(--ink);}
 
+  .tab-removable{padding:0 4px 0 18px;display:inline-flex;align-items:center;gap:6px;}
+  .tab-label-btn{background:none;border:none;color:inherit;font:inherit;cursor:pointer;padding:9px 0;}
+  .tab-del-btn{
+    background:rgba(0,0,0,.08);color:inherit;border:none;border-radius:50%;
+    width:18px;height:18px;line-height:18px;font-size:13px;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;padding:0;flex:0 0 auto;
+  }
+  .tab-removable:not(.active) .tab-del-btn{background:#e8e1d2;color:var(--muted);}
+  .tab-removable:not(.active) .tab-del-btn:hover{background:#f4d9d5;color:var(--ink-dark);}
+  .tab-removable.active .tab-del-btn:hover{background:rgba(255,255,255,.35);}
+
   .modal-overlay{
     display:none;position:fixed;inset:0;background:rgba(30,25,20,.55);z-index:60;
     align-items:center;justify-content:center;padding:20px;
@@ -137,7 +148,7 @@
   td{padding:4px 10px;border-bottom:1px solid var(--line);vertical-align:middle;white-space:nowrap;}
   tr:hover td{background:var(--accent-bg);}
   .subject-cell{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-  .assignee-cell{font-size:13.5px;font-weight:600;color:#000;width:100px;}
+  .assignee-cell{font-size:13.5px;font-weight:600;color:#000;width:92px;}
   table th:not(:nth-child(3)), table td:not(:nth-child(3)):not(.sticky-actions){white-space:nowrap;}
   .category-cell{text-align:center;padding-left:2px !important;padding-right:2px !important;width:24px !important;color:#000;font-size:10px;font-weight:400;}
   .category-cell-inner{display:block;writing-mode:vertical-rl;text-orientation:upright;font-size:10px;font-weight:400;color:#000;width:14px;overflow:hidden;margin:0 auto;}
@@ -460,7 +471,7 @@
   <div class="panel" id="tab-list" style="display:none;">
     <div class="list-toolbar">
       <div class="search-wrap">
-        <input type="text" id="search-box" placeholder="科目・部署・主題・担当で検索" oninput="renderList()">
+        <input type="text" id="search-box" placeholder="科目・部署・主題・担当で検索（スペース区切りで複数条件）" oninput="renderList()">
         <button type="button" id="search-clear" class="search-clear-btn" onclick="clearSearch()" aria-label="検索解除" style="display:none;">×</button>
       </div>
       <select id="year-filter" onchange="renderList()">
@@ -474,7 +485,8 @@
         <col style="width:24px;">
         <col style="width:70%;">
         <col style="width:100px;">
-        <col style="width:100px;">
+        <col style="width:24px;">
+        <col style="width:92px;">
         <col style="width:58px;">
         <col style="width:58px;">
         <col style="width:175px;">
@@ -485,6 +497,7 @@
           <th class="category-cell"><span class="category-cell-inner">科目</span></th>
           <th class="subject-header">主題</th>
           <th class="amt">金額</th>
+          <th class="category-cell"><span class="category-cell-inner">部署</span></th>
           <th class="assignee-cell">担当</th>
           <th class="date-cell">会計提出</th>
           <th class="date-cell">会計承認</th>
@@ -492,13 +505,13 @@
         </tr>
       </thead>
       <tbody id="list-body">
-        <tr><td colspan="8" class="loading">読み込み中…</td></tr>
+        <tr><td colspan="9" class="loading">読み込み中…</td></tr>
       </tbody>
       <tfoot>
         <tr class="total-row">
           <td colspan="3" class="total-label">合計</td>
           <td id="list-total" class="amt"></td>
-          <td colspan="4"></td>
+          <td colspan="5"></td>
         </tr>
       </tfoot>
     </table>
@@ -538,6 +551,7 @@
         <li>一覧上部の検索欄に、科目・部署・主題・担当者などのキーワードを入力すると絞り込めます。</li>
         <li>年度のプルダウンから、特定の年度の申請だけに絞り込めます。</li>
         <li>特定の工事・案件だけを常に見られるようにしたい場合は、タブの一番右にある<strong>「＋ タブ増設」</strong>から専用タブを追加できます。</li>
+        <li>増設したタブは、タブ名の右にある<strong>「×」</strong>ボタンから削除できます（タブを消しても、そこに含まれていた申請データ自体は削除されません）。</li>
       </ol>
 
       <p class="help-note">※ 印刷や表示がおかしい場合は、ブラウザの再読み込み（Ctrl+Shift+R など）を試してから、改めてご確認ください。</p>
@@ -985,7 +999,7 @@ function populateYearFilter(){
 
 async function loadList(){
   const body = document.getElementById('list-body');
-  body.innerHTML = '<tr><td colspan="8" class="loading">読み込み中…</td></tr>';
+  body.innerHTML = '<tr><td colspan="9" class="loading">読み込み中…</td></tr>';
   try{
     const deptFilter = LOCKED_DEPARTMENT ? `&department=eq.${encodeURIComponent(LOCKED_DEPARTMENT)}` : '';
     const rows = await sb(`expense_requests?select=*${deptFilter}&order=submit_date.desc.nullslast,pdf_no.desc.nullslast,created_at.desc`);
@@ -993,7 +1007,7 @@ async function loadList(){
     populateYearFilter();
     renderList();
   }catch(e){
-    body.innerHTML = '<tr><td colspan="8" class="empty">読み込みに失敗しました</td></tr>';
+    body.innerHTML = '<tr><td colspan="9" class="empty">読み込みに失敗しました</td></tr>';
     console.error(e);
   }
 }
@@ -1003,15 +1017,21 @@ function renderList(){
   const q = (document.getElementById('search-box').value || '').trim().toLowerCase();
   document.getElementById('search-clear').style.display = q ? 'flex' : 'none';
   const yearFilter = document.getElementById('year-filter').value;
-  let rows = q
-    ? cachedList.filter(r => (r.subject||'').toLowerCase().includes(q) || (r.assignee||'').toLowerCase().includes(q) || (r.category||'').toLowerCase().includes(q) || (r.department||'').toLowerCase().includes(q) || (r.assignee_department||'').toLowerCase().includes(q) || (r.budget_category||'').toLowerCase().includes(q))
+  // 全角・半角スペース区切りで複数キーワードに分割し、すべてに一致する行だけ残す(AND検索)
+  const keywords = q.split(/[\s　]+/).filter(Boolean);
+  let rows = keywords.length
+    ? cachedList.filter(r => {
+        const haystack = [r.subject, r.assignee, r.category, r.department, r.assignee_department, r.budget_category]
+          .map(v => (v||'').toLowerCase()).join(' ');
+        return keywords.every(kw => haystack.includes(kw));
+      })
     : cachedList;
   if(yearFilter){
     rows = rows.filter(r => effectiveYear(r) === Number(yearFilter));
   }
 
   if(!rows.length){
-    body.innerHTML = '<tr><td colspan="8" class="empty">該当する申請はありません</td></tr>';
+    body.innerHTML = '<tr><td colspan="9" class="empty">該当する申請はありません</td></tr>';
     document.getElementById('list-total').textContent = '¥0';
     return;
   }
@@ -1023,6 +1043,7 @@ function renderList(){
         <td class="searchable category-cell" onclick="searchByValue('${escapeHtml(r.budget_category||'')}')" title="${escapeHtml(r.budget_category||'')}"><span class="category-cell-inner">${categoryShortLabel(r.budget_category)}</span></td>
         <td class="subject-cell" title="${escapeHtml(r.subject)}">${escapeHtml((r.subject||'').replace(/\n/g, ' '))}</td>
         <td class="amt">${r.total_cost ? '¥'+Number(r.total_cost).toLocaleString() : '—'}</td>
+        <td class="searchable category-cell" onclick="searchByValue('${escapeHtml(r.assignee_department||'')}')" title="${escapeHtml(r.assignee_department||'')}"><span class="category-cell-inner">${assigneeDeptShortLabel(r.assignee_department)}</span></td>
         <td class="searchable assignee-cell" onclick="searchByValue('${escapeHtml(r.assignee||'')}')">${r.assignee || '—'}</td>
         <td class="date-cell">${fmtEraShort(r.accounting_submit_date)}</td>
         <td class="date-cell">${fmtEraShort(r.accounting_approve_date)}</td>
@@ -1071,6 +1092,12 @@ function categoryShortLabel(budgetCategory){
   if(first === '本') return '本部';
   if(first === '教') return '教庁';
   return escapeHtml(first);
+}
+
+// 担当者部署（電気課・水道課など）を頭文字だけの短い表示にする(営繕課→営 など)
+function assigneeDeptShortLabel(dept){
+  if(!dept) return '—';
+  return escapeHtml(dept.charAt(0));
 }
 
 function renderCurrentPdfNote(){
@@ -1345,8 +1372,26 @@ function renderProjectTabs(){
   const container = document.getElementById('project-tabs-container');
   if(!container) return;
   container.innerHTML = PROJECT_TABS.map(t =>
-    `<button class="tab" data-tab="${t.id}" onclick="switchTab('${t.id}')">${escapeHtml(t.label)}</button>`
+    `<span class="tab tab-removable" data-tab="${t.id}">
+      <button type="button" class="tab-label-btn" onclick="switchTab('${t.id}')">${escapeHtml(t.label)}</button>
+      <button type="button" class="tab-del-btn" onclick="event.stopPropagation(); deleteProjectTab('${t.id}', '${escapeHtml(t.label).replace(/'/g,"\\'")}')" title="このタブを削除">×</button>
+    </span>`
   ).join('') + `<button type="button" class="tab tab-add" onclick="openAddTabModal()">＋ タブ増設</button>`;
+}
+
+async function deleteProjectTab(id, label){
+  if(!confirm(`タブ「${label}」を削除しますか？（このタブに紐づく申請データ自体は削除されません）`)) return;
+  try{
+    await sb(`project_tabs?id=eq.${id}`, { method:'DELETE' });
+    showToast('タブを削除しました');
+    const wasActive = document.querySelector(`.tab-removable[data-tab="${id}"]`)?.classList.contains('active');
+    await loadProjectTabs();
+    renderProjectTabs();
+    if(wasActive) switchTab('list');
+  }catch(e){
+    showToast('タブの削除に失敗しました: ' + e.message, 6000);
+    console.error(e);
+  }
 }
 
 if(LOCKED_DEPARTMENT){
