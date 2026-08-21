@@ -471,7 +471,7 @@
   <div class="panel" id="tab-list" style="display:none;">
     <div class="list-toolbar">
       <div class="search-wrap">
-        <input type="text" id="search-box" placeholder="科目・部署・主題・担当で検索（スペース区切りで複数条件）" oninput="renderList()">
+        <input type="text" id="search-box" placeholder="科目・部署・主題・担当で検索" title="スペース区切りで複数のキーワードを入力すると、すべてに一致する申請だけに絞り込めます" oninput="renderList()">
         <button type="button" id="search-clear" class="search-clear-btn" onclick="clearSearch()" aria-label="検索解除" style="display:none;">×</button>
       </div>
       <select id="year-filter" onchange="renderList()">
@@ -489,7 +489,7 @@
         <col style="width:92px;">
         <col style="width:58px;">
         <col style="width:58px;">
-        <col style="width:175px;">
+        <col style="width:200px;">
       </colgroup>
       <thead>
         <tr>
@@ -538,7 +538,7 @@
         <li>ダウンロードされたPDFファイルを開き、そこから印刷（送信先・部数の確認など）や、保存・共有を行ってください。</li>
         <li>用紙に印刷する必要が無い場合は、ダウンロードされたPDFファイルをそのまま保存・共有しても構いません。</li>
         <li>確認だけで印刷しない場合は<strong>「閉じる」</strong>ボタンでプレビューを閉じられます。</li>
-        <li>一覧の各行にある<strong>「複写」</strong>ボタンからは、その申請に添付した見積書・明細書などのPDFファイルをそのまま開けます（新しいタブで開くので、そこから印刷・保存ができます）。</li>
+        <li>一覧の各行にある<strong>「ファイル」</strong>ボタンからは、その申請に添付した見積書・明細書などのPDFファイルをそのまま開けます（新しいタブで開くので、そこから印刷・保存ができます）。</li>
       </ol>
 
       <h2 class="help-h2">3. 申請内容を修正・削除する</h2>
@@ -1053,8 +1053,8 @@ function renderList(){
             <button class="icon-btn edit" onclick="editRequest('${r.id}')">編集</button>
             <button class="icon-btn print" onclick="openPrint('${r.id}')">印刷</button>
             ${r.pdf_url
-              ? `<a class="icon-btn pdf pdf-attached" href="${r.pdf_url}" target="_blank" rel="noopener" title="添付の見積書・明細書PDFを開く（印刷・保存はブラウザのPDF表示画面から。PDF No.: ${escapeHtml(r.pdf_no||'—')}）">複写</a>`
-              : `<button class="icon-btn pdf pdf-none" onclick="copyPdfNo('${escapeHtml(r.pdf_no||'')}')" title="添付の見積書・明細書PDF未添付。PDF No.: ${escapeHtml(r.pdf_no||'—')}（クリックで番号をコピー）">複写</button>`
+              ? `<a class="icon-btn pdf pdf-attached" href="${r.pdf_url}" target="_blank" rel="noopener" title="添付の見積書・明細書PDFを開く（印刷・保存はブラウザのPDF表示画面から。PDF No.: ${escapeHtml(r.pdf_no||'—')}）">ファイル</a>`
+              : `<button class="icon-btn pdf pdf-none" onclick="copyPdfNo('${escapeHtml(r.pdf_no||'')}')" title="添付の見積書・明細書PDF未添付。PDF No.: ${escapeHtml(r.pdf_no||'—')}（クリックで番号をコピー）">ファイル</button>`
             }
           </div>
         </td>
