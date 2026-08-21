@@ -318,6 +318,7 @@
     }
     .sheet-frame{
       width:auto !important;height:auto !important;overflow:visible !important;margin:0 auto !important;
+      margin-left:5mm !important;
     }
     .sheet{
       border:none !important;width:245mm !important;margin:0 auto !important;padding:0 !important;
@@ -1222,8 +1223,10 @@ function downloadPdf(){
   // キャプチャ中だけ実寸（transformなし）に戻す
   const prevTransform = sheet.style.transform;
   const prevTransformOrigin = sheet.style.transformOrigin;
+  const prevBorder = sheet.style.border;
   sheet.style.transform = '';
   sheet.style.transformOrigin = '';
+  sheet.style.border = 'none'; // 画面プレビュー用の薄い枠線がPDFに写り込まないよう一時的に消す
 
   // transform解除がレイアウトに反映されるのを一拍待ってから計測・キャプチャする
   requestAnimationFrame(() => requestAnimationFrame(() => {
@@ -1253,6 +1256,7 @@ function downloadPdf(){
       .finally(() => {
         sheet.style.transform = prevTransform;
         sheet.style.transformOrigin = prevTransformOrigin;
+        sheet.style.border = prevBorder;
         btn.disabled = false;
         btn.textContent = prevLabel;
       });
