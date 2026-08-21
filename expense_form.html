@@ -1217,33 +1217,46 @@ function downloadPdf(){
   btn.disabled = true;
   btn.textContent = '作成中…';
 
-  htmlToImage.toCanvas(sheet, { pixelRatio: 4, backgroundColor: '#ffffff' })
-    .then(canvas => {
-      const pxPerMm = 96 / 25.4;
-      const rect = sheet.getBoundingClientRect();
-      const widthMm = rect.width / pxPerMm;
-      const heightMm = rect.height / pxPerMm;
-      const pageWidthMm = 257, pageHeightMm = 182;
-      const marginX = Math.max(0, (pageWidthMm - widthMm) / 2);
-      const marginY = Math.max(0, (pageHeightMm - heightMm) / 2);
+  // 画面幅に収めるための表示用スケール（fitSheetToScreenが transform:scale() で
+  // 縮小している）が掛かっている場合、PDFに縮小後のサイズが使われてしまうため、
+  // キャプチャ中だけ実寸（transformなし）に戻す
+  const prevTransform = sheet.style.transform;
+  const prevTransformOrigin = sheet.style.transformOrigin;
+  sheet.style.transform = '';
+  sheet.style.transformOrigin = '';
 
-      const { jsPDF } = window.jspdf;
-      const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: [pageWidthMm, pageHeightMm] });
-      const imgData = canvas.toDataURL('image/png');
-      pdf.addImage(imgData, 'PNG', marginX, marginY, widthMm, heightMm);
+  // transform解除がレイアウトに反映されるのを一拍待ってから計測・キャプチャする
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    htmlToImage.toCanvas(sheet, { pixelRatio: 4, backgroundColor: '#ffffff' })
+      .then(canvas => {
+        const pxPerMm = 96 / 25.4;
+        const rect = sheet.getBoundingClientRect();
+        const widthMm = rect.width / pxPerMm;
+        const heightMm = rect.height / pxPerMm;
+        const pageWidthMm = 257, pageHeightMm = 182;
+        const marginX = Math.max(0, (pageWidthMm - widthMm) / 2);
+        const marginY = Math.max(0, (pageHeightMm - heightMm) / 2);
 
-      const subjectText = (document.getElementById('p-subject').textContent || '予想経費申請書').trim();
-      const fname = (subjectText.slice(0, 30) || '予想経費申請書') + '.pdf';
-      pdf.save(fname);
-    })
-    .catch(err => {
-      console.error(err);
-      alert('PDFの作成に失敗しました。時間をおいてもう一度お試しください。');
-    })
-    .finally(() => {
-      btn.disabled = false;
-      btn.textContent = prevLabel;
-    });
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: [pageWidthMm, pageHeightMm] });
+        const imgData = canvas.toDataURL('image/png');
+        pdf.addImage(imgData, 'PNG', marginX, marginY, widthMm, heightMm);
+
+        const subjectText = (document.getElementById('p-subject').textContent || '予想経費申請書').trim();
+        const fname = (subjectText.slice(0, 30) || '予想経費申請書') + '.pdf';
+        pdf.save(fname);
+      })
+      .catch(err => {
+        console.error(err);
+        alert('PDFの作成に失敗しました。時間をおいてもう一度お試しください。');
+      })
+      .finally(() => {
+        sheet.style.transform = prevTransform;
+        sheet.style.transformOrigin = prevTransformOrigin;
+        btn.disabled = false;
+        btn.textContent = prevLabel;
+      });
+  }));
 }
 
 document.getElementById('f-submit-date').value = new Date().toISOString().slice(0,10);
