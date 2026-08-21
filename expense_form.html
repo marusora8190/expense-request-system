@@ -520,8 +520,8 @@
         <li><strong>「申請一覧・印刷」</strong>タブを開きます。</li>
         <li>一覧から該当する申請の行にある<strong>「印刷」</strong>ボタンを押します。</li>
         <li>原紙レイアウトのプレビュー画面が開きます。内容を確認してください。</li>
-        <li>画面上部の<strong>「PDFダウンロードして印刷」</strong>ボタンを押すと、①この内容がPDFファイルとしてダウンロードされ、②続けてブラウザの印刷ダイアログが自動で開きます。</li>
-        <li>印刷ダイアログで、送信先（プリンター）・部数を確認し、印刷してください。</li>
+        <li>画面上部の<strong>「PDFダウンロード」</strong>ボタンを押すと、この内容がPDFファイルとしてダウンロードされます。</li>
+        <li>ダウンロードされたPDFファイルを開き、そこから印刷（送信先・部数の確認など）や、保存・共有を行ってください。</li>
         <li>用紙に印刷する必要が無い場合は、ダウンロードされたPDFファイルをそのまま保存・共有しても構いません。</li>
         <li>確認だけで印刷しない場合は<strong>「閉じる」</strong>ボタンでプレビューを閉じられます。</li>
       </ol>
@@ -571,7 +571,7 @@
   <div>
     <div class="print-toolbar">
       <button class="close" onclick="closePrint()">閉じる</button>
-      <button class="pdf" id="pdf-download-btn" onclick="downloadPdfAndPrint()">PDFダウンロードして印刷</button>
+      <button class="pdf" id="pdf-download-btn" onclick="downloadPdf()">PDFダウンロード</button>
     </div>
     <div class="sheet-frame" id="sheet-frame">
     <div class="sheet">
@@ -1331,12 +1331,6 @@ function downloadPdf(){
           btn.textContent = prevLabel;
         });
     }));
-  });
-}
-
-function downloadPdfAndPrint(){
-  downloadPdf().then(ok => {
-    if(ok) window.print();
   });
 }
 
