@@ -81,6 +81,13 @@
   .pdf-current-note button{margin-left:4px;color:#c94f3c;background:none;border:none;text-decoration:underline;cursor:pointer;font-size:12.5px;padding:0;}
   .pdf-file-hint{font-size:11.5px;color:var(--muted);margin-top:4px;}
   .form-title{font-size:15px;font-weight:700;margin-bottom:16px;color:var(--ink);}
+  .help-content{max-width:760px;}
+  .help-h2{font-size:15.5px;font-weight:700;color:var(--ink);margin:26px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--line);}
+  .help-h2:first-child{margin-top:0;}
+  .help-steps{margin:0;padding-left:22px;color:var(--text);font-size:13.5px;line-height:1.8;}
+  .help-steps li{margin-bottom:4px;}
+  .help-steps strong{color:var(--ink-dark);font-weight:700;}
+  .help-note{margin:22px 0 0;font-size:12px;color:var(--muted);}
   .list-toolbar{margin-bottom:14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
   .search-wrap{position:relative;width:100%;max-width:320px;}
   #year-filter{
@@ -226,7 +233,7 @@
   .title-row .meta .lbl-v{writing-mode:vertical-rl;text-align:center;letter-spacing:.05em;}
   .title-row .meta .bracket{font-size:20px;}
   .bracket{font-weight:700;}
-  #p-department{font-family:"Meiryo UI","Meiryo",sans-serif;color:#000;font-weight:400;font-size:14.5px;}
+  #p-department{font-family:"Meiryo UI","Meiryo",sans-serif;color:#000;font-weight:400;font-size:14.5px;position:relative;top:-2mm;}
   .dept-bracket{display:inline-flex;align-items:center;}
 
   .submit-date{text-align:right;font-size:13px;padding:6px 0 0;white-space:nowrap;width:220mm;margin:0;box-sizing:border-box;font-family:"MS Mincho","MS 明朝","Hiragino Mincho ProN",serif;}
@@ -340,6 +347,7 @@
   <div class="tabs">
     <button class="tab active" data-tab="new" onclick="switchTab('new')">新規申請</button>
     <button class="tab" data-tab="list" onclick="switchTab('list')">申請一覧・印刷</button>
+    <button class="tab" data-tab="help" onclick="switchTab('help')">使い方</button>
     <span id="project-tabs-container"></span>
   </div>
 
@@ -495,6 +503,44 @@
     </table>
     </div>
   </div>
+
+  <div class="panel" id="tab-help" style="display:none;">
+    <div class="help-content">
+      <h2 class="help-h2">1. 新しい申請を入力する</h2>
+      <ol class="help-steps">
+        <li><strong>「新規申請」</strong>タブを開きます。</li>
+        <li>科目・提出部署（部署固定URLの場合は自動入力）・担当・各種日付・主題・予算科目・総経費・実施の概要・備考などを入力します。</li>
+        <li>見積書・明細書のPDFファイルがあれば添付します。</li>
+        <li>入力し終えたら、画面下の<strong>「保存する」</strong>ボタンを押します。</li>
+      </ol>
+
+      <h2 class="help-h2">2. 保存した申請を印刷・PDF化する</h2>
+      <ol class="help-steps">
+        <li><strong>「申請一覧・印刷」</strong>タブを開きます。</li>
+        <li>一覧から該当する申請の行にある<strong>「印刷」</strong>ボタンを押します。</li>
+        <li>原紙レイアウトのプレビュー画面が開きます。内容を確認してください。</li>
+        <li>画面上部の<strong>「PDFダウンロードして印刷」</strong>ボタンを押すと、①この内容がPDFファイルとしてダウンロードされ、②続けてブラウザの印刷ダイアログが自動で開きます。</li>
+        <li>印刷ダイアログで、送信先（プリンター）・部数を確認し、印刷してください。</li>
+        <li>用紙に印刷する必要が無い場合は、ダウンロードされたPDFファイルをそのまま保存・共有しても構いません。</li>
+        <li>確認だけで印刷しない場合は<strong>「閉じる」</strong>ボタンでプレビューを閉じられます。</li>
+      </ol>
+
+      <h2 class="help-h2">3. 申請内容を修正・削除する</h2>
+      <ol class="help-steps">
+        <li>「申請一覧・印刷」タブの一覧から、該当する申請の<strong>「編集」</strong>ボタンを押すと、入力内容を呼び出して修正できます。</li>
+        <li>不要になった申請は<strong>「削除」</strong>ボタンで削除できます（削除すると元に戻せません）。</li>
+      </ol>
+
+      <h2 class="help-h2">4. 一覧の検索・絞り込み</h2>
+      <ol class="help-steps">
+        <li>一覧上部の検索欄に、科目・部署・主題・担当者などのキーワードを入力すると絞り込めます。</li>
+        <li>年度のプルダウンから、特定の年度の申請だけに絞り込めます。</li>
+        <li>特定の工事・案件だけを常に見られるようにしたい場合は、タブの一番右にある<strong>「＋ タブ増設」</strong>から専用タブを追加できます。</li>
+      </ol>
+
+      <p class="help-note">※ 印刷や表示がおかしい場合は、ブラウザの再読み込み（Ctrl+Shift+R など）を試してから、改めてご確認ください。</p>
+    </div>
+  </div>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -524,8 +570,7 @@
   <div>
     <div class="print-toolbar">
       <button class="close" onclick="closePrint()">閉じる</button>
-      <button class="pdf" id="pdf-download-btn" onclick="downloadPdf()">PDFダウンロード</button>
-      <button class="go" onclick="window.print()">この内容で印刷</button>
+      <button class="pdf" id="pdf-download-btn" onclick="downloadPdfAndPrint()">PDFダウンロードして印刷</button>
     </div>
     <div class="sheet-frame" id="sheet-frame">
     <div class="sheet">
@@ -719,6 +764,7 @@ async function submitAddTab(){
 function switchTab(name){
   document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active', b.dataset.tab===name));
   document.getElementById('tab-new').style.display = name==='new' ? 'block':'none';
+  document.getElementById('tab-help').style.display = name==='help' ? 'block':'none';
   const projectTab = PROJECT_TABS.find(t => t.id === name);
   const isListLike = name==='list' || !!projectTab;
   document.getElementById('tab-list').style.display = isListLike ? 'block':'none';
@@ -1212,7 +1258,7 @@ function downloadPdf(){
   const sheet = document.querySelector('#print-overlay .sheet');
   if(!sheet || !window.htmlToImage || !window.jspdf){
     alert('PDF作成の準備ができていません。少し待ってからもう一度お試しください。');
-    return;
+    return Promise.resolve(false);
   }
   const prevLabel = btn.textContent;
   btn.disabled = true;
@@ -1229,38 +1275,48 @@ function downloadPdf(){
   sheet.style.border = 'none'; // 画面プレビュー用の薄い枠線がPDFに写り込まないよう一時的に消す
 
   // transform解除がレイアウトに反映されるのを一拍待ってから計測・キャプチャする
-  requestAnimationFrame(() => requestAnimationFrame(() => {
-    htmlToImage.toCanvas(sheet, { pixelRatio: 4, backgroundColor: '#ffffff' })
-      .then(canvas => {
-        const pxPerMm = 96 / 25.4;
-        const rect = sheet.getBoundingClientRect();
-        const widthMm = rect.width / pxPerMm;
-        const heightMm = rect.height / pxPerMm;
-        const pageWidthMm = 257, pageHeightMm = 182;
-        const marginX = Math.max(0, (pageWidthMm - widthMm) / 2) + 5;
-        const marginY = Math.max(0, (pageHeightMm - heightMm) / 2);
+  return new Promise((resolve) => {
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      htmlToImage.toCanvas(sheet, { pixelRatio: 4, backgroundColor: '#ffffff' })
+        .then(canvas => {
+          const pxPerMm = 96 / 25.4;
+          const rect = sheet.getBoundingClientRect();
+          const widthMm = rect.width / pxPerMm;
+          const heightMm = rect.height / pxPerMm;
+          const pageWidthMm = 257, pageHeightMm = 182;
+          const marginX = Math.max(0, (pageWidthMm - widthMm) / 2) + 5;
+          const marginY = Math.max(0, (pageHeightMm - heightMm) / 2);
 
-        const { jsPDF } = window.jspdf;
-        const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: [pageWidthMm, pageHeightMm] });
-        const imgData = canvas.toDataURL('image/png');
-        pdf.addImage(imgData, 'PNG', marginX, marginY, widthMm, heightMm);
+          const { jsPDF } = window.jspdf;
+          const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: [pageWidthMm, pageHeightMm] });
+          const imgData = canvas.toDataURL('image/png');
+          pdf.addImage(imgData, 'PNG', marginX, marginY, widthMm, heightMm);
 
-        const subjectText = (document.getElementById('p-subject').textContent || '予想経費申請書').trim();
-        const fname = (subjectText.slice(0, 30) || '予想経費申請書') + '.pdf';
-        pdf.save(fname);
-      })
-      .catch(err => {
-        console.error(err);
-        alert('PDFの作成に失敗しました。時間をおいてもう一度お試しください。');
-      })
-      .finally(() => {
-        sheet.style.transform = prevTransform;
-        sheet.style.transformOrigin = prevTransformOrigin;
-        sheet.style.border = prevBorder;
-        btn.disabled = false;
-        btn.textContent = prevLabel;
-      });
-  }));
+          const subjectText = (document.getElementById('p-subject').textContent || '予想経費申請書').trim();
+          const fname = (subjectText.slice(0, 30) || '予想経費申請書') + '.pdf';
+          pdf.save(fname);
+          resolve(true);
+        })
+        .catch(err => {
+          console.error(err);
+          alert('PDFの作成に失敗しました。時間をおいてもう一度お試しください。');
+          resolve(false);
+        })
+        .finally(() => {
+          sheet.style.transform = prevTransform;
+          sheet.style.transformOrigin = prevTransformOrigin;
+          sheet.style.border = prevBorder;
+          btn.disabled = false;
+          btn.textContent = prevLabel;
+        });
+    }));
+  });
+}
+
+function downloadPdfAndPrint(){
+  downloadPdf().then(ok => {
+    if(ok) window.print();
+  });
 }
 
 document.getElementById('f-submit-date').value = new Date().toISOString().slice(0,10);
