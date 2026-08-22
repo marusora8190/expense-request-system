@@ -337,7 +337,7 @@
     }
     .sheet-frame{
       width:auto !important;height:auto !important;overflow:visible !important;margin:0 auto !important;
-      transform:translateX(5mm) !important;
+      transform:translateX(10mm) !important;
     }
     .sheet{
       border:none !important;width:245mm !important;margin:0 auto !important;padding:0 !important;
@@ -696,8 +696,16 @@ async function sb(path, opts={}){
     const t = await res.text().catch(()=> "");
     throw new Error(`Supabase error ${res.status}: ${t}`);
   }
-  if(res.status===204) return null;
-  return res.json();
+  // Prefer:return=minimal を付けたPOST/PATCHは200番台でも本文が空で返ってくることがあるため、
+  // ステータスコードだけで判断せず、実際の中身が空かどうかを見てから解析する
+  const text = await res.text();
+  if(!text) return null;
+  try{
+    return JSON.parse(text);
+  }catch(e){
+    console.warn('Supabaseの応答をJSONとして解析できませんでした:', text);
+    return null;
+  }
 }
 
 const PDF_BUCKET = 'expense-pdfs';
@@ -1223,7 +1231,7 @@ function escapeHtml2(s){
 function fmtReiwaLine(dateStr, suffixHtml, tight){
   const p = toReiwaParts(dateStr);
   const gap1 = tight ? ' ' : '　　　';
-  const gap2 = tight ? ' ' : '　　　　';
+  const gap2 = tight ? ' ' : '　　';
   if(!p){
     return `<span class="rl">令和</span>${gap1}<span class="rl">年</span>${gap2}<span class="rl">月</span>${gap2}<span class="rl">日</span><span class="suffix">${suffixHtml}</span>`;
   }
