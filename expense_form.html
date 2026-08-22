@@ -201,6 +201,7 @@
   }
   .print-toolbar button{padding:10px 20px;border-radius:8px;font-size:14px;font-weight:600;}
   .print-toolbar .go{background:var(--ink);color:#fff;}
+  .print-toolbar .go:disabled{opacity:.6;cursor:wait;}
   .print-toolbar .close{background:#fff;color:var(--text);}
   .print-toolbar .pdf{background:#2f6f4e;color:#fff;}
   .print-toolbar .pdf:hover{background:#255a3f;}
@@ -534,9 +535,8 @@
         <li><strong>「申請一覧・印刷」</strong>タブを開きます。</li>
         <li>一覧から該当する申請の行にある<strong>「印刷」</strong>ボタンを押します。</li>
         <li>原紙レイアウトのプレビュー画面が開きます。内容を確認してください。</li>
-        <li>画面上部の<strong>「PDFダウンロード」</strong>ボタンを押すと、この内容がPDFファイルとしてダウンロードされます。</li>
-        <li>ダウンロードされたPDFファイルを開き、そこから印刷（送信先・部数の確認など）や、保存・共有を行ってください。</li>
-        <li>用紙に印刷する必要が無い場合は、ダウンロードされたPDFファイルをそのまま保存・共有しても構いません。</li>
+        <li>そのまま印刷したい場合は、画面上部の<strong>「印刷」</strong>ボタンを押してください。裏側でPDFを作ってから印刷ダイアログを開くので、ブラウザの印刷機能を直接使うよりも縮小などのトラブルが起きにくくなっています。</li>
+        <li>ファイルとして保存・共有したい場合は<strong>「PDFダウンロード」</strong>ボタンを押すと、この内容がPDFファイルとしてダウンロードされます。</li>
         <li>確認だけで印刷しない場合は<strong>「閉じる」</strong>ボタンでプレビューを閉じられます。</li>
         <li>一覧の各行にある<strong>「ファイル」</strong>ボタンからは、その申請に添付した見積書・明細書などのPDFファイルをそのまま開けます（新しいタブで開くので、そこから印刷・保存ができます）。</li>
       </ol>
@@ -587,6 +587,7 @@
   <div>
     <div class="print-toolbar">
       <button class="close" onclick="closePrint()">閉じる</button>
+      <button class="go" id="pdf-print-btn" onclick="printViaPdf()">印刷</button>
       <button class="pdf" id="pdf-download-btn" onclick="downloadPdf()">PDFダウンロード</button>
     </div>
     <div class="sheet-frame" id="sheet-frame">
@@ -1304,20 +1305,13 @@ window.addEventListener('resize', () => {
   if(document.getElementById('print-overlay').classList.contains('show')) fitSheetToScreen();
 });
 
-function closePrint(){
-  document.getElementById('print-overlay').classList.remove('show');
-}
-
-function downloadPdf(){
-  const btn = document.getElementById('pdf-download-btn');
+// .sheetを実寸でキャプチャしてjsPDFのPDFオブジェクトを作る共通処理。
+// ダウンロード・印刷どちらのボタンからも、この結果を使い回す。
+function buildExpensePdf(){
   const sheet = document.querySelector('#print-overlay .sheet');
   if(!sheet || !window.htmlToImage || !window.jspdf){
-    alert('PDF作成の準備ができていません。少し待ってからもう一度お試しください。');
-    return Promise.resolve(false);
+    return Promise.reject(new Error('PDF作成の準備ができていません。少し待ってからもう一度お試しください。'));
   }
-  const prevLabel = btn.textContent;
-  btn.disabled = true;
-  btn.textContent = '作成中…';
 
   // 画面幅に収めるための表示用スケール（fitSheetToScreenが transform:scale() で
   // 縮小している）が掛かっている場合、PDFに縮小後のサイズが使われてしまうため、
@@ -1332,7 +1326,7 @@ function downloadPdf(){
   sheet.style.padding = '0'; // 画面表示用の余白も一時的に除去し、印刷時と同じ余白でキャプチャする
 
   // transform解除がレイアウトに反映されるのを一拍待ってから計測・キャプチャする
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     requestAnimationFrame(() => requestAnimationFrame(() => {
       htmlToImage.toCanvas(sheet, { pixelRatio: 4, backgroundColor: '#ffffff' })
         .then(canvas => {
@@ -1351,24 +1345,91 @@ function downloadPdf(){
 
           const subjectText = (document.getElementById('p-subject').textContent || '予想経費申請書').trim();
           const fname = (subjectText.slice(0, 30) || '予想経費申請書') + '.pdf';
-          pdf.save(fname);
-          resolve(true);
+          resolve({ pdf, fname });
         })
-        .catch(err => {
-          console.error(err);
-          alert('PDFの作成に失敗しました。時間をおいてもう一度お試しください。');
-          resolve(false);
-        })
+        .catch(reject)
         .finally(() => {
           sheet.style.transform = prevTransform;
           sheet.style.transformOrigin = prevTransformOrigin;
           sheet.style.border = prevBorder;
           sheet.style.padding = prevPadding;
-          btn.disabled = false;
-          btn.textContent = prevLabel;
         });
     }));
   });
+}
+
+function closePrint(){
+  document.getElementById('print-overlay').classList.remove('show');
+}
+
+function downloadPdf(){
+  const btn = document.getElementById('pdf-download-btn');
+  const prevLabel = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = '作成中…';
+
+  return buildExpensePdf()
+    .then(({ pdf, fname }) => {
+      pdf.save(fname);
+      return true;
+    })
+    .catch(err => {
+      console.error(err);
+      alert('PDFの作成に失敗しました。時間をおいてもう一度お試しください。');
+      return false;
+    })
+    .finally(() => {
+      btn.disabled = false;
+      btn.textContent = prevLabel;
+    });
+}
+
+// PDFを生成し、そのPDFを使ってブラウザの印刷ダイアログを開く。
+// (@media printのCSSに頼らず、PDFダウンロードと全く同じ内容・サイズで印刷できる)
+function printViaPdf(){
+  const btn = document.getElementById('pdf-print-btn');
+  const prevLabel = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = '準備中…';
+
+  buildExpensePdf()
+    .then(({ pdf }) => {
+      const blobUrl = pdf.output('bloburl');
+      const iframe = document.createElement('iframe');
+      iframe.style.position = 'fixed';
+      iframe.style.right = '0';
+      iframe.style.bottom = '0';
+      iframe.style.width = '0';
+      iframe.style.height = '0';
+      iframe.style.border = '0';
+      iframe.src = blobUrl;
+      document.body.appendChild(iframe);
+      iframe.onload = () => {
+        setTimeout(() => {
+          try{
+            iframe.contentWindow.focus();
+            iframe.contentWindow.print();
+          }catch(e){
+            console.error(e);
+            // 埋め込みでの印刷がブロックされた場合は、新しいタブでPDFを開いて
+            // そちらから印刷してもらう
+            window.open(blobUrl, '_blank');
+          }
+        }, 300);
+      };
+      // 印刷ダイアログを閉じた後もiframeが残り続けないよう、少し時間をおいて片付ける
+      setTimeout(() => {
+        document.body.removeChild(iframe);
+      }, 60000);
+    })
+    .catch(err => {
+      console.error(err);
+      alert('印刷用PDFの作成に失敗しました。時間をおいてもう一度お試しください。');
+    })
+    .finally(() => {
+      btn.disabled = false;
+      btn.textContent = prevLabel;
+    });
 }
 
 document.getElementById('f-submit-date').value = new Date().toISOString().slice(0,10);
