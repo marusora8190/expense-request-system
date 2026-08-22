@@ -1106,27 +1106,20 @@ function buildApproveStampDataUrl(text){
   const fontSize = 26 * scale;
   const paddingX = 18 * scale;
   const paddingY = 8 * scale;
-  const borderWidth = 3 * scale;
 
   const measureCanvas = document.createElement('canvas');
   const mctx = measureCanvas.getContext('2d');
-  mctx.font = `bold ${fontSize}px "Meiryo","Hiragino Sans",sans-serif`;
+  mctx.font = `bold ${fontSize}px "HG正楷書体-PRO","HGSeikaishotaiPRO","Hiragino Mincho ProN",serif`;
   const textWidth = mctx.measureText(text).width;
 
   const canvas = document.createElement('canvas');
   canvas.width = Math.ceil(textWidth + paddingX * 2);
   canvas.height = Math.ceil(fontSize * 1.5 + paddingY * 2);
   const ctx = canvas.getContext('2d');
-
-  ctx.fillStyle = '#ffffff';
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-  ctx.strokeStyle = '#d21212';
-  ctx.lineWidth = borderWidth;
-  ctx.strokeRect(borderWidth/2, borderWidth/2, canvas.width - borderWidth, canvas.height - borderWidth);
+  // 背景は塗らず透明のままにする(枠・白背景なしで赤文字だけをPDFに重ねる)
 
   ctx.fillStyle = '#d21212';
-  ctx.font = `bold ${fontSize}px "Meiryo","Hiragino Sans",sans-serif`;
+  ctx.font = `bold ${fontSize}px "HG正楷書体-PRO","HGSeikaishotaiPRO","Hiragino Mincho ProN",serif`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillText(text, canvas.width/2, canvas.height/2 + fontSize*0.05);
