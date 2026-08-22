@@ -1166,11 +1166,15 @@ async function openAttachedFile(id, evt){
     const stamp = buildApproveStampDataUrl(`${approveMD} 会計承認`);
     const pngImage = await pdfDoc.embedPng(stamp.dataUrl);
 
-    // スタンプの表示幅をページ幅の約28%を目安にし、縦横比を保ったまま縮小する
-    const drawWidth = Math.min(pageWidth * 0.28, 170);
+    // 「正」マークのすぐ右隣（ページ左上付近）に配置する。
+    // 1mm = 2.8346pt として、左上端から右へ約24mm・下へ約14mm の位置を中心に置く
+    const mmToPt = 2.8346;
+    const drawWidth = Math.min(pageWidth * 0.22, 130);
     const drawHeight = drawWidth * (stamp.height / stamp.width);
-    const x = (pageWidth - drawWidth) / 2;
-    const y = pageHeight * 0.12; // 中央下部: 下端から少し余白を取った位置
+    const centerXPt = 24 * mmToPt;
+    const centerYFromTopPt = 14 * mmToPt;
+    const x = centerXPt;
+    const y = pageHeight - centerYFromTopPt - drawHeight / 2;
 
     page.drawImage(pngImage, { x, y, width: drawWidth, height: drawHeight });
 
