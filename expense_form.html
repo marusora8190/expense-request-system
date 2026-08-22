@@ -83,6 +83,15 @@
     outline:none;border-color:var(--ink);box-shadow:0 0 0 3px rgba(165,42,32,.1);
   }
   .field textarea{resize:vertical;min-height:64px;}
+  /* 実施の概要・予備欄: 印刷レイアウトと同じ行間隔で薄い横罫線を引き、
+     どこまでで何行分かひと目で分かるようにする */
+  .field textarea.ruled-textarea{
+    line-height:26px;
+    background-color:#fffefb;
+    background-image:repeating-linear-gradient(to bottom, transparent 0 25px, #e3dcc9 25px 26px);
+    background-origin:content-box;
+    background-attachment:local;
+  }
   .field-hint{font-size:11.5px;color:var(--muted);margin-top:4px;}
   #f-subject{min-height:62px;height:62px;resize:vertical;line-height:1.4;}
   .pdf-current-note{font-size:13px;color:#000;margin-bottom:6px;}
@@ -287,7 +296,7 @@
   .cost-note{flex:1;display:flex;align-items:center;justify-content:center;font-size:13px;padding-left:12px;letter-spacing:.15em;}
 
   .text-block-row .label-col{flex:0 0 34px;}
-  .text-block{flex:1;padding:2px 14px 4px 28px;font-size:13.5px;line-height:2;white-space:pre-wrap;box-sizing:border-box;display:flex;align-items:flex-start;}
+  .text-block{flex:1;padding:2px 14px 4px 28px;font-size:13.5px;line-height:2.44;white-space:pre-wrap;box-sizing:border-box;display:flex;align-items:flex-start;}
   .text-block-row .text-block{
     background-image:
       repeating-linear-gradient(to right, var(--ink) 0 1.5px, transparent 1.5px 5.5px),
@@ -317,6 +326,13 @@
   .remarks-row .label-col .rl-sub-col{font-size:9px;font-weight:500;letter-spacing:.05em;line-height:1.2;}
   .remarks-row .label-col .rl-sub-bracket{font-size:11px;line-height:1;display:block;transform:scaleX(2.2);}
   .remarks-row .label-col .rl-main{font-size:14px;font-weight:700;}
+
+  .approve-stamp{
+    position:absolute; left:50%; bottom:8mm; transform:translateX(-50%);
+    font-size:22pt; font-weight:700; color:#d21212;
+    border:1.5px solid #d21212; padding:2px 14px; white-space:nowrap;
+    background:rgba(255,255,255,.85); pointer-events:none;
+  }
   .sheet-footer{width:233mm;text-align:right;font-size:11px;color:var(--ink);padding:6px 4px 0;letter-spacing:.05em;box-sizing:border-box;}
 
 
@@ -437,11 +453,11 @@
 
       <div class="field full">
         <label>実施の概要</label>
-        <textarea id="f-overview" rows="4" placeholder="工事・購入等の内容を記入"></textarea>
+        <textarea id="f-overview" class="ruled-textarea" rows="4" placeholder="工事・購入等の内容を記入"></textarea>
       </div>
       <div class="field full">
         <label>予備（変更等使用時に・原紙印刷欄）</label>
-        <textarea id="f-remarks" rows="6" placeholder="変更等があった場合の記録欄"></textarea>
+        <textarea id="f-remarks" class="ruled-textarea" rows="6" placeholder="変更等があった場合の記録欄"></textarea>
       </div>
 
       <div class="field">
@@ -646,12 +662,13 @@
           <div class="text-block user-input" id="p-overview"></div>
         </div>
 
-        <div class="row text-block-row remarks-row">
+        <div class="row text-block-row remarks-row" style="position:relative;">
           <div class="label-col">
             <span class="rl-main">予　備</span>
             <span class="rl-sub"><span class="rl-sub-bracket">（</span><span class="rl-sub-cols"><span class="rl-sub-col">時に使用</span><span class="rl-sub-col">変更等の</span></span><span class="rl-sub-bracket">）</span></span>
           </div>
           <div class="text-block user-input" id="p-remarks"></div>
+          <div class="approve-stamp" id="p-approve-stamp" style="display:none;"></div>
         </div>
       </div>
       <div class="sheet-footer">182.　10　(50×10)</div>
@@ -1250,6 +1267,14 @@ function digitCells(amount){
   return str.split('').map((c,i)=> i<firstNonZero ? '' : c);
 }
 
+// 会計承認日から「8/22」のような月/日表記を作る(年・0埋めなし)
+function fmtMonthDaySlash(dateStr){
+  if(!dateStr) return '';
+  const d = new Date(dateStr+'T00:00:00');
+  if(isNaN(d.getTime())) return '';
+  return `${d.getMonth()+1}/${d.getDate()}`;
+}
+
 function openPrint(id){
   const r = cachedList.find(x=>x.id===id);
   if(!r) return;
@@ -1262,6 +1287,16 @@ function openPrint(id){
   document.getElementById('p-budget').textContent = r.budget_category || '';
   document.getElementById('p-overview').textContent = r.overview || '';
   document.getElementById('p-remarks').textContent = r.remarks || '';
+
+  const stamp = document.getElementById('p-approve-stamp');
+  const approveMD = fmtMonthDaySlash(r.accounting_approve_date);
+  if(approveMD){
+    stamp.textContent = `${approveMD}　会計承認`;
+    stamp.style.display = '';
+  }else{
+    stamp.textContent = '';
+    stamp.style.display = 'none';
+  }
 
   const cells = digitCells(r.total_cost);
   document.getElementById('p-cost-cells').innerHTML = cells.map(c=>`<div>${c}</div>`).join('');
