@@ -1352,10 +1352,13 @@ function escapeHtml2(s){
 // get even letter-spacing and the inserted numbers stay tight/unspaced.
 function fmtReiwaLine(dateStr, suffixHtml, tight){
   const p = toReiwaParts(dateStr);
-  const gap1 = tight ? ' ' : '　　　';
+  const gap1 = ' ';
   const gap2 = tight ? ' ' : '　';
+  // 空欄時: 日付が入っているときに数字が占める幅の分だけ、代わりに空白を入れて
+  // 「年」「月」「日」の間隔が数字入り時と同じ見た目になるようにする
+  const numPlaceholder = tight ? '' : '<span class="num" style="visibility:hidden;"> 00 </span>';
   if(!p){
-    return `<span class="rl">令和</span>${gap1}<span class="rl">年</span>${gap2}<span class="rl">月</span>${gap2}<span class="rl">日</span><span class="suffix">${suffixHtml}</span>`;
+    return `<span class="rl">令和</span>${gap1}<span class="rl">年</span>${gap2}${numPlaceholder}<span class="rl">月</span>${gap2}${numPlaceholder}<span class="rl">日</span><span class="suffix">${suffixHtml}</span>`;
   }
   const yearPart = p.eraLabel === '令和'
     ? `<span class="rl">令和</span> <span class="num">${p.y}</span> <span class="rl">年</span>`
