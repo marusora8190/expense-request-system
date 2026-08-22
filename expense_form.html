@@ -212,7 +212,7 @@
     font-family:"Hiragino Mincho ProN","Yu Mincho","YuMincho","Noto Serif JP",serif;color:var(--ink);
     border:1px solid #ddd;box-sizing:border-box;
   }
-  .sheet-inner{border:1.5px solid var(--ink);width:220mm;}
+  .sheet-inner{border:1.5px solid var(--ink);width:228mm;}
   .user-input{font-family:"Meiryo UI","Meiryo",sans-serif;color:#000;font-weight:400;}
   .num{font-family:"Meiryo UI","Meiryo",sans-serif;color:#000;font-weight:400;}
   .row{display:flex;border-bottom:1.5px solid var(--ink);}
@@ -248,7 +248,7 @@
   #p-department{font-family:"Meiryo UI","Meiryo",sans-serif;color:#000;font-weight:400;font-size:14.5px;position:relative;top:-1mm;}
   .dept-bracket{display:inline-flex;align-items:center;}
 
-  .submit-date{text-align:right;font-size:13px;padding:6px 0 0;white-space:nowrap;width:220mm;margin:0;box-sizing:border-box;font-family:"MS Mincho","MS 明朝","Hiragino Mincho ProN",serif;}
+  .submit-date{text-align:right;font-size:13px;padding:6px 0 0;white-space:nowrap;width:228mm;margin:0;box-sizing:border-box;font-family:"MS Mincho","MS 明朝","Hiragino Mincho ProN",serif;}
   .rl{letter-spacing:.1em;font-family:"MS Mincho","MS 明朝","Hiragino Mincho ProN",serif;}
   .num{letter-spacing:0;padding:0 2px;font-variant-numeric:tabular-nums;}
   .suffix{letter-spacing:0;font-family:"MS Mincho","MS 明朝","Hiragino Mincho ProN",serif;}
@@ -316,7 +316,7 @@
   .remarks-row .label-col .rl-sub-col{font-size:9px;font-weight:500;letter-spacing:.05em;line-height:1.2;}
   .remarks-row .label-col .rl-sub-bracket{font-size:11px;line-height:1;display:block;transform:scaleX(2.2);}
   .remarks-row .label-col .rl-main{font-size:14px;font-weight:700;}
-  .sheet-footer{width:220mm;text-align:right;font-size:11px;color:var(--ink);padding:6px 4px 0;letter-spacing:.05em;box-sizing:border-box;}
+  .sheet-footer{width:228mm;text-align:right;font-size:11px;color:var(--ink);padding:6px 4px 0;letter-spacing:.05em;box-sizing:border-box;}
 
 
   @media print{
@@ -614,10 +614,10 @@
       <div class="sheet-inner" style="margin-top:8px;">
         <div class="row plan-row">
           <div class="label-col">予定</div>
-          <div class="cell" style="flex:2;">
+          <div class="cell" style="flex:0 0 calc(50% - 10mm);">
             <span id="p-start-date">令和　　　年　　　　月　　　　日　　着 工 予 定</span>
           </div>
-          <div class="cell" style="flex:2;">
+          <div class="cell" style="flex:0 0 50%;">
             <span id="p-end-date">令和　　　年　　　　月　　　　日　　終 了 予 定</span>
           </div>
         </div>
