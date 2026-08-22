@@ -327,12 +327,6 @@
   .remarks-row .label-col .rl-sub-bracket{font-size:11px;line-height:1;display:block;transform:scaleX(2.2);}
   .remarks-row .label-col .rl-main{font-size:14px;font-weight:700;}
 
-  .approve-stamp{
-    position:absolute; left:50%; bottom:8mm; transform:translateX(-50%);
-    font-size:22pt; font-weight:700; color:#d21212;
-    border:1.5px solid #d21212; padding:2px 14px; white-space:nowrap;
-    background:rgba(255,255,255,.85); pointer-events:none;
-  }
   .sheet-footer{width:233mm;text-align:right;font-size:11px;color:var(--ink);padding:6px 4px 0;letter-spacing:.05em;box-sizing:border-box;}
 
 
@@ -662,13 +656,12 @@
           <div class="text-block user-input" id="p-overview"></div>
         </div>
 
-        <div class="row text-block-row remarks-row" style="position:relative;">
+        <div class="row text-block-row remarks-row">
           <div class="label-col">
             <span class="rl-main">予　備</span>
             <span class="rl-sub"><span class="rl-sub-bracket">（</span><span class="rl-sub-cols"><span class="rl-sub-col">時に使用</span><span class="rl-sub-col">変更等の</span></span><span class="rl-sub-bracket">）</span></span>
           </div>
           <div class="text-block user-input" id="p-remarks"></div>
-          <div class="approve-stamp" id="p-approve-stamp" style="display:none;"></div>
         </div>
       </div>
       <div class="sheet-footer">182.　10　(50×10)</div>
@@ -678,6 +671,7 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/html-to-image@1.11.13/dist/html-to-image.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 <script>
 const SUPABASE_URL = "https://zhxuntrhxnrssqpvcmvl.supabase.co";
@@ -1079,7 +1073,7 @@ function renderList(){
             <button class="icon-btn edit" onclick="editRequest('${r.id}')">編集</button>
             <button class="icon-btn print" onclick="openPrint('${r.id}')">印刷</button>
             ${r.pdf_url
-              ? `<a class="icon-btn pdf pdf-attached" href="${r.pdf_url}" target="_blank" rel="noopener" title="添付の見積書・明細書PDFを開く（印刷・保存はブラウザのPDF表示画面から。PDF No.: ${escapeHtml(r.pdf_no||'—')}）">ファイル</a>`
+              ? `<button class="icon-btn pdf pdf-attached" onclick="openAttachedFile('${r.id}', event)" title="添付の見積書・明細書PDFを開く（会計承認日が入力済みの場合はスタンプ入りで開きます。PDF No.: ${escapeHtml(r.pdf_no||'—')}）">ファイル</button>`
               : `<button class="icon-btn pdf pdf-none" onclick="copyPdfNo('${escapeHtml(r.pdf_no||'')}')" title="添付の見積書・明細書PDF未添付。PDF No.: ${escapeHtml(r.pdf_no||'—')}（クリックで番号をコピー）">ファイル</button>`
             }
           </div>
@@ -1095,6 +1089,116 @@ async function copyPdfNo(pdfNo){
     showToast(`PDF No.「${pdfNo}」をコピーしました`);
   }catch(e){
     showToast(`PDF No.: ${pdfNo}`);
+  }
+}
+
+// 会計承認日から「8/22」のような月/日表記を作る(年・0埋めなし)
+function fmtMonthDaySlash(dateStr){
+  if(!dateStr) return '';
+  const d = new Date(dateStr+'T00:00:00');
+  if(isNaN(d.getTime())) return '';
+  return `${d.getMonth()+1}/${d.getDate()}`;
+}
+
+// 「8/22　会計承認」の見た目(赤字太字+赤枠)をcanvasに描画し、PNGのdataURLを返す
+function buildApproveStampDataUrl(text){
+  const scale = 4; // 高解像度で描画してからPDFに埋め込む
+  const fontSize = 26 * scale;
+  const paddingX = 18 * scale;
+  const paddingY = 8 * scale;
+  const borderWidth = 3 * scale;
+
+  const measureCanvas = document.createElement('canvas');
+  const mctx = measureCanvas.getContext('2d');
+  mctx.font = `bold ${fontSize}px "Meiryo","Hiragino Sans",sans-serif`;
+  const textWidth = mctx.measureText(text).width;
+
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.ceil(textWidth + paddingX * 2);
+  canvas.height = Math.ceil(fontSize * 1.5 + paddingY * 2);
+  const ctx = canvas.getContext('2d');
+
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  ctx.strokeStyle = '#d21212';
+  ctx.lineWidth = borderWidth;
+  ctx.strokeRect(borderWidth/2, borderWidth/2, canvas.width - borderWidth, canvas.height - borderWidth);
+
+  ctx.fillStyle = '#d21212';
+  ctx.font = `bold ${fontSize}px "Meiryo","Hiragino Sans",sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(text, canvas.width/2, canvas.height/2 + fontSize*0.05);
+
+  return { dataUrl: canvas.toDataURL('image/png'), width: canvas.width, height: canvas.height };
+}
+
+// 「ファイル」ボタン: 添付PDFを開く。会計承認日が入力されていれば、
+// 1ページ目の中央下部に「M/D 会計承認」のスタンプを合成してから開く。
+async function openAttachedFile(id, evt){
+  const r = cachedList.find(x=>x.id===id);
+  if(!r || !r.pdf_url) return;
+
+  const approveMD = fmtMonthDaySlash(r.accounting_approve_date);
+  if(!approveMD){
+    window.open(r.pdf_url, '_blank', 'noopener');
+    return;
+  }
+
+  const btn = evt && evt.currentTarget ? evt.currentTarget : null;
+  const prevLabel = btn ? btn.textContent : null;
+  if(btn){ btn.disabled = true; btn.textContent = '処理中…'; }
+
+  // ポップアップブロック対策: 非同期処理(fetch等)を挟む前に、クリック操作の流れの中で
+  // 同期的に空のタブを開いておき、スタンプ合成が終わったらそこへ読み込ませる
+  const newTab = window.open('', '_blank');
+  if(newTab){
+    newTab.document.write('読み込み中…');
+  }
+
+  try{
+    if(!window.PDFLib) throw new Error('PDF編集ライブラリの読み込みに失敗しました');
+    const existingPdfBytes = await fetch(r.pdf_url).then(res => {
+      if(!res.ok) throw new Error(`添付PDFの取得に失敗しました(${res.status})`);
+      return res.arrayBuffer();
+    });
+
+    const { PDFDocument } = window.PDFLib;
+    const pdfDoc = await PDFDocument.load(existingPdfBytes);
+    const page = pdfDoc.getPages()[0];
+    if(!page) throw new Error('PDFにページがありません');
+    const { width: pageWidth, height: pageHeight } = page.getSize();
+
+    const stamp = buildApproveStampDataUrl(`${approveMD}　会計承認`);
+    const pngImage = await pdfDoc.embedPng(stamp.dataUrl);
+
+    // スタンプの表示幅をページ幅の約28%を目安にし、縦横比を保ったまま縮小する
+    const drawWidth = Math.min(pageWidth * 0.28, 170);
+    const drawHeight = drawWidth * (stamp.height / stamp.width);
+    const x = (pageWidth - drawWidth) / 2;
+    const y = pageHeight * 0.12; // 中央下部: 下端から少し余白を取った位置
+
+    page.drawImage(pngImage, { x, y, width: drawWidth, height: drawHeight });
+
+    const stampedBytes = await pdfDoc.save();
+    const blob = new Blob([stampedBytes], { type: 'application/pdf' });
+    const blobUrl = URL.createObjectURL(blob);
+    if(newTab && !newTab.closed){
+      newTab.location.href = blobUrl;
+    }else{
+      window.open(blobUrl, '_blank', 'noopener');
+    }
+  }catch(e){
+    console.error(e);
+    alert('スタンプの合成に失敗したため、元のPDFをそのまま開きます。\n' + e.message);
+    if(newTab && !newTab.closed){
+      newTab.location.href = r.pdf_url;
+    }else{
+      window.open(r.pdf_url, '_blank', 'noopener');
+    }
+  }finally{
+    if(btn){ btn.disabled = false; btn.textContent = prevLabel; }
   }
 }
 
@@ -1249,7 +1353,7 @@ function escapeHtml2(s){
 function fmtReiwaLine(dateStr, suffixHtml, tight){
   const p = toReiwaParts(dateStr);
   const gap1 = tight ? ' ' : '　　　';
-  const gap2 = tight ? ' ' : '　　';
+  const gap2 = tight ? ' ' : '　';
   if(!p){
     return `<span class="rl">令和</span>${gap1}<span class="rl">年</span>${gap2}<span class="rl">月</span>${gap2}<span class="rl">日</span><span class="suffix">${suffixHtml}</span>`;
   }
@@ -1267,14 +1371,6 @@ function digitCells(amount){
   return str.split('').map((c,i)=> i<firstNonZero ? '' : c);
 }
 
-// 会計承認日から「8/22」のような月/日表記を作る(年・0埋めなし)
-function fmtMonthDaySlash(dateStr){
-  if(!dateStr) return '';
-  const d = new Date(dateStr+'T00:00:00');
-  if(isNaN(d.getTime())) return '';
-  return `${d.getMonth()+1}/${d.getDate()}`;
-}
-
 function openPrint(id){
   const r = cachedList.find(x=>x.id===id);
   if(!r) return;
@@ -1287,16 +1383,6 @@ function openPrint(id){
   document.getElementById('p-budget').textContent = r.budget_category || '';
   document.getElementById('p-overview').textContent = r.overview || '';
   document.getElementById('p-remarks').textContent = r.remarks || '';
-
-  const stamp = document.getElementById('p-approve-stamp');
-  const approveMD = fmtMonthDaySlash(r.accounting_approve_date);
-  if(approveMD){
-    stamp.textContent = `${approveMD}　会計承認`;
-    stamp.style.display = '';
-  }else{
-    stamp.textContent = '';
-    stamp.style.display = 'none';
-  }
 
   const cells = digitCells(r.total_cost);
   document.getElementById('p-cost-cells').innerHTML = cells.map(c=>`<div>${c}</div>`).join('');
