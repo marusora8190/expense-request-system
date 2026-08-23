@@ -564,7 +564,8 @@
 
       <h2 class="help-h2">4. 一覧の検索・絞り込み</h2>
       <ol class="help-steps">
-        <li>一覧上部の検索欄に、科目・部署・主題・担当者などのキーワードを入力すると絞り込めます。</li>
+        <li>一覧上部の検索欄に、科目・部署・主題・担当者などのキーワードを入力すると絞り込めます（スペース区切りで複数入力すると、すべてに一致する申請だけに絞り込めます）。</li>
+        <li>一覧の「科目」「部署」「担当」の欄をクリックすると、その値が検索欄に<strong>追加</strong>されます（今の検索内容は消えないので、クリックを重ねて複数条件で絞り込めます）。</li>
         <li>年度のプルダウンから、特定の年度の申請だけに絞り込めます。</li>
         <li>特定の工事・案件だけを常に見られるようにしたい場合は、タブの一番右にある<strong>「＋ タブ増設」</strong>から専用タブを追加できます。</li>
         <li>増設したタブは、タブ名の右にある<strong>「×」</strong>ボタンから削除できます（タブを消しても、そこに含まれていた申請データ自体は削除されません）。</li>
@@ -1225,7 +1226,15 @@ function clearSearch(){
 }
 
 function searchByValue(value){
-  document.getElementById('search-box').value = value;
+  if(!value) return;
+  const box = document.getElementById('search-box');
+  const current = box.value.trim();
+  const keywords = current ? current.split(/[\s　]+/).filter(Boolean) : [];
+  // すでに同じ条件が入っていれば追加しない(重複防止)
+  if(!keywords.includes(value)){
+    keywords.push(value);
+  }
+  box.value = keywords.join(' ');
   renderList();
 }
 
