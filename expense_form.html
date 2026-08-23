@@ -128,8 +128,18 @@
     font-size:12px;line-height:1;display:flex;align-items:center;justify-content:center;padding:0 8px;
   }
   .search-clear-btn:hover{background:var(--ink);color:#fff;}
-  .search-status{font-size:12.5px;color:var(--muted);margin:8px 2px 0;}
-  .search-status strong{color:var(--ink-dark);font-weight:700;}
+  .search-status{display:flex;flex-wrap:wrap;align-items:center;gap:6px;font-size:12.5px;color:var(--muted);margin:8px 2px 0;}
+  .search-chip{
+    display:inline-flex;align-items:center;gap:5px;background:#f1ece1;color:var(--ink-dark);
+    font-weight:600;font-size:12.5px;padding:3px 6px 3px 10px;border-radius:12px;
+  }
+  .search-chip-remove{
+    background:rgba(0,0,0,.1);color:var(--muted);border:none;border-radius:50%;
+    width:16px;height:16px;line-height:1;font-size:11px;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;padding:0;flex:0 0 auto;
+  }
+  .search-chip-remove:hover{background:var(--ink);color:#fff;}
+  .search-status-count{color:var(--muted);}
   .icon-btn.edit:hover{background:#e8e1d2;}
   .checkbox-row{display:flex;align-items:center;gap:8px;grid-column:1/-1;}
   .checkbox-row input{width:16px;height:16px;}
@@ -1044,11 +1054,23 @@ function updateSearchStatus(query, count){
   const el = document.getElementById('search-status');
   if(!query){
     el.style.display = 'none';
-    el.textContent = '';
+    el.innerHTML = '';
     return;
   }
-  el.style.display = 'block';
-  el.innerHTML = `<strong>「${escapeHtml(query)}」</strong>で絞り込み中（${count}件）`;
+  const keywords = query.split(/[\s　]+/).filter(Boolean);
+  el.style.display = 'flex';
+  const chips = keywords.map(kw => `
+    <span class="search-chip">${escapeHtml(kw)}<button type="button" class="search-chip-remove" onclick="removeSearchKeyword('${escapeHtml(kw).replace(/'/g,"\\'")}')" aria-label="「${escapeHtml(kw)}」の絞り込みを解除">×</button></span>
+  `).join('');
+  el.innerHTML = `${chips}<span class="search-status-count">で絞り込み中（${count}件）</span>`;
+}
+
+// タグの×を押したとき、そのキーワードだけを検索欄から取り除く
+function removeSearchKeyword(keyword){
+  const box = document.getElementById('search-box');
+  const keywords = box.value.trim().split(/[\s　]+/).filter(Boolean).filter(k => k !== keyword);
+  box.value = keywords.join(' ');
+  renderList();
 }
 
 function renderList(){
@@ -1129,7 +1151,7 @@ function buildApproveStampDataUrl(text){
 
   const measureCanvas = document.createElement('canvas');
   const mctx = measureCanvas.getContext('2d');
-  mctx.font = `bold ${fontSize}px "HG正楷書体-PRO","HGSeikaishotaiPRO","Hiragino Mincho ProN",serif`;
+  mctx.font = `bold ${fontSize}px "MS Gothic","MSゴシック",sans-serif`;
   const textWidth = mctx.measureText(text).width;
 
   const canvas = document.createElement('canvas');
@@ -1139,7 +1161,7 @@ function buildApproveStampDataUrl(text){
   // 背景は塗らず透明のままにする(枠・白背景なしで赤文字だけをPDFに重ねる)
 
   ctx.fillStyle = '#d21212';
-  ctx.font = `bold ${fontSize}px "HG正楷書体-PRO","HGSeikaishotaiPRO","Hiragino Mincho ProN",serif`;
+  ctx.font = `bold ${fontSize}px "MS Gothic","MSゴシック",sans-serif`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillText(text, canvas.width/2, canvas.height/2 + fontSize*0.05);
