@@ -91,6 +91,7 @@
     background-image:repeating-linear-gradient(to bottom, transparent 0 25px, #e3dcc9 25px 26px);
     background-origin:content-box;
     background-attachment:local;
+    resize:none; /* 印刷レイアウトの行数(4行/6行)と揃えるため、ドラッグでの拡大縮小を不可にする */
   }
   .field-hint{font-size:11.5px;color:var(--muted);margin-top:4px;}
   #f-subject{min-height:62px;height:62px;resize:vertical;line-height:1.4;}
@@ -117,16 +118,18 @@
   }
   #year-filter:focus{outline:none;border-color:var(--ink);box-shadow:0 0 0 3px rgba(165,42,32,.1);}
   .list-toolbar input{
-    width:100%;max-width:320px;border:1px solid #d8d1c2;border-radius:7px;padding:9px 34px 9px 12px;
+    width:100%;max-width:320px;border:1px solid #d8d1c2;border-radius:7px;padding:9px 50px 9px 12px;
     font-size:13.5px;font-family:inherit;background:#fffefb;color:var(--text);box-sizing:border-box;
   }
   .list-toolbar input:focus{outline:none;border-color:var(--ink);box-shadow:0 0 0 3px rgba(165,42,32,.1);}
   .search-clear-btn{
     position:absolute;right:6px;top:50%;transform:translateY(-50%);
-    width:22px;height:22px;border-radius:50%;background:#e8e1d2;color:var(--muted);
-    font-size:15px;line-height:1;display:flex;align-items:center;justify-content:center;padding:0;
+    min-width:38px;height:22px;border-radius:11px;background:#e8e1d2;color:var(--muted);
+    font-size:12px;line-height:1;display:flex;align-items:center;justify-content:center;padding:0 8px;
   }
   .search-clear-btn:hover{background:var(--ink);color:#fff;}
+  .search-status{font-size:12.5px;color:var(--muted);margin:8px 2px 0;}
+  .search-status strong{color:var(--ink-dark);font-weight:700;}
   .icon-btn.edit:hover{background:#e8e1d2;}
   .checkbox-row{display:flex;align-items:center;gap:8px;grid-column:1/-1;}
   .checkbox-row input{width:16px;height:16px;}
@@ -426,6 +429,15 @@
         <label>終了予定日</label>
         <input type="date" id="f-end-date">
       </div>
+
+      <div class="field">
+        <label>会計提出日</label>
+        <input type="date" id="f-acc-submit">
+      </div>
+      <div class="field">
+        <label>会計承認日</label>
+        <input type="date" id="f-acc-approve">
+      </div>
     </div>
 
     <div class="field-grid field-grid-3col">
@@ -454,15 +466,6 @@
         <textarea id="f-remarks" class="ruled-textarea" rows="6" placeholder="変更等があった場合の記録欄"></textarea>
       </div>
 
-      <div class="field">
-        <label>会計提出日</label>
-        <input type="date" id="f-acc-submit">
-      </div>
-      <div class="field">
-        <label>会計承認日</label>
-        <input type="date" id="f-acc-approve">
-      </div>
-
       <div class="field full">
         <label>備考（一覧用メモ・印刷には出ません）</label>
         <input type="text" id="f-list-note" placeholder="例）水道課予算">
@@ -483,12 +486,13 @@
     <div class="list-toolbar">
       <div class="search-wrap">
         <input type="text" id="search-box" placeholder="科目・部署・主題・担当で検索" title="スペース区切りで複数のキーワードを入力すると、すべてに一致する申請だけに絞り込めます" oninput="renderList()">
-        <button type="button" id="search-clear" class="search-clear-btn" onclick="clearSearch()" aria-label="検索解除" style="display:none;">×</button>
+        <button type="button" id="search-clear" class="search-clear-btn" onclick="clearSearch()" aria-label="検索解除" style="display:none;">解除</button>
       </div>
       <select id="year-filter" onchange="renderList()">
         <option value="">すべての年度</option>
       </select>
     </div>
+    <div id="search-status" class="search-status" style="display:none;"></div>
     <div class="table-scroll">
     <table>
       <colgroup>
@@ -536,6 +540,7 @@
         <li><strong>「新規申請」</strong>タブを開きます。</li>
         <li>科目・提出部署（部署固定URLの場合は自動入力）・担当・各種日付・主題・予算科目・総経費・実施の概要・備考などを入力します。</li>
         <li>見積書・明細書のPDFファイルがあれば添付します。</li>
+        <li><strong>「実施の概要」（4行）・「予備」（6行）</strong>には薄い罫線が引いてあり、印刷レイアウトと同じ行数で固定されています（大きさは変更できません）。<strong>Enterキーを押すと次の行（罫線の1行分）に移動</strong>して書き続けられます。</li>
         <li><strong>別紙（予算書・見積書・図面等）を添付する場合は、PDFファイルにしてください。</strong>Word・Excel・画像ファイルなどは添付できません。</li>
         <li>入力し終えたら、画面下の<strong>「保存する」</strong>ボタンを押します。</li>
       </ol>
@@ -548,13 +553,13 @@
         <li>そのまま印刷したい場合は、画面上部の<strong>「印刷」</strong>ボタンを押してください。裏側でPDFを作ってから印刷ダイアログを開くので、ブラウザの印刷機能を直接使うよりも縮小などのトラブルが起きにくくなっています。</li>
         <li>ファイルとして保存・共有したい場合は<strong>「PDFダウンロード」</strong>ボタンを押すと、この内容がPDFファイルとしてダウンロードされます。</li>
         <li>確認だけで印刷しない場合は<strong>「閉じる」</strong>ボタンでプレビューを閉じられます。</li>
-        <li>一覧の各行にある<strong>「ファイル」</strong>ボタンからは、その申請に添付した見積書・明細書などのPDFファイルをそのまま開けます（新しいタブで開くので、そこから印刷・保存ができます）。「会計承認日」が入力済みの申請では、開いたPDFの1ページ目・左上（社印の右隣）に「M/D　会計承認」の赤字スタンプが自動で入ります。</li>
+        <li>一覧の各行にある<strong>「ファイル」</strong>ボタンからは、その申請に添付した見積書・明細書などのPDFファイルをそのまま開けます（新しいタブで開くので、そこから印刷・保存ができます）。「会計承認日」が入力済みの申請では、開いたPDFの1ページ目の左上に「M/D　会計承認」の赤字スタンプが自動で入ります。</li>
       </ol>
 
       <h2 class="help-h2">3. 申請内容を修正・削除する</h2>
       <ol class="help-steps">
         <li>「申請一覧・印刷」タブの一覧から、該当する申請の<strong>「編集」</strong>ボタンを押すと、入力内容を呼び出して修正できます。</li>
-        <li>不要になった申請は<strong>「削除」</strong>ボタンで削除できます（削除すると元に戻せません）。</li>
+        <li>編集画面の下部には3つのボタンがあります。<strong>「クリア」</strong>は入力内容を空にします。<strong>「更新する」</strong>は修正した内容を保存します（新規申請のときはこのボタンが「保存する」と表示されます）。<strong>「この申請を削除」</strong>は、その申請を削除します（編集画面を開いたときだけ表示され、削除すると元に戻せません）。</li>
       </ol>
 
       <h2 class="help-h2">4. 一覧の検索・絞り込み</h2>
@@ -1033,6 +1038,18 @@ async function loadList(){
   }
 }
 
+// 検索欄の下に「「〇〇」で絞り込み中（△件）」と表示し、何で絞り込んでいるか分かるようにする
+function updateSearchStatus(query, count){
+  const el = document.getElementById('search-status');
+  if(!query){
+    el.style.display = 'none';
+    el.textContent = '';
+    return;
+  }
+  el.style.display = 'block';
+  el.innerHTML = `<strong>「${escapeHtml(query)}」</strong>で絞り込み中（${count}件）`;
+}
+
 function renderList(){
   const body = document.getElementById('list-body');
   const q = (document.getElementById('search-box').value || '').trim().toLowerCase();
@@ -1054,8 +1071,10 @@ function renderList(){
   if(!rows.length){
     body.innerHTML = '<tr><td colspan="9" class="empty">該当する申請はありません</td></tr>';
     document.getElementById('list-total').textContent = '¥0';
+    updateSearchStatus(q, 0);
     return;
   }
+  updateSearchStatus(q, rows.length);
   const total = rows.reduce((sum, r) => sum + (Number(r.total_cost) || 0), 0);
   document.getElementById('list-total').textContent = '¥' + total.toLocaleString();
   body.innerHTML = rows.map(r=>`
