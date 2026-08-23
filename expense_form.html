@@ -396,22 +396,6 @@
       zoom:0.99;
     }
     @page{size:257mm 182mm;margin:3mm;}
-
-    /* 「この一覧を印刷」用: 通常は.appごと非表示にしているが、
-       print-list-modeのときだけ一覧テーブル部分だけを表示する */
-    body.print-list-mode .app{display:block !important;}
-    body.print-list-mode #print-overlay{display:none !important;}
-    body.print-list-mode .app-header{display:none !important;}
-    body.print-list-mode .tabs{display:none !important;}
-    body.print-list-mode #tab-new{display:none !important;}
-    body.print-list-mode #tab-help{display:none !important;}
-    body.print-list-mode .list-toolbar{display:none !important;}
-    body.print-list-mode .search-chip-remove{display:none !important;}
-    body.print-list-mode .sticky-actions .row-actions{display:none !important;}
-    body.print-list-mode thead .sticky-actions{display:none !important;}
-    body.print-list-mode .table-scroll{overflow:visible !important;}
-    body.print-list-mode table{font-size:11px !important;}
-    body.print-list-mode .subject-cell{white-space:normal !important;}
   }
 </style>
 </head>
@@ -551,7 +535,7 @@
         </button>
         <div id="dept-filter-panel" class="dept-filter-panel" style="display:none;"></div>
       </div>
-      <button type="button" class="list-print-btn" onclick="printCurrentList()">この一覧を印刷</button>
+      <button type="button" class="list-print-btn" onclick="exportCurrentListToExcel()">この一覧をエクスポート</button>
     </div>
     <div id="search-status" class="search-status" style="display:none;"></div>
     <div class="table-scroll">
@@ -629,6 +613,7 @@
         <li>一覧の「科目」「部署」「担当」の欄をクリックすると、その値が検索欄に<strong>追加</strong>されます（今の検索内容は消えないので、クリックを重ねて複数条件で絞り込めます）。</li>
         <li>年度のプルダウンから、特定の年度の申請だけに絞り込めます。</li>
         <li><strong>「部署で絞り込み」</strong>ボタンからは、複数の部署にチェックを入れて、そのいずれかに該当する申請だけに絞り込めます（例：水道課と電気課の両方をチェックすると、どちらかの部署の申請がすべて表示されます）。一覧の「部署」列と同じ担当者部署で絞り込みます。</li>
+        <li><strong>「この一覧をエクスポート」</strong>ボタンを押すと、今表示している（絞り込み済みの）一覧の内容がExcelファイル（.xlsx）としてダウンロードされます。</li>
         <li>特定の工事・案件だけを常に見られるようにしたい場合は、タブの一番右にある<strong>「＋ タブ増設」</strong>から専用タブを追加できます。</li>
         <li>増設したタブは、タブ名の右にある<strong>「×」</strong>ボタンから削除できます（タブを消しても、そこに含まれていた申請データ自体は削除されません）。</li>
       </ol>
@@ -740,6 +725,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/html-to-image@1.11.13/dist/html-to-image.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 <script>
 const SUPABASE_URL = "https://zhxuntrhxnrssqpvcmvl.supabase.co";
@@ -1193,10 +1179,9 @@ function onDeptFilterChange(checkbox){
   renderList();
 }
 
-function renderList(){
-  const body = document.getElementById('list-body');
+// 検索キーワード・年度・部署の絞り込みを適用した結果を返す(一覧表示・Excelエクスポート共通)
+function getFilteredRows(){
   const q = (document.getElementById('search-box').value || '').trim().toLowerCase();
-  document.getElementById('search-clear').style.display = q ? 'flex' : 'none';
   const yearFilter = document.getElementById('year-filter').value;
   // 全角・半角スペース区切りで複数キーワードに分割し、すべてに一致する行だけ残す(AND検索)
   const keywords = q.split(/[\s　]+/).filter(Boolean);
@@ -1213,6 +1198,13 @@ function renderList(){
   if(SELECTED_DEPT_FILTERS.size > 0){
     rows = rows.filter(r => SELECTED_DEPT_FILTERS.has(r.assignee_department));
   }
+  return { rows, q };
+}
+
+function renderList(){
+  const body = document.getElementById('list-body');
+  const { rows, q } = getFilteredRows();
+  document.getElementById('search-clear').style.display = q ? 'flex' : 'none';
 
   if(!rows.length){
     body.innerHTML = '<tr><td colspan="9" class="empty">該当する申請はありません</td></tr>';
@@ -1652,14 +1644,67 @@ function buildExpensePdf(){
   });
 }
 
-// 「この一覧を印刷」ボタン: 今表示している一覧テーブル(絞り込み結果)をそのまま印刷する
-function printCurrentList(){
-  document.body.classList.add('print-list-mode');
-  const cleanup = () => document.body.classList.remove('print-list-mode');
-  window.addEventListener('afterprint', cleanup, { once:true });
-  window.print();
-  // afterprintが発火しない環境向けの保険
-  setTimeout(cleanup, 5000);
+// 「この一覧をエクスポート」ボタン: 今表示している一覧(絞り込み結果)をExcelファイルで書き出す
+async function exportCurrentListToExcel(){
+  if(!window.ExcelJS){
+    alert('エクスポートの準備ができていません。少し待ってからもう一度お試しください。');
+    return;
+  }
+  const { rows } = getFilteredRows();
+  if(!rows.length){
+    showToast('絞り込み結果が0件のため、エクスポートできません');
+    return;
+  }
+
+  const wb = new ExcelJS.Workbook();
+  const ws = wb.addWorksheet('申請一覧');
+
+  ws.columns = [
+    { header:'作成日', key:'submit', width:11 },
+    { header:'科目', key:'category', width:12 },
+    { header:'主題', key:'subject', width:42 },
+    { header:'金額', key:'amount', width:15 },
+    { header:'部署', key:'dept', width:13 },
+    { header:'担当', key:'assignee', width:13 },
+    { header:'会計提出', key:'accSubmit', width:11 },
+    { header:'会計承認', key:'accApprove', width:11 },
+  ];
+
+  // 見出し行を太字に
+  ws.getRow(1).font = { bold:true };
+  ws.getRow(1).alignment = { vertical:'middle' };
+
+  rows.forEach(r => {
+    ws.addRow({
+      submit: fmtEraShort(r.submit_date) || '',
+      category: r.budget_category || '',
+      subject: (r.subject || '').replace(/\n/g, ' '),
+      amount: Number(r.total_cost) || 0,
+      dept: r.assignee_department || '',
+      assignee: r.assignee || '',
+      accSubmit: fmtEraShort(r.accounting_submit_date) || '',
+      accApprove: fmtEraShort(r.accounting_approve_date) || '',
+    });
+  });
+
+  // 金額列に3桁区切りの表示形式
+  ws.getColumn('amount').numFmt = '#,##0';
+
+  // 合計行を追加して太字に
+  const total = rows.reduce((sum, r) => sum + (Number(r.total_cost) || 0), 0);
+  const totalRow = ws.addRow({ subject:'合計', amount: total });
+  totalRow.font = { bold:true };
+
+  const buffer = await wb.xlsx.writeBuffer();
+  const blob = new Blob([buffer], { type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  const now = new Date();
+  const fname = `予想経費申請一覧_${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}.xlsx`;
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = fname;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
 }
 
 function closePrint(){
