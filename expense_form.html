@@ -110,6 +110,21 @@
   .help-steps li{margin-bottom:4px;}
   .help-steps strong{color:var(--ink-dark);font-weight:700;}
   .help-note{margin:22px 0 0;font-size:12px;color:var(--muted);}
+  .help-mode-box{
+    background:#f7f2e7;border:1px solid var(--line);border-radius:10px;
+    padding:16px 18px 18px;margin-bottom:26px;
+  }
+  .help-mode-table{width:100%;border-collapse:collapse;font-size:12.5px;}
+  .help-mode-table th, .help-mode-table td{
+    border:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top;
+  }
+  .help-mode-table thead th{background:#efe6d3;color:var(--ink-dark);font-weight:700;}
+  .help-mode-table tbody th, .help-mode-table td:first-child{
+    background:#fbf8f1;color:var(--muted);font-weight:600;white-space:nowrap;
+  }
+  .help-mode-table code, .help-note code{
+    background:#efe6d3;padding:1px 5px;border-radius:4px;font-size:11.5px;
+  }
   .list-toolbar{margin-bottom:14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
   .list-print-btn{
     margin-left:auto;padding:9px 16px;border:1px solid var(--line);border-radius:8px;
@@ -468,11 +483,11 @@
         <input type="date" id="f-end-date">
       </div>
 
-      <div class="field">
+      <div class="field" style="grid-column:4;">
         <label>会計提出日</label>
         <input type="date" id="f-acc-submit">
       </div>
-      <div class="field">
+      <div class="field" style="grid-column:5;">
         <label>会計承認日</label>
         <input type="date" id="f-acc-approve">
       </div>
@@ -529,7 +544,7 @@
       <select id="year-filter" onchange="renderList()">
         <option value="">すべての年度</option>
       </select>
-      <div class="dept-filter-wrap">
+      <div class="dept-filter-wrap" id="dept-filter-wrap">
         <button type="button" id="dept-filter-btn" class="dept-filter-btn" onclick="toggleDeptFilter()">
           部署で絞り込み<span id="dept-filter-count" class="dept-filter-count" style="display:none;"></span>
         </button>
@@ -580,10 +595,27 @@
 
   <div class="panel" id="tab-help" style="display:none;">
     <div class="help-content">
+      <div class="help-mode-box">
+        <h2 class="help-h2" style="margin-top:0;">このシステムには2種類のURLがあります</h2>
+        <table class="help-mode-table">
+          <thead>
+            <tr><th></th><th>管理者用URL</th><th>各課専用URL（<code>?dept=部署名</code>付き）</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>一覧に表示される申請</td><td>すべての部署の申請</td><td>その部署が提出した申請だけ</td></tr>
+            <tr><td>「提出部署」欄</td><td>自分で選んで入力</td><td>自動入力・変更不可（固定）</td></tr>
+            <tr><td>タブの増設・削除</td><td>できる</td><td>できない（管理者専用機能）</td></tr>
+            <tr><td>「部署で絞り込み」ボタン</td><td>ある（全部署の中から絞り込める）</td><td>ない（もともと自分の課の申請しか出ないため不要）</td></tr>
+            <tr><td>向いている人</td><td>営繕部の担当者・全体を管理する人</td><td>各課の担当者（自分の課の申請だけ入力・確認したい人）</td></tr>
+          </tbody>
+        </table>
+        <p class="help-note" style="margin-top:10px;">※ 各課専用URLは、末尾に <code>?dept=水道課</code> のように部署名が付いたアドレスです。デスクトップのショートカットがどちらのURLになっているかは、アドレス欄やショートカットのプロパティで確認できます。</p>
+      </div>
+
       <h2 class="help-h2">1. 新しい申請を入力する</h2>
       <ol class="help-steps">
         <li><strong>「新規申請」</strong>タブを開きます。</li>
-        <li>科目・提出部署（部署固定URLの場合は自動入力）・担当・各種日付・主題・予算科目・総経費・実施の概要・備考などを入力します。</li>
+        <li>科目・提出部署（<strong>各課専用URLの場合は自動入力・変更不可</strong>）・担当・各種日付・主題・予算科目・総経費・実施の概要・備考などを入力します。</li>
         <li>見積書・明細書のPDFファイルがあれば添付します。</li>
         <li><strong>「実施の概要」（4行）・「予備」（6行）</strong>には薄い罫線が引いてあり、印刷レイアウトと同じ行数で固定されています（大きさは変更できません）。<strong>Enterキーを押すと次の行（罫線の1行分）に移動</strong>して書き続けられます。</li>
         <li><strong>別紙（予算書・見積書・図面等）を添付する場合は、PDFファイルにしてください。</strong>Word・Excel・画像ファイルなどは添付できません。</li>
@@ -612,10 +644,18 @@
         <li>一覧上部の検索欄に、科目・部署・主題・担当者などのキーワードを入力すると絞り込めます（スペース区切りで複数入力すると、すべてに一致する申請だけに絞り込めます）。</li>
         <li>一覧の「科目」「部署」「担当」の欄をクリックすると、その値が検索欄に<strong>追加</strong>されます（今の検索内容は消えないので、クリックを重ねて複数条件で絞り込めます）。</li>
         <li>年度のプルダウンから、特定の年度の申請だけに絞り込めます。</li>
-        <li><strong>「部署で絞り込み」</strong>ボタンからは、複数の部署にチェックを入れて、そのいずれかに該当する申請だけに絞り込めます（例：水道課と電気課の両方をチェックすると、どちらかの部署の申請がすべて表示されます）。一覧の「部署」列と同じ担当者部署で絞り込みます。</li>
+        <li><strong>「部署で絞り込み」</strong>ボタンからは、複数の部署にチェックを入れて、そのいずれかに該当する申請だけに絞り込めます（例：水道課と電気課の両方をチェックすると、どちらかの部署の申請がすべて表示されます）。一覧の「部署」列と同じ担当者部署で絞り込みます。（<strong>管理者用URLのみ</strong>の機能です。各課専用URLではもともと自分の課の申請しか表示されないため、このボタンは出ません。）</li>
         <li><strong>「この一覧をエクスポート」</strong>ボタンを押すと、今表示している（絞り込み済みの）一覧の内容がExcelファイル（.xlsx）としてダウンロードされます。</li>
-        <li>特定の工事・案件だけを常に見られるようにしたい場合は、タブの一番右にある<strong>「＋ タブ増設」</strong>から専用タブを追加できます。</li>
+        <li>特定の工事・案件だけを常に見られるようにしたい場合は、タブの一番右にある<strong>「＋ タブ増設」</strong>から専用タブを追加できます（<strong>管理者用URLのみ</strong>の機能です）。</li>
         <li>増設したタブは、タブ名の右にある<strong>「×」</strong>ボタンから削除できます（タブを消しても、そこに含まれていた申請データ自体は削除されません）。</li>
+      </ol>
+
+      <h2 class="help-h2">5. 複数人で同時に使う場合について</h2>
+      <ol class="help-steps">
+        <li>見るだけ・別々の申請を触る分には、何人が同時に開いていても問題ありません。</li>
+        <li>1人が編集中で、他の人は違う申請を見ている・入力しているだけであれば、特に影響はありません。</li>
+        <li>もし<strong>同じ1件の申請</strong>を2人が同時に編集してしまった場合は、先に保存した人はそのまま保存できます。<strong>後から保存しようとした人</strong>には、保存ボタンを押した時点で「この申請は編集を開始した後に他の人によって更新されています。このまま上書きして保存しますか？」という確認メッセージが表示されます。ここで「キャンセル」を選べば、誤って他の人の変更を消してしまうことを防げます。「OK」を選べば、それでも上書き保存できます。</li>
+        <li>この仕組みにより、データが壊れたり、片方の変更が黙って消えてしまうことは起きないようになっています。</li>
       </ol>
 
       <p class="help-note">※ 印刷や表示がおかしい場合は、ブラウザの再読み込み（Ctrl+Shift+R など）を試してから、改めてご確認ください。</p>
@@ -1818,6 +1858,10 @@ if(LOCKED_DEPARTMENT){
   const h1 = document.querySelector('.app-header h1');
   if(h1) h1.innerHTML = `<span>予想経費</span>申請書システム（${LOCKED_DEPARTMENT}）`;
   document.title = `予想経費申請書（${LOCKED_DEPARTMENT}）`;
+  // 各課専用URLでは、もともとその課の申請だけしか表示されないため、
+  // 部署の絞り込みボタン自体が不要なので非表示にする
+  const deptFilterWrap = document.getElementById('dept-filter-wrap');
+  if(deptFilterWrap) deptFilterWrap.style.display = 'none';
 }else{
   // 管理者モード: SupabaseからPROJECT_TABSを読み込んでタブボタンを自動生成
   loadProjectTabs().then(renderProjectTabs);
