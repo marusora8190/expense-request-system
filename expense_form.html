@@ -218,6 +218,7 @@
   #list-total{font-size:15px;color:var(--ink);}
   .row-actions{display:flex;gap:4px;white-space:nowrap;}
   .icon-btn{background:#f1ece1;padding:5px 10px;border-radius:5px;font-size:13px;color:var(--text);writing-mode:horizontal-tb;display:inline-block;text-decoration:none;box-sizing:border-box;line-height:1.6;}
+  .icon-btn.pdf{padding:5px 10px;min-width:0;}
   .icon-btn.print{background:var(--ink);color:#fff;}
   .icon-btn.print:hover{background:var(--ink-dark);}
   .icon-btn.pdf{}
@@ -409,14 +410,14 @@
   </div>
 
   <div class="tabs">
-    <button class="tab active" data-tab="new" onclick="switchTab('new')">新規申請</button>
-    <button class="tab" data-tab="list" onclick="switchTab('list')">申請一覧・印刷</button>
+    <button class="tab" data-tab="new" onclick="switchTab('new')">新規申請</button>
+    <button class="tab active" data-tab="list" onclick="switchTab('list')">申請一覧・印刷</button>
     <button class="tab" data-tab="help" onclick="switchTab('help')">使い方</button>
-    <span id="project-tabs-container"></span>
+    <span id="project-tabs-container" style="margin-left:auto;display:flex;gap:6px;"></span>
   </div>
 
   <!-- NEW REQUEST -->
-  <div class="panel" id="tab-new">
+  <div class="panel" id="tab-new" style="display:none;">
     <div class="form-title" id="form-mode-title">新規申請</div>
     <div class="field-grid field-grid-5col">
       <div class="field">
@@ -523,7 +524,7 @@
   </div>
 
   <!-- LIST -->
-  <div class="panel" id="tab-list" style="display:none;">
+  <div class="panel" id="tab-list">
     <div class="list-toolbar">
       <div class="search-wrap">
         <input type="text" id="search-box" placeholder="科目・部署・主題・担当で検索" title="スペース区切りで複数のキーワードを入力すると、すべてに一致する申請だけに絞り込めます" oninput="renderList()">
@@ -552,7 +553,7 @@
         <col style="width:92px;">
         <col style="width:58px;">
         <col style="width:58px;">
-        <col style="width:200px;">
+        <col style="width:180px;">
       </colgroup>
       <thead>
         <tr>
@@ -1233,8 +1234,8 @@ function renderList(){
             <button class="icon-btn edit" onclick="editRequest('${r.id}')">編集</button>
             <button class="icon-btn print" onclick="openPrint('${r.id}')">印刷</button>
             ${r.pdf_url
-              ? `<button class="icon-btn pdf pdf-attached" onclick="openAttachedFile('${r.id}', event)" title="添付の見積書・明細書PDFを開く（会計承認日が入力済みの場合はスタンプ入りで開きます。PDF No.: ${escapeHtml(r.pdf_no||'—')}）">ファイル</button>`
-              : `<button class="icon-btn pdf pdf-none" onclick="copyPdfNo('${escapeHtml(r.pdf_no||'')}')" title="添付の見積書・明細書PDF未添付。PDF No.: ${escapeHtml(r.pdf_no||'—')}（クリックで番号をコピー）">ファイル</button>`
+              ? `<button class="icon-btn pdf pdf-attached" onclick="openAttachedFile('${r.id}', event)" title="添付の見積書・明細書PDFを開く（会計承認日が入力済みの場合はスタンプ入りで開きます。PDF No.: ${escapeHtml(r.pdf_no||'—')}）">file</button>`
+              : `<button class="icon-btn pdf pdf-none" onclick="copyPdfNo('${escapeHtml(r.pdf_no||'')}')" title="添付の見積書・明細書PDF未添付。PDF No.: ${escapeHtml(r.pdf_no||'—')}（クリックで番号をコピー）">file</button>`
             }
           </div>
         </td>
@@ -1844,6 +1845,9 @@ if(LOCKED_DEPARTMENT){
   // 管理者モード: SupabaseからPROJECT_TABSを読み込んでタブボタンを自動生成
   loadProjectTabs().then(renderProjectTabs);
 }
+
+// 起動時は「申請一覧・印刷」タブを開いた状態にする
+switchTab('list');
 
 document.getElementById('f-submit-date').addEventListener('change', ()=>{
   // 提出年月日が変わると年度が変わる可能性があるので、PDF No.を再計算する
