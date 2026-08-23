@@ -111,6 +111,34 @@
   .help-steps strong{color:var(--ink-dark);font-weight:700;}
   .help-note{margin:22px 0 0;font-size:12px;color:var(--muted);}
   .list-toolbar{margin-bottom:14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
+  .list-print-btn{
+    margin-left:auto;padding:9px 16px;border:1px solid var(--line);border-radius:8px;
+    background:var(--panel);color:var(--text);font-size:13.5px;font-weight:600;cursor:pointer;
+  }
+  .list-print-btn:hover{background:#f1ece1;border-color:var(--ink);}
+
+  .dept-filter-wrap{position:relative;}
+  .dept-filter-btn{
+    padding:9px 14px;border:1px solid #d8d1c2;border-radius:7px;background:#fffefb;
+    color:var(--text);font-size:13.5px;font-family:inherit;cursor:pointer;
+    display:flex;align-items:center;gap:6px;
+  }
+  .dept-filter-btn:hover{border-color:var(--ink);}
+  .dept-filter-count{
+    background:var(--ink);color:#fff;font-size:11px;font-weight:700;
+    border-radius:9px;padding:1px 7px;line-height:1.4;
+  }
+  .dept-filter-panel{
+    position:absolute;top:calc(100% + 4px);left:0;z-index:20;
+    background:#fff;border:1px solid #d8d1c2;border-radius:8px;
+    box-shadow:0 6px 18px rgba(0,0,0,.12);padding:10px 14px;min-width:180px;
+    max-height:260px;overflow-y:auto;
+  }
+  .dept-filter-panel label{
+    display:flex;align-items:center;gap:8px;font-size:13.5px;color:var(--text);
+    padding:5px 2px;cursor:pointer;white-space:nowrap;
+  }
+  .dept-filter-panel input[type="checkbox"]{width:15px;height:15px;cursor:pointer;}
   .search-wrap{position:relative;width:100%;max-width:320px;}
   #year-filter{
     border:1px solid #d8d1c2;border-radius:7px;padding:9px 12px;
@@ -368,6 +396,22 @@
       zoom:0.99;
     }
     @page{size:257mm 182mm;margin:3mm;}
+
+    /* 「この一覧を印刷」用: 通常は.appごと非表示にしているが、
+       print-list-modeのときだけ一覧テーブル部分だけを表示する */
+    body.print-list-mode .app{display:block !important;}
+    body.print-list-mode #print-overlay{display:none !important;}
+    body.print-list-mode .app-header{display:none !important;}
+    body.print-list-mode .tabs{display:none !important;}
+    body.print-list-mode #tab-new{display:none !important;}
+    body.print-list-mode #tab-help{display:none !important;}
+    body.print-list-mode .list-toolbar{display:none !important;}
+    body.print-list-mode .search-chip-remove{display:none !important;}
+    body.print-list-mode .sticky-actions .row-actions{display:none !important;}
+    body.print-list-mode thead .sticky-actions{display:none !important;}
+    body.print-list-mode .table-scroll{overflow:visible !important;}
+    body.print-list-mode table{font-size:11px !important;}
+    body.print-list-mode .subject-cell{white-space:normal !important;}
   }
 </style>
 </head>
@@ -495,12 +539,19 @@
   <div class="panel" id="tab-list" style="display:none;">
     <div class="list-toolbar">
       <div class="search-wrap">
-        <input type="text" id="search-box" placeholder="主題で検索" title="スペース区切りで複数のキーワードを入力すると、すべてに一致する申請だけに絞り込めます" oninput="renderList()">
+        <input type="text" id="search-box" placeholder="科目・部署・主題・担当で検索" title="スペース区切りで複数のキーワードを入力すると、すべてに一致する申請だけに絞り込めます" oninput="renderList()">
         <button type="button" id="search-clear" class="search-clear-btn" onclick="clearSearch()" aria-label="検索解除" style="display:none;">解除</button>
       </div>
       <select id="year-filter" onchange="renderList()">
         <option value="">すべての年度</option>
       </select>
+      <div class="dept-filter-wrap">
+        <button type="button" id="dept-filter-btn" class="dept-filter-btn" onclick="toggleDeptFilter()">
+          部署で絞り込み<span id="dept-filter-count" class="dept-filter-count" style="display:none;"></span>
+        </button>
+        <div id="dept-filter-panel" class="dept-filter-panel" style="display:none;"></div>
+      </div>
+      <button type="button" class="list-print-btn" onclick="printCurrentList()">この一覧を印刷</button>
     </div>
     <div id="search-status" class="search-status" style="display:none;"></div>
     <div class="table-scroll">
@@ -577,6 +628,7 @@
         <li>一覧上部の検索欄に、科目・部署・主題・担当者などのキーワードを入力すると絞り込めます（スペース区切りで複数入力すると、すべてに一致する申請だけに絞り込めます）。</li>
         <li>一覧の「科目」「部署」「担当」の欄をクリックすると、その値が検索欄に<strong>追加</strong>されます（今の検索内容は消えないので、クリックを重ねて複数条件で絞り込めます）。</li>
         <li>年度のプルダウンから、特定の年度の申請だけに絞り込めます。</li>
+        <li><strong>「部署で絞り込み」</strong>ボタンからは、複数の部署にチェックを入れて、そのいずれかに該当する申請だけに絞り込めます（例：水道課と電気課の両方をチェックすると、どちらかの部署の申請がすべて表示されます）。一覧の「部署」列と同じ担当者部署で絞り込みます。</li>
         <li>特定の工事・案件だけを常に見られるようにしたい場合は、タブの一番右にある<strong>「＋ タブ増設」</strong>から専用タブを追加できます。</li>
         <li>増設したタブは、タブ名の右にある<strong>「×」</strong>ボタンから削除できます（タブを消しても、そこに含まれていた申請データ自体は削除されません）。</li>
       </ol>
@@ -875,6 +927,8 @@ async function loadOptions(){
 
       const deps = await sb('departments?select=name&order=sort_order.asc');
       document.getElementById('assignee-department-list').innerHTML = deps.map(d=>`<option value="${d.name}"></option>`).join('');
+      ALL_DEPARTMENTS = deps.map(d=>d.name);
+      renderDeptFilterOptions();
       return;
     }
 
@@ -885,6 +939,8 @@ async function loadOptions(){
     const dSel = document.getElementById('f-department');
     dSel.innerHTML = '<option value="">選択してください</option>' + deps.map(d=>`<option value="${d.name}">${d.name}</option>`).join('');
     document.getElementById('assignee-department-list').innerHTML = deps.map(d=>`<option value="${d.name}"></option>`).join('');
+    ALL_DEPARTMENTS = deps.map(d=>d.name);
+    renderDeptFilterOptions();
 
     const uniqueAssignees = [...new Set(assignees.map(a=>a.assignee).filter(Boolean))].sort();
     document.getElementById('assignee-list').innerHTML = uniqueAssignees.map(a=>`<option value="${a}"></option>`).join('');
@@ -972,6 +1028,8 @@ async function saveRequest(){
 }
 
 let cachedList = [];
+let ALL_DEPARTMENTS = []; // 部署の絞り込みドロップダウン用に読み込んだ部署一覧
+let SELECTED_DEPT_FILTERS = new Set(); // 現在チェックされている絞り込み部署
 
 function fiscalYear(dateStr){
   if(!dateStr) return null;
@@ -1052,17 +1110,36 @@ async function loadList(){
 // 検索欄の下に「「〇〇」で絞り込み中（△件）」と表示し、何で絞り込んでいるか分かるようにする
 function updateSearchStatus(query, count){
   const el = document.getElementById('search-status');
-  if(!query){
+  const keywords = query ? query.split(/[\s　]+/).filter(Boolean) : [];
+  const deptFilters = [...SELECTED_DEPT_FILTERS];
+  if(!keywords.length && !deptFilters.length){
     el.style.display = 'none';
     el.innerHTML = '';
     return;
   }
-  const keywords = query.split(/[\s　]+/).filter(Boolean);
   el.style.display = 'flex';
-  const chips = keywords.map(kw => `
+  const keywordChips = keywords.map(kw => `
     <span class="search-chip">${escapeHtml(kw)}<button type="button" class="search-chip-remove" onclick="removeSearchKeyword('${escapeHtml(kw).replace(/'/g,"\\'")}')" aria-label="「${escapeHtml(kw)}」の絞り込みを解除">×</button></span>
   `).join('');
-  el.innerHTML = `${chips}<span class="search-status-count">で絞り込み中（${count}件）</span>`;
+  const deptChips = deptFilters.map(name => `
+    <span class="search-chip dept-chip">${escapeHtml(name)}<button type="button" class="search-chip-remove" onclick="removeDeptFilter('${escapeHtml(name).replace(/'/g,"\\'")}')" aria-label="「${escapeHtml(name)}」の絞り込みを解除">×</button></span>
+  `).join('');
+  el.innerHTML = `${keywordChips}${deptChips}<span class="search-status-count">で絞り込み中（${count}件）</span>`;
+}
+
+// 検索ステータスのタグから部署の絞り込みを解除する(チェックボックスも連動して外す)
+function removeDeptFilter(name){
+  SELECTED_DEPT_FILTERS.delete(name);
+  const cb = document.querySelector(`#dept-filter-panel input[value="${CSS.escape(name)}"]`);
+  if(cb) cb.checked = false;
+  const countEl = document.getElementById('dept-filter-count');
+  if(SELECTED_DEPT_FILTERS.size > 0){
+    countEl.textContent = SELECTED_DEPT_FILTERS.size;
+    countEl.style.display = 'inline-block';
+  }else{
+    countEl.style.display = 'none';
+  }
+  renderList();
 }
 
 // タグの×を押したとき、そのキーワードだけを検索欄から取り除く
@@ -1070,6 +1147,49 @@ function removeSearchKeyword(keyword){
   const box = document.getElementById('search-box');
   const keywords = box.value.trim().split(/[\s　]+/).filter(Boolean).filter(k => k !== keyword);
   box.value = keywords.join(' ');
+  renderList();
+}
+
+// 部署の絞り込みドロップダウンの中身(チェックボックス一覧)を作る
+function renderDeptFilterOptions(){
+  const panel = document.getElementById('dept-filter-panel');
+  if(!panel) return;
+  panel.innerHTML = ALL_DEPARTMENTS.map(name => `
+    <label>
+      <input type="checkbox" value="${escapeHtml(name)}" ${SELECTED_DEPT_FILTERS.has(name) ? 'checked' : ''} onchange="onDeptFilterChange(this)">
+      ${escapeHtml(name)}
+    </label>
+  `).join('');
+}
+
+function toggleDeptFilter(){
+  const panel = document.getElementById('dept-filter-panel');
+  const isOpen = panel.style.display !== 'none';
+  panel.style.display = isOpen ? 'none' : 'block';
+}
+
+// パネルの外側をクリックしたら閉じる
+document.addEventListener('click', (e) => {
+  const wrap = document.querySelector('.dept-filter-wrap');
+  const panel = document.getElementById('dept-filter-panel');
+  if(wrap && panel && panel.style.display !== 'none' && !wrap.contains(e.target)){
+    panel.style.display = 'none';
+  }
+});
+
+function onDeptFilterChange(checkbox){
+  if(checkbox.checked){
+    SELECTED_DEPT_FILTERS.add(checkbox.value);
+  }else{
+    SELECTED_DEPT_FILTERS.delete(checkbox.value);
+  }
+  const countEl = document.getElementById('dept-filter-count');
+  if(SELECTED_DEPT_FILTERS.size > 0){
+    countEl.textContent = SELECTED_DEPT_FILTERS.size;
+    countEl.style.display = 'inline-block';
+  }else{
+    countEl.style.display = 'none';
+  }
   renderList();
 }
 
@@ -1089,6 +1209,9 @@ function renderList(){
     : cachedList;
   if(yearFilter){
     rows = rows.filter(r => effectiveYear(r) === Number(yearFilter));
+  }
+  if(SELECTED_DEPT_FILTERS.size > 0){
+    rows = rows.filter(r => SELECTED_DEPT_FILTERS.has(r.assignee_department));
   }
 
   if(!rows.length){
@@ -1527,6 +1650,16 @@ function buildExpensePdf(){
         });
     }));
   });
+}
+
+// 「この一覧を印刷」ボタン: 今表示している一覧テーブル(絞り込み結果)をそのまま印刷する
+function printCurrentList(){
+  document.body.classList.add('print-list-mode');
+  const cleanup = () => document.body.classList.remove('print-list-mode');
+  window.addEventListener('afterprint', cleanup, { once:true });
+  window.print();
+  // afterprintが発火しない環境向けの保険
+  setTimeout(cleanup, 5000);
 }
 
 function closePrint(){
