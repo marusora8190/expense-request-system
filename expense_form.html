@@ -456,11 +456,6 @@
       </div>
 
       <div class="field">
-        <label>提出年月日</label>
-        <input type="date" id="f-submit-date">
-      </div>
-
-      <div class="field">
         <label>着工予定日</label>
         <input type="date" id="f-start-date">
       </div>
@@ -470,7 +465,7 @@
       </div>
 
       <div class="field">
-        <label>会計提出日</label>
+        <label>会計提出年月日</label>
         <input type="date" id="f-acc-submit">
       </div>
       <div class="field">
@@ -886,7 +881,7 @@ let editingPdfUrl = null;
 
 function resetForm(){
   document.getElementById('f-budget').dataset.autoFilled = '0';
-  ['f-submit-date','f-start-date','f-end-date','f-subject','f-budget','f-cost','f-overview','f-remarks',
+  ['f-start-date','f-end-date','f-subject','f-budget','f-cost','f-overview','f-remarks',
    'f-assignee','f-assignee-department','f-acc-submit','f-acc-approve','f-pdf-no','f-list-note','f-budget-year'].forEach(id=>{
     document.getElementById(id).value = '';
   });
@@ -958,7 +953,6 @@ async function saveRequest(){
     assignee_department: document.getElementById('f-assignee-department').value || null,
     assignee: document.getElementById('f-assignee').value || null,
     pdf_no: document.getElementById('f-pdf-no').value || null,
-    submit_date: document.getElementById('f-submit-date').value || null,
     start_date: document.getElementById('f-start-date').value || null,
     end_date: document.getElementById('f-end-date').value || null,
     subject,
@@ -973,6 +967,36 @@ async function saveRequest(){
   };
 
   try{
+    // 保存直前にもう一度PDF No.の重複がないか確認する
+    // (電気課・放送通信課・水道課などがほぼ同時に新規申請画面を開いた場合、
+    //  同じ番号が提案されたまま保存されてしまう可能性があるための対策)
+    if(payload.pdf_no){
+      const dup = await sb(`expense_requests?pdf_no=eq.${encodeURIComponent(payload.pdf_no)}&select=id`);
+      const conflictsWithOther = dup.filter(d => d.id !== editingId);
+      if(conflictsWithOther.length > 0){
+        // 自動採番・手入力を問わず、重複していたらその場で空いている番号に振り直して保存を続ける
+        const m = /^(\d{4})(\d{1})(\d{3})$/.exec(payload.pdf_no);
+        const fy = m ? Number(m[1]) : null;
+        const code = m ? m[2] : null;
+        if(fy && code){
+          const prefix = `${fy}${code}`;
+          const rows = await sb(`expense_requests?select=pdf_no&pdf_no=like.${prefix}*`);
+          let maxSeq = 0;
+          rows.forEach(r=>{
+            const mm = /^(\d{4})(\d{1})(\d{3})$/.exec((r.pdf_no||'').trim());
+            if(mm && Number(mm[1]) === fy && mm[2] === code) maxSeq = Math.max(maxSeq, Number(mm[3]));
+          });
+          const next = `${prefix}${String(maxSeq + 1).padStart(3, '0')}`;
+          showToast(`そのPDF No.（${payload.pdf_no}）はすでに使われていたため、${next} に振り直して保存しました`, 6000);
+          payload.pdf_no = next;
+          document.getElementById('f-pdf-no').value = next;
+        }else{
+          showToast(`そのPDF No.（${payload.pdf_no}）はすでに他の申請で使われています。番号を変更してから保存してください`, 7000);
+          return;
+        }
+      }
+    }
+
     // PDFファイルが新しく選択されていればアップロード
     if(pdfFile){
       showToast('PDFをアップロード中…', 10000);
@@ -1050,25 +1074,39 @@ function populateBudgetYearOptions(selectedValue){
   sel.innerHTML = years.map(y => `<option value="${y}">${y}年度</option>`).join('');
 }
 
+// 提出部署からPDF No.用の部署コード(1桁)を判定する
+// 営繕課・建築課・造園課・営繕部はすべて「1」(営繕課からまとめて提出されるため)
+function departmentCode(department){
+  if(['営繕課','建築課','造園課','営繕部'].includes(department)) return '1';
+  if(department === '電気課') return '2';
+  if(department === '放送通信課') return '3';
+  if(department === '水道課') return '4';
+  return '9'; // 想定外の部署名が入っていた場合の予備コード
+}
+
 async function suggestNextPdfNo(){
-  // 提出年月日を元に年度を出し、「年度+3桁連番」(例:2026001)の次の番号を自動計算する
-  const submitDate = document.getElementById('f-submit-date').value;
-  const fy = fiscalYear(submitDate) ?? fiscalYear(new Date().toISOString().slice(0,10));
+  // 作成日（今日の日付）を元に年度を出し、
+  // 「年度4桁+部署コード1桁+3桁連番」(例:20261001)の次の番号を自動計算する
+  const fy = fiscalYear(new Date().toISOString().slice(0,10));
   if(!fy) return;
+  const dept = document.getElementById('f-department').value;
+  if(!dept) return; // 提出部署が未選択の間は採番しない(部署によって番号が変わるため)
+  const code = departmentCode(dept);
+  const prefix = `${fy}${code}`;
   try{
-    const rows = await sb(`expense_requests?select=pdf_no&pdf_no=like.${fy}*`);
+    const rows = await sb(`expense_requests?select=pdf_no&pdf_no=like.${prefix}*`);
     let maxSeq = 0;
     rows.forEach(r=>{
-      const m = /^(\d{4})(\d{3})$/.exec((r.pdf_no||'').trim());
-      if(m && Number(m[1]) === fy){
-        maxSeq = Math.max(maxSeq, Number(m[2]));
+      const m = /^(\d{4})(\d{1})(\d{3})$/.exec((r.pdf_no||'').trim());
+      if(m && Number(m[1]) === fy && m[2] === code){
+        maxSeq = Math.max(maxSeq, Number(m[3]));
       }
     });
     const next = String(maxSeq + 1).padStart(3, '0');
     const field = document.getElementById('f-pdf-no');
     // ユーザーが手動で書き換えていなければ、自動採番した値を入れる
     if(field.dataset.userEdited !== '1'){
-      field.value = `${fy}${next}`;
+      field.value = `${prefix}${next}`;
     }
   }catch(e){
     console.error('PDF No.の自動採番に失敗しました', e);
@@ -1076,7 +1114,7 @@ async function suggestNextPdfNo(){
 }
 
 function effectiveYear(r){
-  return r.budget_year || fiscalYear(r.submit_date);
+  return r.budget_year || fiscalYear((r.created_at||'').slice(0,10));
 }
 
 function populateYearFilter(){
@@ -1092,7 +1130,7 @@ async function loadList(){
   body.innerHTML = '<tr><td colspan="9" class="loading">読み込み中…</td></tr>';
   try{
     const deptFilter = LOCKED_DEPARTMENT ? `&department=eq.${encodeURIComponent(LOCKED_DEPARTMENT)}` : '';
-    const rows = await sb(`expense_requests?select=*${deptFilter}&order=submit_date.desc.nullslast,pdf_no.desc.nullslast,created_at.desc`);
+    const rows = await sb(`expense_requests?select=*${deptFilter}&order=created_at.desc,pdf_no.desc.nullslast`);
     cachedList = rows;
     populateYearFilter();
     renderList();
@@ -1226,7 +1264,7 @@ function renderList(){
   document.getElementById('list-total').textContent = '¥' + total.toLocaleString();
   body.innerHTML = rows.map(r=>`
       <tr>
-        <td class="date-cell">${fmtEraShort(r.submit_date)}</td>
+        <td class="date-cell">${fmtEraShort((r.created_at||'').slice(0,10))}</td>
         <td class="searchable category-cell" onclick="searchByValue('${escapeHtml(r.budget_category||'')}')" title="${escapeHtml(r.budget_category||'')}"><span class="category-cell-inner">${categoryShortLabel(r.budget_category)}</span></td>
         <td class="subject-cell" title="${escapeHtml(r.subject)}">${escapeHtml((r.subject||'').replace(/\n/g, ' '))}</td>
         <td class="amt">${r.total_cost ? '¥'+Number(r.total_cost).toLocaleString() : '—'}</td>
@@ -1463,7 +1501,6 @@ function editRequest(id){
   document.getElementById('f-pdf-file').value = '';
   editingPdfUrl = r.pdf_url || null;
   renderCurrentPdfNote();
-  document.getElementById('f-submit-date').value = r.submit_date || '';
   document.getElementById('f-start-date').value = r.start_date || '';
   document.getElementById('f-end-date').value = r.end_date || '';
   document.getElementById('f-subject').value = r.subject || '';
@@ -1565,7 +1602,7 @@ function openPrint(id){
   if(!r) return;
 
   document.getElementById('p-department').textContent = r.department ? `営繕部${r.department}` : '　　　　　　　　　　　　　　';
-  document.getElementById('p-submit-date').innerHTML = fmtReiwaLine(r.submit_date, '提出', true);
+  document.getElementById('p-submit-date').innerHTML = fmtReiwaLine(null, '提出', true);
   document.getElementById('p-start-date').innerHTML = fmtReiwaLine(r.start_date, '　　着 工 予 定');
   document.getElementById('p-end-date').innerHTML = fmtReiwaLine(r.end_date, '　　終 了 予 定');
   document.getElementById('p-subject').textContent = r.subject || '';
@@ -1690,7 +1727,7 @@ async function exportCurrentListToExcel(){
     { header:'金額', key:'amount', width:15 },
     { header:'部署', key:'dept', width:13 },
     { header:'担当', key:'assignee', width:13 },
-    { header:'会計提出', key:'accSubmit', width:11 },
+    { header:'会計提出年月日', key:'accSubmit', width:14 },
     { header:'会計承認', key:'accApprove', width:11 },
   ];
 
@@ -1700,7 +1737,7 @@ async function exportCurrentListToExcel(){
 
   rows.forEach(r => {
     ws.addRow({
-      submit: fmtEraShort(r.submit_date) || '',
+      submit: fmtEraShort((r.created_at||'').slice(0,10)) || '',
       category: r.budget_category || '',
       subject: (r.subject || '').replace(/\n/g, ' '),
       amount: Number(r.total_cost) || 0,
@@ -1869,8 +1906,9 @@ if(LOCKED_DEPARTMENT){
 // 起動時は「申請一覧・印刷」タブを開いた状態にする
 switchTab('list');
 
-document.getElementById('f-submit-date').addEventListener('change', ()=>{
-  // 提出年月日が変わると年度が変わる可能性があるので、PDF No.を再計算する
+document.getElementById('f-department').addEventListener('change', ()=>{
+  // 提出部署によってPDF No.の部署コードが変わるため、選択が変わったら再計算する
+  // (管理者用URL・自由入力URLなど、提出部署を都度選ぶ場合に必要)
   suggestNextPdfNo();
 });
 document.getElementById('f-pdf-no').addEventListener('input', ()=>{
