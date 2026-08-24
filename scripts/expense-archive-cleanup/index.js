@@ -1,8 +1,7 @@
 // 予想経費申請書システム - 古いデータの自動整理スクリプト
 // 毎月1回、GitHub Actionsから実行される想定。
 //
-// ・作成日からまる7年経過 → 添付PDFファイルだけを削除(申請データは残す)
-// ・作成日からまる10年経過 → 申請データ本体を削除(アーカイブは取らない)
+// ・作成日からまる7年経過 → 添付PDFファイル・申請データ本体を両方削除
 //
 // 実行に必要な環境変数:
 //   SUPABASE_URL      例) https://xxxx.supabase.co
@@ -66,59 +65,43 @@ async function deletePdfObjectByUrl(url) {
   }
 }
 
-// -------- ① 7年経過: 添付PDFだけを削除 --------
-async function cleanupOldPdfs() {
+// -------- 7年経過: 添付PDF・申請データ本体を両方削除 --------
+async function cleanupOldRequests() {
   const cutoff = isoDateYearsAgo(7);
-  console.log(`[PDF削除] 作成日が ${cutoff} 以前で、PDFが添付されている申請を検索します…`);
+  console.log(`[削除] 作成日が ${cutoff} 以前の申請を検索します…`);
 
   const rows = await sb(
-    `expense_requests?select=id,pdf_no,pdf_url&pdf_url=not.is.null&created_at=lte.${cutoff}`
+    `expense_requests?select=id,pdf_no,pdf_url&created_at=lte.${cutoff}&order=created_at.asc`
   );
 
   if (!rows || rows.length === 0) {
-    console.log('[PDF削除] 対象はありませんでした。');
+    console.log('[削除] 対象はありませんでした。');
     return;
   }
 
-  console.log(`[PDF削除] ${rows.length} 件が対象です。`);
+  console.log(`[削除] ${rows.length} 件が対象です。`);
+
+  // PDFが添付されているものは先にストレージから削除
   for (const r of rows) {
-    await deletePdfObjectByUrl(r.pdf_url);
-    await sb(`expense_requests?id=eq.${r.id}`, {
-      method: 'PATCH',
-      prefer: 'return=minimal',
-      body: JSON.stringify({ pdf_url: null, has_estimate_attached: false }),
-    });
-    console.log(`  - 削除済み: PDF No.${r.pdf_no || '(なし)'} (id=${r.id})`);
-  }
-}
-
-// -------- ② 10年経過: 申請データ本体を削除(アーカイブは取らない) --------
-async function deleteOldRows() {
-  const cutoff = isoDateYearsAgo(10);
-  console.log(`[データ削除] 作成日が ${cutoff} 以前の申請を検索します…`);
-
-  const rows = await sb(`expense_requests?select=id&created_at=lte.${cutoff}&order=created_at.asc`);
-
-  if (!rows || rows.length === 0) {
-    console.log('[データ削除] 対象はありませんでした。');
-    return;
+    if (r.pdf_url) {
+      await deletePdfObjectByUrl(r.pdf_url);
+      console.log(`  - PDF削除済み: PDF No.${r.pdf_no || '(なし)'} (id=${r.id})`);
+    }
   }
 
-  console.log(`[データ削除] ${rows.length} 件が対象です。削除します…`);
-
+  // 申請データ本体をまとめて削除
   const idList = rows.map((r) => r.id).join(',');
   await sb(`expense_requests?id=in.(${idList})`, {
     method: 'DELETE',
     prefer: 'return=minimal',
   });
-  console.log(`[データ削除] ${rows.length} 件のデータ本体を削除しました。`);
+  console.log(`[削除] ${rows.length} 件のデータ本体を削除しました。`);
 }
 
 async function main() {
   console.log(`=== 予想経費申請書 自動整理 開始 (${new Date().toISOString()}) ===`);
   try {
-    await cleanupOldPdfs();
-    await deleteOldRows();
+    await cleanupOldRequests();
     console.log('=== 完了 ===');
   } catch (e) {
     console.error('エラーが発生しました:', e);
