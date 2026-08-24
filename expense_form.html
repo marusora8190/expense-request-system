@@ -303,6 +303,7 @@
   .submit-date{text-align:right;font-size:13px;padding:6px 0 0;white-space:nowrap;width:233mm;margin:0;box-sizing:border-box;font-family:"MS Mincho","MS 明朝","Hiragino Mincho ProN",serif;}
   .rl{letter-spacing:.1em;font-family:"MS Mincho","MS 明朝","Hiragino Mincho ProN",serif;}
   .num{letter-spacing:0;padding:0 2px;font-variant-numeric:tabular-nums;}
+  .submit-date .num,.plan-row .num{font-family:"Meiryo UI","Meiryo",sans-serif;font-size:15px;font-weight:400;}
   .suffix{letter-spacing:0;font-family:"MS Mincho","MS 明朝","Hiragino Mincho ProN",serif;}
 
   .plan-row .cell{flex:1;font-size:13.5px;display:flex;align-items:center;justify-content:center;gap:4px;white-space:nowrap;}
@@ -1620,12 +1621,12 @@ function fmtReiwaLine(dateStr, suffixHtml, tight){
   // 「年」「月」「日」の間隔が数字入り時と同じ見た目になるようにする
   const numPlaceholder = '<span class="num" style="visibility:hidden;"> 00 </span>';
   if(!p){
-    return `<span class="rl">令和</span>${gap}${numPlaceholder}<span class="rl">年</span>${gap}${numPlaceholder}<span class="rl">月</span>${gap}${numPlaceholder}<span class="rl">日</span><span class="suffix">${suffixHtml}</span>`;
+    return `<span class="rl">令和</span>${gap}${numPlaceholder}${gap}<span class="rl">年</span>${gap}${numPlaceholder}${gap}<span class="rl">月</span>${gap}${numPlaceholder}${gap}<span class="rl">日</span><span class="suffix">${suffixHtml}</span>`;
   }
   const yearPart = p.eraLabel === '令和'
     ? `<span class="rl">令和</span>${gap}<span class="num"> ${p.y} </span>${gap}<span class="rl">年</span>`
     : `<span class="num">${p.eraLabel}</span>`;
-  return `${yearPart}${gap}<span class="num"> ${p.m} </span><span class="rl">月</span>${gap}<span class="num"> ${p.dd} </span><span class="rl">日</span><span class="suffix">${suffixHtml}</span>`;
+  return `${yearPart}${gap}<span class="num"> ${p.m} </span>${gap}<span class="rl">月</span>${gap}<span class="num"> ${p.dd} </span>${gap}<span class="rl">日</span><span class="suffix">${suffixHtml}</span>`;
 }
 
 function digitCells(amount){
