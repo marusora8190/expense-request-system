@@ -1,0 +1,26 @@
+name: 予想経費申請書 - 古いデータの自動整理
+
+on:
+  schedule:
+    # 毎月1日 午前9時(JST) = 同日0時(UTC) に実行
+    - cron: '0 0 1 * *'
+  workflow_dispatch: {}  # 手動実行もできるようにしておく(テスト用)
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Run cleanup script
+        working-directory: scripts/expense-archive-cleanup
+        env:
+          SUPABASE_URL: ${{ secrets.EXPENSE_SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.EXPENSE_SUPABASE_ANON_KEY }}
+        run: node index.js
