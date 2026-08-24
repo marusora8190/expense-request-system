@@ -430,6 +430,12 @@
       </div>
 
       <div class="field">
+        <label>作成日</label>
+        <input type="date" id="f-created-date">
+        <div class="field-hint">※ 空欄のまま保存すると、保存した日が自動で入ります</div>
+      </div>
+
+      <div class="field">
         <label>提出部署</label>
         <select id="f-department"><option value="">読み込み中…</option></select>
       </div>
@@ -583,6 +589,7 @@
       <ol class="help-steps">
         <li><strong>「新規申請」</strong>タブを開きます。</li>
         <li>科目・提出部署（部署固定URLの場合は自動入力）・担当・各種日付・主題・予算科目・総経費・実施の概要・備考などを入力します。</li>
+        <li><strong>「作成日」</strong>は、空欄のまま保存すると自動的に保存した日が入ります。まとめて後日入力した場合など、実際に申請した日に直したいときは、この欄に日付を入力すれば上書きできます（一覧の並び順や年度判定、PDF No.の採番もこの日付が基準になります）。</li>
         <li>見積書・明細書のPDFファイルがあれば添付します。</li>
         <li><strong>「実施の概要」（4行）・「予備」（6行）</strong>には薄い罫線が引いてあり、印刷レイアウトと同じ行数で固定されています（大きさは変更できません）。<strong>Enterキーを押すと次の行（罫線の1行分）に移動</strong>して書き続けられます。</li>
         <li><strong>別紙（予算書・見積書・図面等）を添付する場合は、PDFファイルにしてください。</strong>Word・Excel・画像ファイルなどは添付できません。</li>
@@ -882,7 +889,7 @@ let editingPdfUrl = null;
 
 function resetForm(){
   document.getElementById('f-budget').dataset.autoFilled = '0';
-  ['f-start-date','f-end-date','f-subject','f-budget','f-cost','f-overview','f-remarks',
+  ['f-created-date','f-start-date','f-end-date','f-subject','f-budget','f-cost','f-overview','f-remarks',
    'f-assignee','f-assignee-department','f-acc-submit','f-acc-approve','f-pdf-no','f-list-note','f-budget-year'].forEach(id=>{
     document.getElementById(id).value = '';
   });
@@ -948,6 +955,10 @@ async function saveRequest(){
   const pdfFileInput = document.getElementById('f-pdf-file');
   const pdfFile = pdfFileInput.files[0] || null;
 
+  // 作成日を手動で指定した場合はその日付(正午扱いでタイムゾーンのずれを防ぐ)を、
+  // 空欄の場合は新規保存時のみ「今」を使う(編集時は元の作成日時のまま変更しない)
+  const createdDateInput = document.getElementById('f-created-date').value;
+
   const payload = {
     budget_year: document.getElementById('f-budget-year').value ? Number(document.getElementById('f-budget-year').value) : null,
     department: document.getElementById('f-department').value || null,
@@ -966,6 +977,10 @@ async function saveRequest(){
     accounting_approve_date: document.getElementById('f-acc-approve').value || null,
     list_note: document.getElementById('f-list-note').value || null
   };
+  if(createdDateInput){
+    // タイムゾーンのずれで日付が前後にずれないよう、正午の時刻を付けて保存する
+    payload.created_at = `${createdDateInput}T12:00:00`;
+  }
 
   try{
     // 保存直前にもう一度PDF No.の重複がないか確認する
@@ -1086,9 +1101,10 @@ function departmentCode(department){
 }
 
 async function suggestNextPdfNo(){
-  // 作成日（今日の日付）を元に年度を出し、
+  // 作成日(手動で指定していればその日付、なければ今日の日付)を元に年度を出し、
   // 「年度4桁+部署コード1桁+3桁連番」(例:20261001)の次の番号を自動計算する
-  const fy = fiscalYear(new Date().toISOString().slice(0,10));
+  const createdDateInput = document.getElementById('f-created-date').value;
+  const fy = fiscalYear(createdDateInput || new Date().toISOString().slice(0,10));
   if(!fy) return;
   const dept = document.getElementById('f-department').value;
   if(!dept) return; // 提出部署が未選択の間は採番しない(部署によって番号が変わるため)
@@ -1495,6 +1511,7 @@ function editRequest(id){
   populateBudgetYearOptions(r.budget_year);
   document.getElementById('f-budget-year').value = r.budget_year || '';
   document.getElementById('f-department').value = r.department || '';
+  document.getElementById('f-created-date').value = (r.created_at||'').slice(0,10);
   document.getElementById('f-assignee-department').value = r.assignee_department || '';
   document.getElementById('f-assignee').value = r.assignee || '';
   document.getElementById('f-pdf-no').value = r.pdf_no || '';
@@ -1910,6 +1927,10 @@ switchTab('list');
 document.getElementById('f-department').addEventListener('change', ()=>{
   // 提出部署によってPDF No.の部署コードが変わるため、選択が変わったら再計算する
   // (管理者用URL・自由入力URLなど、提出部署を都度選ぶ場合に必要)
+  suggestNextPdfNo();
+});
+document.getElementById('f-created-date').addEventListener('change', ()=>{
+  // 作成日によって年度が変わる可能性があるため、変更されたら再計算する
   suggestNextPdfNo();
 });
 document.getElementById('f-pdf-no').addEventListener('input', ()=>{
