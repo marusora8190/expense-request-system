@@ -518,8 +518,8 @@
     <div class="actions-row">
       <button class="btn-danger" id="delete-btn" onclick="deleteFromForm()" style="display:none;">この申請を削除</button>
       <div class="actions-row-right">
-        <button class="btn-secondary" onclick="resetForm()">クリア</button>
-        <button class="btn-primary" id="save-btn" onclick="saveRequest()">保存する</button>
+        <button class="btn-secondary" onclick="confirmClearForm()">クリア</button>
+        <button class="btn-primary" id="save-btn" onclick="confirmSaveRequest()">保存する</button>
       </div>
     </div>
   </div>
@@ -886,6 +886,22 @@ function switchTab(name){
 let editingId = null;
 let editingSnapshotUpdatedAt = null;
 let editingPdfUrl = null;
+
+function confirmClearForm(){
+  const message = editingId
+    ? '編集を中断して、入力欄を空にします（この申請のデータ自体は変更されません）。よろしいですか？'
+    : '入力した内容をすべて空にします。よろしいですか？';
+  if(!confirm(message)) return;
+  resetForm();
+}
+
+function confirmSaveRequest(){
+  const message = editingId
+    ? 'この内容でこの申請を上書きします。よろしいですか？'
+    : 'この内容で新しい申請として保存します。よろしいですか？';
+  if(!confirm(message)) return;
+  saveRequest();
+}
 
 function resetForm(){
   document.getElementById('f-budget').dataset.autoFilled = '0';
