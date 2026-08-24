@@ -618,8 +618,8 @@
         <li>年度のプルダウンから、特定の年度の申請だけに絞り込めます。</li>
         <li id="help-dept-filter"><strong>「部署で絞り込み」</strong>ボタンからは、複数の部署にチェックを入れて、そのいずれかに該当する申請だけに絞り込めます（例：水道課と電気課の両方をチェックすると、どちらかの部署の申請がすべて表示されます）。一覧の「部署」列と同じ担当者部署で絞り込みます（一覧の「部署」欄をクリックしたときも、ここに自動でチェックが入ります）。※各課専用URL（部署固定URL）で開いている場合は、その部署の申請しか表示されないため、このボタンは表示されません（管理者用URLでのみ表示されます）。</li>
         <li><strong>「この一覧をエクスポート」</strong>ボタンを押すと、今表示している（絞り込み済みの）一覧の内容がExcelファイル（.xlsx）としてダウンロードされます。</li>
-        <li>特定の工事・案件だけを常に見られるようにしたい場合は、タブの一番右にある<strong>「＋ タブ増設」</strong>から専用タブを追加できます。</li>
-        <li>増設したタブは、タブ名の右にある<strong>「×」</strong>ボタンから削除できます（タブを消しても、そこに含まれていた申請データ自体は削除されません）。</li>
+        <li id="help-tab-add">特定の工事・案件だけを常に見られるようにしたい場合は、タブの一番右にある<strong>「＋ タブ増設」</strong>から専用タブを追加できます。</li>
+        <li id="help-tab-remove">増設したタブは、タブ名の右にある<strong>「×」</strong>ボタンから削除できます（タブを消しても、そこに含まれていた申請データ自体は削除されません）。</li>
       </ol>
 
       <p class="help-note">※ 印刷や表示がおかしい場合は、ブラウザの再読み込み（Ctrl+Shift+R など）を試してから、改めてご確認ください。</p>
@@ -738,6 +738,12 @@ const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 // URLに ?dept=部署名 が付いている場合、その部署専用モードで動作する
 // (例: expense_form.html?dept=電気課 )
 const LOCKED_DEPARTMENT = new URLSearchParams(window.location.search).get('dept') || null;
+
+// URLに ?mode=free が付いている場合、部署は固定せず自由に選べるが、
+// 「おやさとやかた乾隅棟関係工事」タブなど管理者専用の機能は表示しない
+// 一般公開用モード。
+// (例: expense_form.html?mode=free )
+const FREE_MODE = new URLSearchParams(window.location.search).get('mode') === 'free';
 
 // 特定の工事・案件だけを絞り込んで見られる管理者用タブの一覧。
 // Supabaseの project_tabs テーブルから読み込む(画面の「＋タブ追加」ボタンで増やせる)。
@@ -1832,6 +1838,15 @@ async function deleteProjectTab(id, label){
   }
 }
 
+// 管理者専用の「タブ増設」機能に関する使い方の説明を非表示にする
+// (部署固定モード・自由入力モードの両方で使用)
+function hideProjectTabHelp(){
+  const a = document.getElementById('help-tab-add');
+  const b = document.getElementById('help-tab-remove');
+  if(a) a.style.display = 'none';
+  if(b) b.style.display = 'none';
+}
+
 if(LOCKED_DEPARTMENT){
   // 部署固定モード: 管理者専用のタブ群(PROJECT_TABS)は表示せず、タイトルに部署名を表示
   const h1 = document.querySelector('.app-header h1');
@@ -1844,6 +1859,10 @@ if(LOCKED_DEPARTMENT){
   // 使い方の説明からも「部署で絞り込み」の項目を非表示にする
   const helpDeptFilter = document.getElementById('help-dept-filter');
   if(helpDeptFilter) helpDeptFilter.style.display = 'none';
+  hideProjectTabHelp();
+}else if(FREE_MODE){
+  // 自由入力モード: 提出部署は自由に選べるが、管理者専用タブ(PROJECT_TABS)は表示しない
+  hideProjectTabHelp();
 }else{
   // 管理者モード: SupabaseからPROJECT_TABSを読み込んでタブボタンを自動生成
   loadProjectTabs().then(renderProjectTabs);
