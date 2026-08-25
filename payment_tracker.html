@@ -743,7 +743,21 @@ function refreshVerifyRowsFromRequests(){
       .sort((a,b)=> (a.created_at||'').localeCompare(b.created_at||''));
 
     verifyRows = matched.length > 0
-      ? matched.map(r => ({ subject: r.subject || '', amount: prevAmounts[r.subject || ''] || '' }))
+      ? matched.map(r => {
+          // 「営繕課本部営繕費」「各課本部営繕費」タブですでに請求金額が入力済みなら、
+          // その金額をここにも自動で反映する(同じ月・同じ工事の請求書年月日 or 支払日で判定)
+          let recordedAmount = 0;
+          (r._payments || []).forEach(p=>{
+            const dStr = p.invoice_date || p.payment_date;
+            if(!dStr) return;
+            const d = new Date(dStr + 'T00:00:00');
+            if(d.getFullYear() === calYear && (d.getMonth()+1) === month){
+              recordedAmount += Number(p.amount || 0);
+            }
+          });
+          const amount = recordedAmount > 0 ? String(recordedAmount) : (prevAmounts[r.subject || ''] || '');
+          return { subject: r.subject || '', amount };
+        })
       : [{subject:'', amount:''}];
   }
 
