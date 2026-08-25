@@ -243,6 +243,9 @@
   .ledger-table td.date-cell input[type="date"]{
     border:1px solid #d8d1c2;border-radius:5px;padding:4px 5px;font-size:12px;width:118px;
   }
+  .ledger-table input.amount-input{
+    border:1px solid #d8d1c2;border-radius:5px;padding:4px 6px;font-size:12px;width:100px;text-align:right;
+  }
 
   /* 済・日付・工事名称・予想経費の4列を固定(横スクロールしても常に表示) */
   .ledger-table .stick-1{ width:46px; min-width:46px; position:sticky; left:0; z-index:3; }
@@ -452,6 +455,7 @@
             <th class="stick-2">請求書年月日</th>
             <th class="stick-3">工事名称</th>
             <th class="stick-4">予想経費</th>
+            <th>請求金額</th>
             <th>担当</th>
             <th>前年度合計</th>
             <th>支払額合計</th>
@@ -472,7 +476,7 @@
           </tr>
         </thead>
         <tbody id="invoice-body">
-          <tr><td colspan="21" class="ledger-empty">読み込み中…</td></tr>
+          <tr><td colspan="22" class="ledger-empty">読み込み中…</td></tr>
         </tbody>
         <tfoot id="invoice-foot"></tfoot>
       </table>
@@ -1082,6 +1086,56 @@ async function updateInvoiceDate(paymentId, value){
   renderInvoiceList();
 }
 
+async function updateInvoiceAmount(paymentId, value){
+  const amount = Number(value || 0);
+  const p = payments.find(x=>x.id === paymentId);
+  if(p) p.amount = amount;
+  try{
+    await sb(`payments?id=eq.${paymentId}`, {
+      method: 'PATCH', prefer: 'return=minimal',
+      body: JSON.stringify({ amount, updated_at: new Date().toISOString() })
+    });
+  }catch(e){
+    showToast('金額の保存に失敗しました: ' + e.message, 5000);
+    console.error(e);
+  }
+  attachAggregates();
+  renderInvoiceList();
+}
+
+// まだ請求(支払い)が一件も無い工事の行で、日付と金額の両方が入力されたら
+// 新しい支払いレコードとして登録する
+async function tryCreateInvoice(requestId){
+  const row = document.querySelector(`tr[data-new-request="${requestId}"]`);
+  if(!row) return;
+  const dateInput = row.querySelector('.new-invoice-date');
+  const amountInput = row.querySelector('.new-invoice-amount');
+  const dateVal = dateInput ? dateInput.value : '';
+  const amountVal = amountInput ? amountInput.value : '';
+  if(!dateVal || !amountVal) return; // 両方揃うまでは何もしない
+
+  try{
+    const created = await sb('payments', {
+      method: 'POST',
+      body: JSON.stringify({
+        expense_request_id: requestId,
+        payment_date: dateVal,
+        invoice_date: dateVal,
+        amount: Number(amountVal)
+      })
+    });
+    if(created && created[0]) payments.push(created[0]);
+    showToast('請求を登録しました');
+  }catch(e){
+    showToast('請求の登録に失敗しました: ' + e.message, 5000);
+    console.error(e);
+    return;
+  }
+  attachAggregates();
+  populateInvoiceYearOptions();
+  renderInvoiceList();
+}
+
 async function toggleInvoiceMark(paymentId, checked){
   paymentMarks[paymentId] = checked;
   try{
@@ -1106,7 +1160,7 @@ function renderInvoiceList(){
   const foot = document.getElementById('invoice-foot');
 
   if(!fy){
-    body.innerHTML = '<tr><td colspan="21" class="ledger-empty">年度を選択してください</td></tr>';
+    body.innerHTML = '<tr><td colspan="22" class="ledger-empty">年度を選択してください</td></tr>';
     foot.innerHTML = '';
     return;
   }
@@ -1131,11 +1185,14 @@ function renderInvoiceList(){
     const totalPaid = prevYearTotal + thisYearTotal;
     const remaining = Number(r.total_cost||0) - totalPaid;
 
+    let includedThisRound = false;
+
     (r._payments || []).forEach(p=>{
       const invDate = p.invoice_date;
       const invFy = invDate ? fiscalYear(invDate) : null;
       const include = invFy === fy || (!invDate && fiscalYear(p.payment_date) === fy);
       if(!include) return;
+      includedThisRound = true;
 
       if(!countedProjects.has(r.id)){
         countedProjects.add(r.id);
@@ -1155,25 +1212,60 @@ function renderInvoiceList(){
 
       entries.push({ r, p, prevYearTotal, thisYearTotal, totalPaid, remaining, monthIdx });
     });
+
+    // この工事がこの年度に表示される場合は、もう1件請求を追加できる空欄行を末尾に出す。
+    // 対象: (a) この年度に既に請求がある / (b) 登録年度以降で、まだ残額がある工事
+    //       (年度をまたいで支払いが続く場合にも対応するため)
+    const showBlankRow = includedThisRound
+      || (r.budget_year != null && r.budget_year <= fy && remaining > 0)
+      || ((r._payments||[]).length === 0 && r.budget_year === fy);
+    if(showBlankRow){
+      entries.push({ r, p: null, prevYearTotal: 0, thisYearTotal: 0, totalPaid: 0, remaining: Number(r.total_cost||0), monthIdx: -1, _blankFor: r.id });
+    }
   });
 
   if(entries.length === 0){
-    body.innerHTML = '<tr><td colspan="21" class="ledger-empty">該当する請求がありません</td></tr>';
+    body.innerHTML = '<tr><td colspan="22" class="ledger-empty">該当する請求がありません</td></tr>';
     foot.innerHTML = '';
     return;
   }
 
-  entries.sort((a,b)=> (a.p.invoice_date || '9999').localeCompare(b.p.invoice_date || '9999'));
+  entries.sort((a,b)=>{
+    if(a.r.id !== b.r.id){
+      return (a.r.created_at || '').localeCompare(b.r.created_at || '');
+    }
+    return ((a.p && a.p.invoice_date) || '9999').localeCompare((b.p && b.p.invoice_date) || '9999');
+  });
 
   body.innerHTML = entries.map(({r, p, prevYearTotal, thisYearTotal, totalPaid, remaining, monthIdx})=>{
+    const monthCells = months.map((m, idx) => `<td class="num">${p && idx === monthIdx ? Number(p.amount||0).toLocaleString() : ''}</td>`).join('');
+
+    if(!p){
+      // まだ請求(支払い)が一件も無い工事: 日付と金額を入力すると新しい請求として登録される
+      return `
+      <tr data-new-request="${r.id}">
+        <td class="mark-cell stick-1"><input type="checkbox" disabled></td>
+        <td class="date-cell stick-2"><input type="date" class="new-invoice-date" onchange="tryCreateInvoice('${r.id}')"></td>
+        <td class="subject stick-3">${escapeHtml(r.subject || '（主題未入力）')}</td>
+        <td class="num stick-4">${Number(r.total_cost||0).toLocaleString()}</td>
+        <td><input type="text" class="amount-input new-invoice-amount" placeholder="金額" oninput="this.value=this.value.replace(/[^0-9]/g,'')" onchange="tryCreateInvoice('${r.id}')"></td>
+        <td>${escapeHtml(r.assignee_department || r.assignee || '—')}</td>
+        <td class="num"></td>
+        <td class="num"></td>
+        <td class="num">0</td>
+        <td class="num">${remaining.toLocaleString()}</td>
+        ${monthCells}
+      </tr>`;
+    }
+
     const isMarked = !!paymentMarks[p.id];
-    const monthCells = months.map((m, idx) => `<td class="num">${idx === monthIdx ? Number(p.amount||0).toLocaleString() : ''}</td>`).join('');
     return `
       <tr>
         <td class="mark-cell stick-1"><input type="checkbox" ${isMarked ? 'checked' : ''} onchange="toggleInvoiceMark('${p.id}', this.checked)"></td>
         <td class="date-cell stick-2"><input type="date" value="${p.invoice_date || ''}" onchange="updateInvoiceDate('${p.id}', this.value)"></td>
         <td class="subject stick-3">${escapeHtml(r.subject || '（主題未入力）')}</td>
         <td class="num stick-4">${Number(r.total_cost||0).toLocaleString()}</td>
+        <td><input type="text" class="amount-input" value="${p.amount || ''}" oninput="this.value=this.value.replace(/[^0-9]/g,'')" onchange="updateInvoiceAmount('${p.id}', this.value)"></td>
         <td>${escapeHtml(r.assignee_department || r.assignee || '—')}</td>
         <td class="num">${prevYearTotal ? prevYearTotal.toLocaleString() : ''}</td>
         <td class="num">${thisYearTotal ? thisYearTotal.toLocaleString() : ''}</td>
@@ -1190,6 +1282,7 @@ function renderInvoiceList(){
     <tr>
       <td colspan="3" class="stick-1">合計</td>
       <td class="num stick-4">${sumCost.toLocaleString()}</td>
+      <td></td>
       <td></td>
       <td class="num">${sumPrevYear.toLocaleString()}</td>
       <td class="num">${sumThisYear.toLocaleString()}</td>
