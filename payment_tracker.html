@@ -232,7 +232,7 @@
     background:var(--accent-bg);color:var(--ink-dark);font-weight:700;
     position:sticky;top:0;z-index:2;
   }
-  .ledger-table td.subject{text-align:left;font-weight:600;max-width:280px;white-space:normal;}
+  .ledger-table td.subject{text-align:left;font-weight:600;white-space:nowrap;min-width:320px;}
   .ledger-table td.num{text-align:right;font-variant-numeric:tabular-nums;}
   .ledger-table td.neg{color:var(--ink-dark);font-weight:700;}
   .ledger-table tbody tr:hover td{background:#fbf8f2;}
@@ -243,6 +243,20 @@
   .ledger-table td.date-cell input[type="date"]{
     border:1px solid #d8d1c2;border-radius:5px;padding:4px 5px;font-size:12px;width:118px;
   }
+
+  /* 済・日付・工事名称・予想経費の4列を固定(横スクロールしても常に表示) */
+  .ledger-table .stick-1{ width:46px; min-width:46px; position:sticky; left:0; z-index:3; }
+  .ledger-table .stick-2{ width:132px; min-width:132px; position:sticky; left:46px; z-index:3; }
+  .ledger-table .stick-3{ position:sticky; left:178px; z-index:3; }
+  .ledger-table .stick-4{ position:sticky; z-index:3; border-right:2px solid var(--ink); }
+  .ledger-table th.stick-1, .ledger-table th.stick-2, .ledger-table th.stick-3, .ledger-table th.stick-4{ background:var(--accent-bg); z-index:4; }
+  .ledger-table td.stick-1, .ledger-table td.stick-2, .ledger-table td.stick-3, .ledger-table td.stick-4{ background:var(--panel); }
+  .ledger-table tbody tr:hover td.stick-1,
+  .ledger-table tbody tr:hover td.stick-2,
+  .ledger-table tbody tr:hover td.stick-3,
+  .ledger-table tbody tr:hover td.stick-4{ background:#fbf8f2; }
+  .ledger-table tfoot td.stick-1{ position:sticky; left:0; z-index:3; background:#faf6ee; }
+  .ledger-table tfoot td.stick-4{ background:#faf6ee; }
 </style>
 </head>
 <body>
@@ -394,10 +408,10 @@
       <table class="ledger-table">
         <thead>
           <tr>
-            <th>済</th>
-            <th>会計承認</th>
-            <th>工事名称</th>
-            <th>予想経費</th>
+            <th class="stick-1">済</th>
+            <th class="stick-2">会計承認</th>
+            <th class="stick-3">工事名称</th>
+            <th class="stick-4">予想経費</th>
             <th>担当</th>
             <th>前年度合計</th>
             <th>支払額合計</th>
@@ -434,10 +448,10 @@
       <table class="ledger-table">
         <thead>
           <tr>
-            <th>済</th>
-            <th>請求書年月日</th>
-            <th>工事名称</th>
-            <th>予想経費</th>
+            <th class="stick-1">済</th>
+            <th class="stick-2">請求書年月日</th>
+            <th class="stick-3">工事名称</th>
+            <th class="stick-4">予想経費</th>
             <th>担当</th>
             <th>前年度合計</th>
             <th>支払額合計</th>
@@ -544,6 +558,16 @@ function yen(n){
 }
 function escapeHtml(s){
   return (s||'').toString().replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+// 「工事名称」列は内容に応じて幅が変わるため、その右隣(予想経費列)の
+// 固定位置(left)を実際の幅に合わせて毎回計算し直す
+function applyStickyOffsets(tableEl){
+  if(!tableEl) return;
+  const col3 = tableEl.querySelector('thead th.stick-3');
+  if(!col3) return;
+  const offset4 = 178 + col3.getBoundingClientRect().width;
+  tableEl.querySelectorAll('.stick-4').forEach(el=>{ el.style.left = offset4 + 'px'; });
 }
 
 let requests = [];   // expense_requests (with computed payment aggregates attached)
@@ -957,10 +981,10 @@ function renderLedger(){
 
     return `
       <tr>
-        <td class="mark-cell"><input type="checkbox" ${isMarked ? 'checked' : ''} onchange="toggleLedgerMark('${r.id}', ${fy}, this.checked)"></td>
-        <td>${reiwaShortDate(r.created_at)}</td>
-        <td class="subject">${escapeHtml(r.subject || '（主題未入力）')}</td>
-        <td class="num">${Number(r.total_cost||0).toLocaleString()}</td>
+        <td class="mark-cell stick-1"><input type="checkbox" ${isMarked ? 'checked' : ''} onchange="toggleLedgerMark('${r.id}', ${fy}, this.checked)"></td>
+        <td class="stick-2">${reiwaShortDate(r.created_at)}</td>
+        <td class="subject stick-3">${escapeHtml(r.subject || '（主題未入力）')}</td>
+        <td class="num stick-4">${Number(r.total_cost||0).toLocaleString()}</td>
         <td>${escapeHtml(r.department || '—')}</td>
         <td class="num">${prevYearTotal ? prevYearTotal.toLocaleString() : ''}</td>
         <td class="num">${thisYearTotal ? thisYearTotal.toLocaleString() : ''}</td>
@@ -971,12 +995,13 @@ function renderLedger(){
   }).join('');
 
   body.innerHTML = rowsHtml;
+  applyStickyOffsets(body.closest('table'));
 
   const monthFootCells = monthTotals.map(v => `<td class="num">${v ? v.toLocaleString() : ''}</td>`).join('');
   foot.innerHTML = `
     <tr>
-      <td colspan="3">合計</td>
-      <td class="num">${sumCost.toLocaleString()}</td>
+      <td colspan="3" class="stick-1">合計</td>
+      <td class="num stick-4">${sumCost.toLocaleString()}</td>
       <td></td>
       <td class="num">${sumPrevYear.toLocaleString()}</td>
       <td class="num">${sumThisYear.toLocaleString()}</td>
@@ -1114,10 +1139,10 @@ function renderInvoiceList(){
     const monthCells = months.map((m, idx) => `<td class="num">${idx === monthIdx ? Number(p.amount||0).toLocaleString() : ''}</td>`).join('');
     return `
       <tr>
-        <td class="mark-cell"><input type="checkbox" ${isMarked ? 'checked' : ''} onchange="toggleInvoiceMark('${p.id}', this.checked)"></td>
-        <td class="date-cell"><input type="date" value="${p.invoice_date || ''}" onchange="updateInvoiceDate('${p.id}', this.value)"></td>
-        <td class="subject">${escapeHtml(r.subject || '（主題未入力）')}</td>
-        <td class="num">${Number(r.total_cost||0).toLocaleString()}</td>
+        <td class="mark-cell stick-1"><input type="checkbox" ${isMarked ? 'checked' : ''} onchange="toggleInvoiceMark('${p.id}', this.checked)"></td>
+        <td class="date-cell stick-2"><input type="date" value="${p.invoice_date || ''}" onchange="updateInvoiceDate('${p.id}', this.value)"></td>
+        <td class="subject stick-3">${escapeHtml(r.subject || '（主題未入力）')}</td>
+        <td class="num stick-4">${Number(r.total_cost||0).toLocaleString()}</td>
         <td>${escapeHtml(r.assignee_department || r.assignee || '—')}</td>
         <td class="num">${prevYearTotal ? prevYearTotal.toLocaleString() : ''}</td>
         <td class="num">${thisYearTotal ? thisYearTotal.toLocaleString() : ''}</td>
@@ -1127,11 +1152,13 @@ function renderInvoiceList(){
       </tr>`;
   }).join('');
 
+  applyStickyOffsets(body.closest('table'));
+
   const monthFootCells = monthTotals.map(v => `<td class="num">${v ? v.toLocaleString() : ''}</td>`).join('');
   foot.innerHTML = `
     <tr>
-      <td colspan="3">合計</td>
-      <td class="num">${sumCost.toLocaleString()}</td>
+      <td colspan="3" class="stick-1">合計</td>
+      <td class="num stick-4">${sumCost.toLocaleString()}</td>
       <td></td>
       <td class="num">${sumPrevYear.toLocaleString()}</td>
       <td class="num">${sumThisYear.toLocaleString()}</td>
