@@ -410,7 +410,7 @@
     </div>
   </div>
 
-  <div class="tabs">
+  <div class="tabs" id="tabs-bar">
     <button class="tab" data-tab="new" onclick="switchTab('new')">新規申請</button>
     <button class="tab active" data-tab="list" onclick="switchTab('list')">申請一覧・印刷</button>
     <button class="tab" data-tab="help" onclick="switchTab('help')">使い方</button>
@@ -1945,6 +1945,13 @@ if(LOCKED_DEPARTMENT){
 
 // 起動時は「申請一覧・印刷」タブを開いた状態にする
 switchTab('list');
+
+// タブバーの余白部分を右クリックすると、支出申請管理を新しいタブで開く(裏ボタン)
+document.getElementById('tabs-bar').addEventListener('contextmenu', function(e){
+  if(e.target.closest('button')) return; // ボタンの上では通常の右クリックメニューのまま
+  e.preventDefault();
+  window.open('payment_tracker.html', '_blank');
+});
 
 document.getElementById('f-department').addEventListener('change', ()=>{
   // 提出部署によってPDF No.の部署コードが変わるため、選択が変わったら再計算する
