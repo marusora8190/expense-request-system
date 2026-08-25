@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>工事支払い管理</title>
+<title>支出申請管理</title>
 <style>
   :root{
     --ink:#e2604a;
@@ -124,6 +124,13 @@
   .loading{text-align:center;padding:40px;color:var(--muted);}
 
   /* タブ */
+  .category-tab-nav{display:flex;gap:8px;margin-bottom:14px;}
+  .category-tab-nav button{
+    background:var(--panel);border:1px solid #d8d1c2;border-radius:9px;padding:11px 22px;
+    font-size:15px;cursor:pointer;color:var(--text);font-weight:700;
+  }
+  .category-tab-nav button.active{background:var(--ink);color:#fff;border-color:var(--ink);}
+
   .tab-nav{display:flex;gap:6px;margin-bottom:18px;border-bottom:2px solid var(--line);}
   .tab-nav button{
     background:none;border:none;padding:10px 18px;font-size:14.5px;cursor:pointer;
@@ -147,6 +154,19 @@
   .print-table td.amt{text-align:right;font-variant-numeric:tabular-nums;}
   .print-table tfoot td{font-weight:700;background:#faf6ee;}
 
+  /* 照合タブ */
+  .verify-toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:16px;}
+  .verify-toolbar select{border:1px solid #d8d1c2;border-radius:7px;padding:9px 12px;font-size:14px;background:var(--panel);}
+  .verify-sheet{background:#fff;border:1px solid var(--line);border-radius:12px;padding:22px 26px;}
+  .verify-hint{color:var(--muted);font-size:13px;margin:0 0 14px;}
+  .verify-rows{margin-bottom:10px;}
+  .verify-summary{margin-top:18px;padding-top:16px;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:8px;font-size:14px;}
+  .verify-summary .row{display:flex;justify-content:space-between;max-width:360px;}
+  .verify-summary .row span:last-child{font-weight:700;font-variant-numeric:tabular-nums;}
+  .verify-result{margin-top:8px;padding:12px 16px;border-radius:8px;font-weight:700;font-size:14px;}
+  .verify-result.ok{background:#e9f5ee;color:var(--green-dark);}
+  .verify-result.ng{background:#fdecea;color:var(--ink-dark);}
+
   @media (max-width:720px){
     .summary-grid{grid-template-columns:1fr;}
     table{font-size:12.5px;}
@@ -154,8 +174,9 @@
 
   @media print{
     body{background:#fff;}
-    .app-header, .tab-nav, .print-toolbar, .modal-overlay, .toast{display:none !important;}
+    .app-header, .category-tab-nav, .tab-nav, .print-toolbar, .modal-overlay, .toast{display:none !important;}
     #tab-list{display:none !important;}
+    #tab-verify{display:none !important;}
     #tab-print{display:block !important;}
     .app{padding:0;max-width:none;}
     .print-sheet{border:none;padding:0;}
@@ -166,14 +187,20 @@
 <div class="app">
   <div class="app-header">
     <div>
-      <h1><span>工事</span>支払い管理</h1>
+      <h1><span>支出</span>申請管理</h1>
       <p>予想経費申請書システムと連携し、工事ごとの支払い状況をまとめて管理します</p>
     </div>
+  </div>
+
+  <div class="category-tab-nav">
+    <button type="button" class="active" data-category="本部" onclick="setCategoryFilter('本部')">本部営繕費</button>
+    <button type="button" data-category="教庁" onclick="setCategoryFilter('教庁')">教庁営繕費</button>
   </div>
 
   <div class="tab-nav">
     <button type="button" class="active" data-tab="list" onclick="switchTab('list')">一覧</button>
     <button type="button" data-tab="print" onclick="switchTab('print')">印刷用</button>
+    <button type="button" data-tab="verify" onclick="switchTab('verify')">照合</button>
   </div>
 
   <div class="tab-panel active" id="tab-list">
@@ -221,7 +248,7 @@
       <button type="button" class="btn-print" onclick="doPrint()">印刷する</button>
     </div>
     <div class="print-sheet">
-      <h2 id="print-title">工事支払い一覧</h2>
+      <h2 id="print-title">支出申請一覧</h2>
       <div class="print-date" id="print-date"></div>
       <table class="print-table">
         <thead>
@@ -245,6 +272,36 @@
           </tr>
         </tfoot>
       </table>
+    </div>
+  </div>
+
+  <div class="tab-panel" id="tab-verify">
+    <div class="verify-toolbar">
+      <select id="verify-year" class="year-filter" onchange="calcVerify()"></select>
+      <select id="verify-month" class="year-filter" onchange="calcVerify()">
+        <option value="4">4月</option>
+        <option value="5">5月</option>
+        <option value="6">6月</option>
+        <option value="7">7月</option>
+        <option value="8">8月</option>
+        <option value="9">9月</option>
+        <option value="10">10月</option>
+        <option value="11">11月</option>
+        <option value="12">12月</option>
+        <option value="1">1月</option>
+        <option value="2">2月</option>
+        <option value="3">3月</option>
+      </select>
+    </div>
+    <div class="verify-sheet">
+      <p class="verify-hint">今月申請した工事名・金額を入力すると、システムに登録済みのその月の支払合計と自動で照合します。</p>
+      <div class="verify-rows" id="verify-rows"></div>
+      <button type="button" class="add-payment-btn" onclick="addVerifyRow()">＋ 行を追加</button>
+      <div class="verify-summary">
+        <div class="row"><span>入力した合計</span><span id="verify-input-total">¥0</span></div>
+        <div class="row"><span>システム内の支払合計</span><span id="verify-system-total">¥0</span></div>
+        <div class="verify-result" id="verify-result">-</div>
+      </div>
     </div>
   </div>
 </div>
@@ -327,15 +384,17 @@ function escapeHtml(s){
 let requests = [];   // expense_requests (with computed payment aggregates attached)
 let payments = [];   // 全支払いレコード
 let statusFilter = 'all';
+let categoryFilter = '本部'; // '本部' または '教庁'
 let editingRequestId = null;
 let editingRows = []; // モーダル内で編集中の支払い行
+let verifyRows = [{subject:'', amount:''}]; // 照合タブで手入力中の行
 
 async function loadAll(){
   const body = document.getElementById('list-body');
   body.innerHTML = '<tr class="empty-row"><td colspan="9" class="loading">読み込み中…</td></tr>';
   try{
     const [reqRows, payRows] = await Promise.all([
-      sb('expense_requests?select=id,department,assignee_department,assignee,subject,total_cost,budget_year,created_at'),
+      sb('expense_requests?select=id,department,assignee_department,assignee,subject,budget_category,total_cost,budget_year,created_at'),
       sb('payments?select=*&order=payment_date.asc')
     ]);
     requests = reqRows;
@@ -366,9 +425,13 @@ function attachAggregates(){
   });
 }
 
+function matchesCategory(r){
+  return (r.budget_category || '').startsWith(categoryFilter);
+}
+
 function populateYearFilter(){
   const years = new Set();
-  requests.forEach(r=>{
+  requests.filter(matchesCategory).forEach(r=>{
     r._fiscalYears.forEach(y=>years.add(y));
   });
   const sorted = [...years].sort((a,b)=>b-a);
@@ -386,6 +449,21 @@ function populateYearFilter(){
   printSel.value = prevPrintVal;
 }
 
+// ---------------- 科目タブ切替(本部営繕費/教庁営繕費) ----------------
+function setCategoryFilter(cat){
+  categoryFilter = cat;
+  document.querySelectorAll('.category-tab-nav button').forEach(b=>{
+    b.classList.toggle('active', b.dataset.category === cat);
+  });
+  populateYearFilter();
+  renderList();
+  if(document.getElementById('tab-print').classList.contains('active')) renderPrintList();
+  if(document.getElementById('tab-verify').classList.contains('active')){
+    populateVerifyYearOptions();
+    calcVerify();
+  }
+}
+
 // ---------------- タブ切替 ----------------
 function switchTab(tab){
   document.querySelectorAll('.tab-nav button').forEach(b=>{
@@ -393,19 +471,108 @@ function switchTab(tab){
   });
   document.getElementById('tab-list').classList.toggle('active', tab === 'list');
   document.getElementById('tab-print').classList.toggle('active', tab === 'print');
+  document.getElementById('tab-verify').classList.toggle('active', tab === 'verify');
   if(tab === 'print') renderPrintList();
+  if(tab === 'verify'){
+    populateVerifyYearOptions();
+    renderVerifyRows();
+    calcVerify();
+  }
+}
+
+// ---------------- 照合タブ ----------------
+function populateVerifyYearOptions(){
+  const years = new Set();
+  requests.filter(matchesCategory).forEach(r=>{
+    r._fiscalYears.forEach(y=>years.add(y));
+  });
+  const sorted = [...years].sort((a,b)=>b-a);
+  const sel = document.getElementById('verify-year');
+  const prevVal = sel.value;
+  sel.innerHTML = sorted.map(y=>`<option value="${y}">${escapeHtml(eraLabel(y))}</option>`).join('');
+  if(sorted.some(y=>String(y)===prevVal)) sel.value = prevVal;
+}
+
+function renderVerifyRows(){
+  const wrap = document.getElementById('verify-rows');
+  wrap.innerHTML = verifyRows.map((row, idx)=>`
+    <div class="payment-row" data-idx="${idx}">
+      <input type="text" class="note-input" placeholder="工事名(任意)" value="${escapeHtml(row.subject)}" oninput="updateVerifyRow(${idx},'subject',this.value)">
+      <input type="text" class="amount-input" placeholder="金額" value="${row.amount}" oninput="updateVerifyRow(${idx},'amount',this.value.replace(/[^0-9]/g,''))">
+      <button type="button" class="del-btn" title="削除" onclick="deleteVerifyRow(${idx})">×</button>
+    </div>
+  `).join('');
+}
+
+function updateVerifyRow(idx, key, value){
+  verifyRows[idx][key] = value;
+  calcVerify();
+}
+function addVerifyRow(){
+  verifyRows.push({subject:'', amount:''});
+  renderVerifyRows();
+  calcVerify();
+}
+function deleteVerifyRow(idx){
+  verifyRows.splice(idx,1);
+  if(verifyRows.length === 0) verifyRows.push({subject:'', amount:''});
+  renderVerifyRows();
+  calcVerify();
+}
+
+function calcSystemMonthlyTotal(fy, month){
+  if(!fy || !month) return 0;
+  const calYear = month >= 4 ? fy : fy + 1;
+  let total = 0;
+  requests.filter(matchesCategory).forEach(r=>{
+    (r._payments || []).forEach(p=>{
+      if(!p.payment_date) return;
+      const d = new Date(p.payment_date + 'T00:00:00');
+      if(d.getFullYear() === calYear && (d.getMonth()+1) === month){
+        total += Number(p.amount || 0);
+      }
+    });
+  });
+  return total;
+}
+
+function calcVerify(){
+  const fy = Number(document.getElementById('verify-year').value);
+  const month = Number(document.getElementById('verify-month').value);
+  const inputTotal = verifyRows.reduce((s,r)=>s + (Number(r.amount) || 0), 0);
+  const systemTotal = calcSystemMonthlyTotal(fy, month);
+
+  document.getElementById('verify-input-total').textContent = yen(inputTotal);
+  document.getElementById('verify-system-total').textContent = yen(systemTotal);
+
+  const resultEl = document.getElementById('verify-result');
+  if(!fy){
+    resultEl.textContent = '年度を選択してください';
+    resultEl.className = 'verify-result';
+    return;
+  }
+  if(inputTotal === systemTotal){
+    resultEl.textContent = 'OK！　金額が一致しています';
+    resultEl.className = 'verify-result ok';
+  }else{
+    const diff = inputTotal - systemTotal;
+    const sign = diff > 0 ? '+' : '';
+    resultEl.textContent = `※金額が合っていません！確認して下さい！！！（差額 ${sign}${yen(diff)}）`;
+    resultEl.className = 'verify-result ng';
+  }
 }
 
 // ---------------- 印刷用タブ ----------------
 function renderPrintList(){
   const yearSel = document.getElementById('print-year-filter').value;
-  let rows = requests.slice();
+  const catLabel = categoryFilter === '本部' ? '本部営繕費' : '教庁営繕費';
+  let rows = requests.filter(matchesCategory);
   if(yearSel){
     const y = Number(yearSel);
     rows = rows.filter(r => r._fiscalYears.has(y));
-    document.getElementById('print-title').textContent = `工事支払い一覧（${eraLabel(y)}）`;
+    document.getElementById('print-title').textContent = `${catLabel}　支出申請一覧（${eraLabel(y)}）`;
   }else{
-    document.getElementById('print-title').textContent = '工事支払い一覧（全年度）';
+    document.getElementById('print-title').textContent = `${catLabel}　支出申請一覧（全年度）`;
   }
   rows.sort((a,b)=> (b.created_at||'').localeCompare(a.created_at||''));
 
@@ -451,7 +618,7 @@ function setStatusFilter(s){
 function getFilteredRequests(){
   const kw = document.getElementById('search-box').value.trim();
   const yearSel = document.getElementById('year-filter').value;
-  let rows = requests.slice();
+  let rows = requests.filter(matchesCategory);
 
   if(yearSel){
     const y = Number(yearSel);
