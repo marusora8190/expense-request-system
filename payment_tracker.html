@@ -47,14 +47,14 @@
   .table-scroll{overflow-x:auto;background:var(--panel);border-radius:12px;border:1px solid var(--line);}
   table{width:100%;border-collapse:collapse;font-size:13.5px;}
   th{
-    text-align:left;padding:11px 12px;background:var(--accent-bg);color:var(--ink-dark);
+    text-align:center;padding:11px 12px;background:var(--accent-bg);color:var(--ink-dark);
     font-weight:700;white-space:nowrap;border-bottom:1px solid var(--line);
     position:sticky;top:0;z-index:2;
   }
   td{padding:11px 12px;border-bottom:1px solid var(--line);white-space:nowrap;}
   tr:last-child td{border-bottom:none;}
   tr:hover td{background:#fbf8f2;}
-  td.subject-cell{white-space:normal;max-width:340px;font-weight:600;}
+  td.subject-cell{white-space:nowrap;font-weight:600;}
   td.amt{text-align:right;font-variant-numeric:tabular-nums;}
   .badge{
     display:inline-block;font-size:11px;padding:2px 8px;border-radius:20px;
@@ -208,12 +208,12 @@
     </div>
   </div>
 
-  <div class="category-tab-nav">
+  <div class="category-tab-nav" id="tabs-bar">
     <button type="button" class="active" data-category="本部" onclick="setCategoryFilter('本部')">本部営繕費</button>
     <button type="button" data-category="教庁" onclick="setCategoryFilter('教庁')">教庁営繕費</button>
   </div>
 
-  <div class="tab-nav" id="tabs-bar">
+  <div class="tab-nav">
     <button type="button" class="active" data-tab="list" onclick="switchTab('list')">一覧</button>
     <button type="button" data-tab="print" onclick="switchTab('print')">印刷用</button>
     <button type="button" data-tab="verify" onclick="switchTab('verify')">照合</button>
@@ -242,9 +242,9 @@
             <th>部署</th>
             <th>主題</th>
             <th>担当</th>
-            <th style="text-align:right;">総経費</th>
-            <th style="text-align:right;">支払合計</th>
-            <th style="text-align:right;">残金</th>
+            <th>総経費</th>
+            <th>支払合計</th>
+            <th>残金</th>
             <th>状態</th>
             <th></th>
           </tr>
@@ -273,9 +273,9 @@
             <th>部署</th>
             <th>主題</th>
             <th>担当</th>
-            <th style="text-align:right;">総経費</th>
-            <th style="text-align:right;">支払合計</th>
-            <th style="text-align:right;">残金</th>
+            <th>総経費</th>
+            <th>支払合計</th>
+            <th>残金</th>
           </tr>
         </thead>
         <tbody id="print-body"></tbody>
