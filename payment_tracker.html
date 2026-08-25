@@ -176,7 +176,8 @@
     border-bottom:1px solid #ecdfc9;font-size:13px;
   }
   .verify-breakdown .b-row:last-child{border-bottom:none;}
-  .verify-breakdown .b-row .b-subject{color:var(--text);white-space:normal;}
+  .verify-breakdown .b-row .b-subject{color:var(--text);white-space:normal;flex:1;}
+  .verify-breakdown .b-row .b-label{color:var(--muted);white-space:nowrap;}
   .verify-breakdown .b-row .b-amount{color:var(--ink-dark);font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap;}
   .verify-breakdown .b-empty{color:var(--muted);font-size:13px;padding:8px 0;}
   .verify-result{margin-top:8px;padding:12px 16px;border-radius:8px;font-weight:700;font-size:14px;}
@@ -206,6 +207,8 @@
     .app-header, .category-tab-nav, .tab-nav, .print-toolbar, .modal-overlay, .toast{display:none !important;}
     #tab-list{display:none !important;}
     #tab-verify{display:none !important;}
+    #tab-ledger{display:none !important;}
+    #tab-invoices{display:none !important;}
     #tab-print{display:block !important;}
     .app{padding:0;max-width:none;}
     .print-sheet{border:none;padding:0;}
@@ -216,6 +219,29 @@
     body.print-mode-verify .verify-toolbar,
     body.print-mode-verify .verify-sheet{display:none !important;}
     body.print-mode-verify .verify-print-sheet{display:block !important;}
+  }
+
+  /* 年度合計タブ */
+  .ledger-toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:16px;}
+  .ledger-toolbar select{border:1px solid #d8d1c2;border-radius:7px;padding:9px 12px;font-size:14px;background:var(--panel);}
+  .ledger-table-scroll{overflow-x:auto;background:var(--panel);border-radius:12px;border:1px solid var(--line);}
+  .ledger-table{border-collapse:collapse;font-size:12.5px;min-width:1500px;width:100%;}
+  .ledger-table th, .ledger-table td{padding:8px 9px;border-bottom:1px solid var(--line);border-right:1px solid #f0ebe0;white-space:nowrap;text-align:center;}
+  .ledger-table th:last-child, .ledger-table td:last-child{border-right:none;}
+  .ledger-table th{
+    background:var(--accent-bg);color:var(--ink-dark);font-weight:700;
+    position:sticky;top:0;z-index:2;
+  }
+  .ledger-table td.subject{text-align:left;font-weight:600;max-width:280px;white-space:normal;}
+  .ledger-table td.num{text-align:right;font-variant-numeric:tabular-nums;}
+  .ledger-table td.neg{color:var(--ink-dark);font-weight:700;}
+  .ledger-table tbody tr:hover td{background:#fbf8f2;}
+  .ledger-table tfoot td{font-weight:700;background:#faf6ee;}
+  .ledger-empty{text-align:center;color:var(--muted);padding:40px 0;}
+  .ledger-table td.mark-cell{text-align:center;}
+  .ledger-table td.mark-cell input[type="checkbox"]{width:16px;height:16px;cursor:pointer;}
+  .ledger-table td.date-cell input[type="date"]{
+    border:1px solid #d8d1c2;border-radius:5px;padding:4px 5px;font-size:12px;width:118px;
   }
 </style>
 </head>
@@ -237,6 +263,8 @@
     <button type="button" class="active" data-tab="list" onclick="switchTab('list')">一覧</button>
     <button type="button" data-tab="print" onclick="switchTab('print')">印刷用</button>
     <button type="button" data-tab="verify" onclick="switchTab('verify')">照合</button>
+    <button type="button" data-tab="ledger" onclick="switchTab('ledger')">年度合計</button>
+    <button type="button" data-tab="invoices" onclick="switchTab('invoices')">請求書一覧</button>
   </div>
 
   <div class="tab-panel active" id="tab-list">
@@ -357,6 +385,85 @@
       </table>
     </div>
   </div>
+
+  <div class="tab-panel" id="tab-ledger">
+    <div class="ledger-toolbar">
+      <select id="ledger-year-filter" class="year-filter" onchange="renderLedger()"></select>
+    </div>
+    <div class="ledger-table-scroll">
+      <table class="ledger-table">
+        <thead>
+          <tr>
+            <th>済</th>
+            <th>会計承認</th>
+            <th>工事名称</th>
+            <th>予想経費</th>
+            <th>担当</th>
+            <th>前年度合計</th>
+            <th>支払額合計</th>
+            <th>工事総合計</th>
+            <th>残額</th>
+            <th>4月支払分</th>
+            <th>5月支払分</th>
+            <th>6月支払分</th>
+            <th>7月支払分</th>
+            <th>8月支払分</th>
+            <th>9月支払分</th>
+            <th>10月支払分</th>
+            <th>11月支払分</th>
+            <th>12月支払分</th>
+            <th>1月支払分</th>
+            <th>2月支払分</th>
+            <th>3月末</th>
+          </tr>
+        </thead>
+        <tbody id="ledger-body">
+          <tr><td colspan="21" class="ledger-empty">読み込み中…</td></tr>
+        </tbody>
+        <tfoot id="ledger-foot"></tfoot>
+      </table>
+    </div>
+  </div>
+
+  <div class="tab-panel" id="tab-invoices">
+    <p class="verify-hint">「請求書年月日」はこのタブで直接入力・編集できます(支払日とは別に管理します)。担当は部署(電気課・水道課など)を表示します。</p>
+    <div class="ledger-toolbar">
+      <select id="invoice-year-filter" class="year-filter" onchange="renderInvoiceList()"></select>
+    </div>
+    <div class="ledger-table-scroll">
+      <table class="ledger-table">
+        <thead>
+          <tr>
+            <th>済</th>
+            <th>請求書年月日</th>
+            <th>工事名称</th>
+            <th>予想経費</th>
+            <th>担当</th>
+            <th>前年度合計</th>
+            <th>支払額合計</th>
+            <th>工事総合計</th>
+            <th>残額</th>
+            <th>4月支払分</th>
+            <th>5月支払分</th>
+            <th>6月支払分</th>
+            <th>7月支払分</th>
+            <th>8月支払分</th>
+            <th>9月支払分</th>
+            <th>10月支払分</th>
+            <th>11月支払分</th>
+            <th>12月支払分</th>
+            <th>1月支払分</th>
+            <th>2月支払分</th>
+            <th>3月末</th>
+          </tr>
+        </thead>
+        <tbody id="invoice-body">
+          <tr><td colspan="21" class="ledger-empty">読み込み中…</td></tr>
+        </tbody>
+        <tfoot id="invoice-foot"></tfoot>
+      </table>
+    </div>
+  </div>
 </div>
 
 <!-- 編集モーダル -->
@@ -442,6 +549,8 @@ function escapeHtml(s){
 let requests = [];   // expense_requests (with computed payment aggregates attached)
 let payments = [];   // 全支払いレコード
 let overrides = [];  // 手動「完了」フラグ
+let ledgerMarks = {}; // 年度合計タブの「済」マーク: `${expense_request_id}_${fiscal_year}` -> boolean
+let paymentMarks = {}; // 請求書一覧タブの「済」マーク: `${payment_id}` -> boolean
 let statusFilter = 'all';
 let categoryFilter = '本部'; // '本部' または '教庁'
 let editingRequestId = null;
@@ -453,14 +562,20 @@ async function loadAll(){
   const body = document.getElementById('list-body');
   body.innerHTML = '<tr class="empty-row"><td colspan="9" class="loading">読み込み中…</td></tr>';
   try{
-    const [reqRows, payRows, ovrRows] = await Promise.all([
+    const [reqRows, payRows, ovrRows, markRows, payMarkRows] = await Promise.all([
       sb('expense_requests?select=id,department,assignee_department,assignee,subject,budget_category,total_cost,budget_year,created_at'),
       sb('payments?select=*&order=payment_date.asc'),
-      sb('payment_overrides?select=*')
+      sb('payment_overrides?select=*'),
+      sb('ledger_marks?select=*'),
+      sb('payment_marks?select=*')
     ]);
     requests = reqRows;
     payments = payRows;
     overrides = ovrRows;
+    ledgerMarks = {};
+    markRows.forEach(m=>{ ledgerMarks[`${m.expense_request_id}_${m.fiscal_year}`] = m.is_marked; });
+    paymentMarks = {};
+    payMarkRows.forEach(m=>{ paymentMarks[m.payment_id] = m.is_marked; });
     attachAggregates();
     populateYearFilter();
     renderList();
@@ -527,6 +642,14 @@ function setCategoryFilter(cat){
     populateVerifyYearOptions();
     calcVerify();
   }
+  if(document.getElementById('tab-ledger').classList.contains('active')){
+    populateLedgerYearOptions();
+    renderLedger();
+  }
+  if(document.getElementById('tab-invoices').classList.contains('active')){
+    populateInvoiceYearOptions();
+    renderInvoiceList();
+  }
 }
 
 // ---------------- タブ切替 ----------------
@@ -537,11 +660,21 @@ function switchTab(tab){
   document.getElementById('tab-list').classList.toggle('active', tab === 'list');
   document.getElementById('tab-print').classList.toggle('active', tab === 'print');
   document.getElementById('tab-verify').classList.toggle('active', tab === 'verify');
+  document.getElementById('tab-ledger').classList.toggle('active', tab === 'ledger');
+  document.getElementById('tab-invoices').classList.toggle('active', tab === 'invoices');
   if(tab === 'print') renderPrintList();
   if(tab === 'verify'){
     populateVerifyYearOptions();
     renderVerifyRows();
     calcVerify();
+  }
+  if(tab === 'ledger'){
+    populateLedgerYearOptions();
+    renderLedger();
+  }
+  if(tab === 'invoices'){
+    populateInvoiceYearOptions();
+    renderInvoiceList();
   }
 }
 
@@ -629,11 +762,11 @@ function calcSystemMonthlyDetails(fy, month){
       if(!p.payment_date) return;
       const d = new Date(p.payment_date + 'T00:00:00');
       if(d.getFullYear() === calYear && (d.getMonth()+1) === month){
-        rows.push({ subject: r.subject || '（主題未入力）', amount: Number(p.amount || 0) });
+        rows.push({ subject: r.subject || '（主題未入力）', amount: Number(p.amount || 0), payment_date: p.payment_date });
       }
     });
   });
-  rows.sort((a,b)=> b.amount - a.amount);
+  rows.sort((a,b)=> (a.payment_date || '').localeCompare(b.payment_date || ''));
   return rows;
 }
 
@@ -654,6 +787,7 @@ function calcVerify(){
     breakdownEl.innerHTML = details.map(d=>`
       <div class="b-row">
         <span class="b-subject">${escapeHtml(d.subject)}</span>
+        <span class="b-label">予想経費金額</span>
         <span class="b-amount">${yen(d.amount)}</span>
       </div>
     `).join('');
@@ -716,6 +850,296 @@ function doVerifyPrint(){
 window.addEventListener('afterprint', ()=>{
   document.body.classList.remove('print-mode-verify');
 });
+
+// ---------------- 年度合計タブ ----------------
+let ledgerDefaultsSet = false;
+
+function reiwaShortDate(dateStr){
+  if(!dateStr) return '—';
+  const d = new Date(dateStr);
+  const y = d.getFullYear() - 2018;
+  return `R${y}.${d.getMonth()+1}.${d.getDate()}`;
+}
+
+function populateLedgerYearOptions(){
+  const years = new Set();
+  requests.filter(matchesCategory).forEach(r=>{
+    r._fiscalYears.forEach(y=>years.add(y));
+  });
+  const sorted = [...years].sort((a,b)=>b-a);
+  const sel = document.getElementById('ledger-year-filter');
+  const prevVal = sel.value;
+  sel.innerHTML = sorted.map(y=>`<option value="${y}">${escapeHtml(eraLabel(y))}</option>`).join('');
+  if(sorted.some(y=>String(y)===prevVal)){
+    sel.value = prevVal;
+  }else if(!ledgerDefaultsSet){
+    const currentFy = fiscalYear(new Date().toISOString().slice(0,10));
+    if(sorted.some(y=>y===currentFy)) sel.value = currentFy;
+    ledgerDefaultsSet = true;
+  }
+}
+
+async function toggleLedgerMark(requestId, fy, checked){
+  const key = `${requestId}_${fy}`;
+  ledgerMarks[key] = checked; // 先に画面側の状態を更新(体感を軽くする)
+  try{
+    await sb('ledger_marks', {
+      method: 'POST',
+      prefer: 'resolution=merge-duplicates,return=minimal',
+      body: JSON.stringify({
+        expense_request_id: requestId,
+        fiscal_year: fy,
+        is_marked: checked,
+        updated_at: new Date().toISOString()
+      })
+    });
+  }catch(e){
+    showToast('「済」の保存に失敗しました: ' + e.message, 5000);
+    console.error(e);
+  }
+}
+
+function renderLedger(){
+  const fy = Number(document.getElementById('ledger-year-filter').value);
+  const body = document.getElementById('ledger-body');
+  const foot = document.getElementById('ledger-foot');
+
+  if(!fy){
+    body.innerHTML = '<tr><td colspan="21" class="ledger-empty">年度を選択してください</td></tr>';
+    foot.innerHTML = '';
+    return;
+  }
+
+  let rows = requests.filter(r => matchesCategory(r) && r._fiscalYears.has(fy));
+  rows.sort((a,b) => (a.created_at||'').localeCompare(b.created_at||''));
+
+  if(rows.length === 0){
+    body.innerHTML = '<tr><td colspan="21" class="ledger-empty">該当する工事がありません</td></tr>';
+    foot.innerHTML = '';
+    return;
+  }
+
+  const months = [4,5,6,7,8,9,10,11,12,1,2,3];
+  const monthTotals = months.map(()=>0);
+  let sumCost=0, sumPrevYear=0, sumThisYear=0, sumTotal=0, sumRemaining=0;
+
+  const rowsHtml = rows.map(r=>{
+    let prevYearTotal = 0, thisYearTotal = 0;
+    const byMonth = {};
+    months.forEach(m=> byMonth[m] = 0);
+
+    (r._payments || []).forEach(p=>{
+      if(!p.payment_date) return;
+      const pfy = fiscalYear(p.payment_date);
+      const amt = Number(p.amount || 0);
+      if(pfy < fy){
+        prevYearTotal += amt;
+      }else if(pfy === fy){
+        thisYearTotal += amt;
+        const d = new Date(p.payment_date + 'T00:00:00');
+        byMonth[d.getMonth()+1] = (byMonth[d.getMonth()+1] || 0) + amt;
+      }
+    });
+
+    const totalPaid = prevYearTotal + thisYearTotal;
+    const remaining = Number(r.total_cost||0) - totalPaid;
+
+    sumCost += Number(r.total_cost||0);
+    sumPrevYear += prevYearTotal;
+    sumThisYear += thisYearTotal;
+    sumTotal += totalPaid;
+    sumRemaining += remaining;
+    months.forEach((m,idx)=> monthTotals[idx] += byMonth[m]);
+
+    const monthCells = months.map(m => `<td class="num">${byMonth[m] ? Number(byMonth[m]).toLocaleString() : ''}</td>`).join('');
+    const markKey = `${r.id}_${fy}`;
+    const isMarked = !!ledgerMarks[markKey];
+
+    return `
+      <tr>
+        <td class="mark-cell"><input type="checkbox" ${isMarked ? 'checked' : ''} onchange="toggleLedgerMark('${r.id}', ${fy}, this.checked)"></td>
+        <td>${reiwaShortDate(r.created_at)}</td>
+        <td class="subject">${escapeHtml(r.subject || '（主題未入力）')}</td>
+        <td class="num">${Number(r.total_cost||0).toLocaleString()}</td>
+        <td>${escapeHtml(r.department || '—')}</td>
+        <td class="num">${prevYearTotal ? prevYearTotal.toLocaleString() : ''}</td>
+        <td class="num">${thisYearTotal ? thisYearTotal.toLocaleString() : ''}</td>
+        <td class="num">${totalPaid ? totalPaid.toLocaleString() : ''}</td>
+        <td class="num${remaining < 0 ? ' neg' : ''}">${remaining.toLocaleString()}</td>
+        ${monthCells}
+      </tr>`;
+  }).join('');
+
+  body.innerHTML = rowsHtml;
+
+  const monthFootCells = monthTotals.map(v => `<td class="num">${v ? v.toLocaleString() : ''}</td>`).join('');
+  foot.innerHTML = `
+    <tr>
+      <td colspan="3">合計</td>
+      <td class="num">${sumCost.toLocaleString()}</td>
+      <td></td>
+      <td class="num">${sumPrevYear.toLocaleString()}</td>
+      <td class="num">${sumThisYear.toLocaleString()}</td>
+      <td class="num">${sumTotal.toLocaleString()}</td>
+      <td class="num${sumRemaining < 0 ? ' neg' : ''}">${sumRemaining.toLocaleString()}</td>
+      ${monthFootCells}
+    </tr>`;
+}
+
+// ---------------- 請求書一覧タブ ----------------
+let invoiceDefaultsSet = false;
+
+function populateInvoiceYearOptions(){
+  const years = new Set();
+  requests.filter(matchesCategory).forEach(r=>{
+    r._fiscalYears.forEach(y=>years.add(y));
+    (r._payments||[]).forEach(p=>{
+      if(p.invoice_date) years.add(fiscalYear(p.invoice_date));
+    });
+  });
+  const sorted = [...years].sort((a,b)=>b-a);
+  const sel = document.getElementById('invoice-year-filter');
+  const prevVal = sel.value;
+  sel.innerHTML = sorted.map(y=>`<option value="${y}">${escapeHtml(eraLabel(y))}</option>`).join('');
+  if(sorted.some(y=>String(y)===prevVal)){
+    sel.value = prevVal;
+  }else if(!invoiceDefaultsSet){
+    const currentFy = fiscalYear(new Date().toISOString().slice(0,10));
+    if(sorted.some(y=>y===currentFy)) sel.value = currentFy;
+    invoiceDefaultsSet = true;
+  }
+}
+
+async function updateInvoiceDate(paymentId, value){
+  const p = payments.find(x=>x.id === paymentId);
+  if(p) p.invoice_date = value || null;
+  try{
+    await sb(`payments?id=eq.${paymentId}`, {
+      method: 'PATCH', prefer: 'return=minimal',
+      body: JSON.stringify({ invoice_date: value || null, updated_at: new Date().toISOString() })
+    });
+  }catch(e){
+    showToast('請求書年月日の保存に失敗しました: ' + e.message, 5000);
+    console.error(e);
+  }
+  populateInvoiceYearOptions();
+  renderInvoiceList();
+}
+
+async function toggleInvoiceMark(paymentId, checked){
+  paymentMarks[paymentId] = checked;
+  try{
+    await sb('payment_marks', {
+      method: 'POST',
+      prefer: 'resolution=merge-duplicates,return=minimal',
+      body: JSON.stringify({
+        payment_id: paymentId,
+        is_marked: checked,
+        updated_at: new Date().toISOString()
+      })
+    });
+  }catch(e){
+    showToast('「済」の保存に失敗しました: ' + e.message, 5000);
+    console.error(e);
+  }
+}
+
+function renderInvoiceList(){
+  const fy = Number(document.getElementById('invoice-year-filter').value);
+  const body = document.getElementById('invoice-body');
+  const foot = document.getElementById('invoice-foot');
+
+  if(!fy){
+    body.innerHTML = '<tr><td colspan="21" class="ledger-empty">年度を選択してください</td></tr>';
+    foot.innerHTML = '';
+    return;
+  }
+
+  const months = [4,5,6,7,8,9,10,11,12,1,2,3];
+  const monthTotals = months.map(()=>0);
+  let sumCost=0, sumPrevYear=0, sumThisYear=0, sumTotal=0, sumRemaining=0;
+  const countedProjects = new Set();
+  const entries = [];
+
+  requests.filter(matchesCategory).forEach(r=>{
+    // このプロジェクトの「前年度合計」「支払額合計(選択年度)」「工事総合計」「残額」は
+    // 実際の支払日(payment_date)ベースで計算する(年度合計タブと同じ考え方)
+    let prevYearTotal = 0, thisYearTotal = 0;
+    (r._payments || []).forEach(p=>{
+      if(!p.payment_date) return;
+      const pfy = fiscalYear(p.payment_date);
+      const amt = Number(p.amount || 0);
+      if(pfy < fy) prevYearTotal += amt;
+      else if(pfy === fy) thisYearTotal += amt;
+    });
+    const totalPaid = prevYearTotal + thisYearTotal;
+    const remaining = Number(r.total_cost||0) - totalPaid;
+
+    (r._payments || []).forEach(p=>{
+      const invDate = p.invoice_date;
+      const invFy = invDate ? fiscalYear(invDate) : null;
+      const include = invFy === fy || (!invDate && fiscalYear(p.payment_date) === fy);
+      if(!include) return;
+
+      if(!countedProjects.has(r.id)){
+        countedProjects.add(r.id);
+        sumCost += Number(r.total_cost||0);
+        sumPrevYear += prevYearTotal;
+        sumThisYear += thisYearTotal;
+        sumTotal += totalPaid;
+        sumRemaining += remaining;
+      }
+
+      let monthIdx = -1;
+      if(invDate && invFy === fy){
+        const d = new Date(invDate + 'T00:00:00');
+        monthIdx = months.indexOf(d.getMonth()+1);
+        if(monthIdx >= 0) monthTotals[monthIdx] += Number(p.amount||0);
+      }
+
+      entries.push({ r, p, prevYearTotal, thisYearTotal, totalPaid, remaining, monthIdx });
+    });
+  });
+
+  if(entries.length === 0){
+    body.innerHTML = '<tr><td colspan="21" class="ledger-empty">該当する請求がありません</td></tr>';
+    foot.innerHTML = '';
+    return;
+  }
+
+  entries.sort((a,b)=> (a.p.invoice_date || '9999').localeCompare(b.p.invoice_date || '9999'));
+
+  body.innerHTML = entries.map(({r, p, prevYearTotal, thisYearTotal, totalPaid, remaining, monthIdx})=>{
+    const isMarked = !!paymentMarks[p.id];
+    const monthCells = months.map((m, idx) => `<td class="num">${idx === monthIdx ? Number(p.amount||0).toLocaleString() : ''}</td>`).join('');
+    return `
+      <tr>
+        <td class="mark-cell"><input type="checkbox" ${isMarked ? 'checked' : ''} onchange="toggleInvoiceMark('${p.id}', this.checked)"></td>
+        <td class="date-cell"><input type="date" value="${p.invoice_date || ''}" onchange="updateInvoiceDate('${p.id}', this.value)"></td>
+        <td class="subject">${escapeHtml(r.subject || '（主題未入力）')}</td>
+        <td class="num">${Number(r.total_cost||0).toLocaleString()}</td>
+        <td>${escapeHtml(r.assignee_department || r.assignee || '—')}</td>
+        <td class="num">${prevYearTotal ? prevYearTotal.toLocaleString() : ''}</td>
+        <td class="num">${thisYearTotal ? thisYearTotal.toLocaleString() : ''}</td>
+        <td class="num">${totalPaid ? totalPaid.toLocaleString() : ''}</td>
+        <td class="num${remaining < 0 ? ' neg' : ''}">${remaining.toLocaleString()}</td>
+        ${monthCells}
+      </tr>`;
+  }).join('');
+
+  const monthFootCells = monthTotals.map(v => `<td class="num">${v ? v.toLocaleString() : ''}</td>`).join('');
+  foot.innerHTML = `
+    <tr>
+      <td colspan="3">合計</td>
+      <td class="num">${sumCost.toLocaleString()}</td>
+      <td></td>
+      <td class="num">${sumPrevYear.toLocaleString()}</td>
+      <td class="num">${sumThisYear.toLocaleString()}</td>
+      <td class="num">${sumTotal.toLocaleString()}</td>
+      <td class="num${sumRemaining < 0 ? ' neg' : ''}">${sumRemaining.toLocaleString()}</td>
+      ${monthFootCells}
+    </tr>`;
+}
 
 // ---------------- 印刷用タブ ----------------
 function renderPrintList(){
