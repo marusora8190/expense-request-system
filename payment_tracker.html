@@ -213,7 +213,7 @@
     <button type="button" data-category="教庁" onclick="setCategoryFilter('教庁')">教庁営繕費</button>
   </div>
 
-  <div class="tab-nav">
+  <div class="tab-nav" id="tabs-bar">
     <button type="button" class="active" data-tab="list" onclick="switchTab('list')">一覧</button>
     <button type="button" data-tab="print" onclick="switchTab('print')">印刷用</button>
     <button type="button" data-tab="verify" onclick="switchTab('verify')">照合</button>
@@ -872,6 +872,13 @@ function showToast(msg, ms=3000){
 
 document.getElementById('modal-overlay').addEventListener('click', (e)=>{
   if(e.target.id === 'modal-overlay') closeModal();
+});
+
+// タブバーの余白部分を右クリックすると、予想経費申請書を新しいタブで開く(裏ボタン)
+document.getElementById('tabs-bar').addEventListener('contextmenu', function(e){
+  if(e.target.closest('button')) return; // ボタンの上では通常の右クリックメニューのまま
+  e.preventDefault();
+  window.open('https://marusora8190.github.io/expense-request-system/expense_form.html', '_blank');
 });
 
 loadAll();
