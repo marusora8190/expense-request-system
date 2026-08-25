@@ -224,7 +224,7 @@
   /* 年度合計タブ */
   .ledger-toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:16px;}
   .ledger-toolbar select{border:1px solid #d8d1c2;border-radius:7px;padding:9px 12px;font-size:14px;background:var(--panel);}
-  .ledger-table-scroll{overflow-x:auto;background:var(--panel);border-radius:12px;border:1px solid var(--line);}
+  .ledger-table-scroll{overflow-x:auto;overflow-y:auto;max-height:65vh;background:var(--panel);border-radius:12px;border:1px solid var(--line);}
   .ledger-table{border-collapse:collapse;font-size:12.5px;min-width:1500px;width:100%;}
   .ledger-table th, .ledger-table td{padding:8px 9px;border-bottom:1px solid var(--line);border-right:1px solid #f0ebe0;white-space:nowrap;text-align:center;}
   .ledger-table th:last-child, .ledger-table td:last-child{border-right:none;}
@@ -355,8 +355,8 @@
 
   <div class="tab-panel" id="tab-verify">
     <div class="verify-toolbar">
-      <select id="verify-year" class="year-filter" onchange="calcVerify()"></select>
-      <select id="verify-month" class="year-filter" onchange="calcVerify()">
+      <select id="verify-year" class="year-filter" onchange="refreshVerifyRowsFromRequests()"></select>
+      <select id="verify-month" class="year-filter" onchange="refreshVerifyRowsFromRequests()">
         <option value="4">4月</option>
         <option value="5">5月</option>
         <option value="6">6月</option>
@@ -373,7 +373,7 @@
       <button type="button" class="btn-print" onclick="doVerifyPrint()">印刷する</button>
     </div>
     <div class="verify-sheet">
-      <p class="verify-hint">今月申請した工事名・金額を入力すると、システムに登録済みのその月の支払合計と自動で照合します。</p>
+      <p class="verify-hint">この月に登録された予想経費申請書の工事名が自動で並びます。請求書が届いたら、その金額をここに入力してください(登録されていない工事は「＋ 行を追加」で手入力できます)。</p>
       <div class="verify-rows" id="verify-rows"></div>
       <button type="button" class="add-payment-btn" onclick="addVerifyRow()">＋ 行を追加</button>
       <div class="verify-summary">
@@ -664,7 +664,7 @@ function setCategoryFilter(cat){
   if(document.getElementById('tab-print').classList.contains('active')) renderPrintList();
   if(document.getElementById('tab-verify').classList.contains('active')){
     populateVerifyYearOptions();
-    calcVerify();
+    refreshVerifyRowsFromRequests();
   }
   if(document.getElementById('tab-ledger').classList.contains('active')){
     populateLedgerYearOptions();
@@ -689,8 +689,7 @@ function switchTab(tab){
   if(tab === 'print') renderPrintList();
   if(tab === 'verify'){
     populateVerifyYearOptions();
-    renderVerifyRows();
-    calcVerify();
+    refreshVerifyRowsFromRequests();
   }
   if(tab === 'ledger'){
     populateLedgerYearOptions();
@@ -714,6 +713,38 @@ function populateVerifyYearOptions(){
   sel.innerHTML = sorted.map(y=>`<option value="${y}">${escapeHtml(eraLabel(y))}</option>`).join('');
   if(sorted.some(y=>String(y)===prevVal)) sel.value = prevVal;
   applyVerifyDefaultsIfNeeded(sorted);
+}
+
+// この年度・月に登録された予想経費申請書(工事)を、照合タブの行として自動的に並べる。
+// すでに金額を入力済みの工事名があれば、その金額は保持する。
+function refreshVerifyRowsFromRequests(){
+  const fy = Number(document.getElementById('verify-year').value);
+  const month = Number(document.getElementById('verify-month').value);
+
+  const prevAmounts = {};
+  verifyRows.forEach(row=>{
+    if(row.subject) prevAmounts[row.subject] = row.amount;
+  });
+
+  if(!fy || !month){
+    verifyRows = [{subject:'', amount:''}];
+  }else{
+    const calYear = month >= 4 ? fy : fy + 1;
+    const matched = requests
+      .filter(r => matchesCategory(r) && r.created_at)
+      .filter(r=>{
+        const d = new Date(r.created_at);
+        return d.getFullYear() === calYear && (d.getMonth()+1) === month;
+      })
+      .sort((a,b)=> (a.created_at||'').localeCompare(b.created_at||''));
+
+    verifyRows = matched.length > 0
+      ? matched.map(r => ({ subject: r.subject || '', amount: prevAmounts[r.subject || ''] || '' }))
+      : [{subject:'', amount:''}];
+  }
+
+  renderVerifyRows();
+  calcVerify();
 }
 
 function applyVerifyDefaultsIfNeeded(availableYears){
