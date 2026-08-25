@@ -411,6 +411,7 @@ let categoryFilter = '本部'; // '本部' または '教庁'
 let editingRequestId = null;
 let editingRows = []; // モーダル内で編集中の支払い行
 let verifyRows = [{subject:'', amount:''}]; // 照合タブで手入力中の行
+let verifyDefaultsSet = false; // 照合タブの初期値(今年度・今月)を設定済みか
 
 async function loadAll(){
   const body = document.getElementById('list-body');
@@ -519,6 +520,25 @@ function populateVerifyYearOptions(){
   const prevVal = sel.value;
   sel.innerHTML = sorted.map(y=>`<option value="${y}">${escapeHtml(eraLabel(y))}</option>`).join('');
   if(sorted.some(y=>String(y)===prevVal)) sel.value = prevVal;
+  applyVerifyDefaultsIfNeeded(sorted);
+}
+
+function applyVerifyDefaultsIfNeeded(availableYears){
+  if(verifyDefaultsSet) return;
+  const today = new Date();
+  const todayStr = today.toISOString().slice(0,10);
+  const currentFy = fiscalYear(todayStr);
+  const currentMonth = today.getMonth() + 1;
+
+  const yearSel = document.getElementById('verify-year');
+  if(availableYears.some(y => y === currentFy)){
+    yearSel.value = currentFy;
+  }
+
+  const monthSel = document.getElementById('verify-month');
+  monthSel.value = String(currentMonth);
+
+  verifyDefaultsSet = true;
 }
 
 function renderVerifyRows(){
