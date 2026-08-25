@@ -123,9 +123,42 @@
 
   .loading{text-align:center;padding:40px;color:var(--muted);}
 
+  /* タブ */
+  .tab-nav{display:flex;gap:6px;margin-bottom:18px;border-bottom:2px solid var(--line);}
+  .tab-nav button{
+    background:none;border:none;padding:10px 18px;font-size:14.5px;cursor:pointer;
+    color:var(--muted);font-weight:700;border-bottom:3px solid transparent;margin-bottom:-2px;
+  }
+  .tab-nav button.active{color:var(--ink-dark);border-bottom-color:var(--ink);}
+  .tab-panel{display:none;}
+  .tab-panel.active{display:block;}
+
+  /* 印刷用タブ */
+  .print-toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:16px;}
+  .print-toolbar select{border:1px solid #d8d1c2;border-radius:7px;padding:9px 12px;font-size:14px;background:var(--panel);}
+  .btn-print{background:var(--ink);color:#fff;border:none;border-radius:7px;padding:10px 20px;font-size:14px;cursor:pointer;font-weight:700;}
+  .btn-print:hover{background:var(--ink-dark);}
+  .print-sheet{background:#fff;border:1px solid var(--line);border-radius:12px;padding:26px 30px;}
+  .print-sheet h2{margin:0 0 4px;font-size:18px;text-align:center;}
+  .print-sheet .print-date{text-align:right;color:var(--muted);font-size:12px;margin-bottom:14px;}
+  .print-table{width:100%;border-collapse:collapse;font-size:13px;}
+  .print-table th, .print-table td{border:1px solid #ccc2ac;padding:7px 9px;}
+  .print-table th{background:var(--accent-bg);color:var(--ink-dark);}
+  .print-table td.amt{text-align:right;font-variant-numeric:tabular-nums;}
+  .print-table tfoot td{font-weight:700;background:#faf6ee;}
+
   @media (max-width:720px){
     .summary-grid{grid-template-columns:1fr;}
     table{font-size:12.5px;}
+  }
+
+  @media print{
+    body{background:#fff;}
+    .app-header, .tab-nav, .print-toolbar, .modal-overlay, .toast{display:none !important;}
+    #tab-list{display:none !important;}
+    #tab-print{display:block !important;}
+    .app{padding:0;max-width:none;}
+    .print-sheet{border:none;padding:0;}
   }
 </style>
 </head>
@@ -138,39 +171,81 @@
     </div>
   </div>
 
-  <div class="toolbar">
-    <div class="search-wrap">
-      <input type="text" id="search-box" placeholder="主題・部署・担当で検索">
+  <div class="tab-nav">
+    <button type="button" class="active" data-tab="list" onclick="switchTab('list')">一覧</button>
+    <button type="button" data-tab="print" onclick="switchTab('print')">印刷用</button>
+  </div>
+
+  <div class="tab-panel active" id="tab-list">
+    <div class="toolbar">
+      <div class="search-wrap">
+        <input type="text" id="search-box" placeholder="主題・部署・担当で検索">
+      </div>
+      <select id="year-filter" class="year-filter">
+        <option value="">すべての年度</option>
+      </select>
+      <div class="status-filter">
+        <button type="button" class="active" data-status="all" onclick="setStatusFilter('all')">すべて</button>
+        <button type="button" data-status="open" onclick="setStatusFilter('open')">支払い中</button>
+        <button type="button" data-status="done" onclick="setStatusFilter('done')">完了</button>
+      </div>
     </div>
-    <select id="year-filter" class="year-filter">
-      <option value="">すべての年度</option>
-    </select>
-    <div class="status-filter">
-      <button type="button" class="active" data-status="all" onclick="setStatusFilter('all')">すべて</button>
-      <button type="button" data-status="open" onclick="setStatusFilter('open')">支払い中</button>
-      <button type="button" data-status="done" onclick="setStatusFilter('done')">完了</button>
+
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>年度</th>
+            <th>部署</th>
+            <th>主題</th>
+            <th>担当</th>
+            <th style="text-align:right;">総経費</th>
+            <th style="text-align:right;">支払合計</th>
+            <th style="text-align:right;">残金</th>
+            <th>状態</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="list-body">
+          <tr class="empty-row"><td colspan="9" class="loading">読み込み中…</td></tr>
+        </tbody>
+      </table>
     </div>
   </div>
 
-  <div class="table-scroll">
-    <table>
-      <thead>
-        <tr>
-          <th>年度</th>
-          <th>部署</th>
-          <th>主題</th>
-          <th>担当</th>
-          <th style="text-align:right;">総経費</th>
-          <th style="text-align:right;">支払合計</th>
-          <th style="text-align:right;">残金</th>
-          <th>状態</th>
-          <th></th>
-        </tr>
-      </thead>
-      <tbody id="list-body">
-        <tr class="empty-row"><td colspan="9" class="loading">読み込み中…</td></tr>
-      </tbody>
-    </table>
+  <div class="tab-panel" id="tab-print">
+    <div class="print-toolbar">
+      <select id="print-year-filter" class="year-filter" onchange="renderPrintList()">
+        <option value="">すべての年度</option>
+      </select>
+      <button type="button" class="btn-print" onclick="doPrint()">印刷する</button>
+    </div>
+    <div class="print-sheet">
+      <h2 id="print-title">工事支払い一覧</h2>
+      <div class="print-date" id="print-date"></div>
+      <table class="print-table">
+        <thead>
+          <tr>
+            <th>年度</th>
+            <th>部署</th>
+            <th>主題</th>
+            <th>担当</th>
+            <th style="text-align:right;">総経費</th>
+            <th style="text-align:right;">支払合計</th>
+            <th style="text-align:right;">残金</th>
+          </tr>
+        </thead>
+        <tbody id="print-body"></tbody>
+        <tfoot>
+          <tr>
+            <td colspan="4">合計</td>
+            <td class="amt" id="print-total-cost">¥0</td>
+            <td class="amt" id="print-total-paid">¥0</td>
+            <td class="amt" id="print-total-remaining">¥0</td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
   </div>
 </div>
 
@@ -292,14 +367,77 @@ function attachAggregates(){
 }
 
 function populateYearFilter(){
-  const sel = document.getElementById('year-filter');
   const years = new Set();
   requests.forEach(r=>{
     r._fiscalYears.forEach(y=>years.add(y));
   });
   const sorted = [...years].sort((a,b)=>b-a);
-  sel.innerHTML = '<option value="">すべての年度</option>' +
+  const optionsHtml = '<option value="">すべての年度</option>' +
     sorted.map(y=>`<option value="${y}">${escapeHtml(eraLabel(y))}</option>`).join('');
+
+  const sel = document.getElementById('year-filter');
+  const prevListVal = sel.value;
+  sel.innerHTML = optionsHtml;
+  sel.value = prevListVal;
+
+  const printSel = document.getElementById('print-year-filter');
+  const prevPrintVal = printSel.value;
+  printSel.innerHTML = optionsHtml;
+  printSel.value = prevPrintVal;
+}
+
+// ---------------- タブ切替 ----------------
+function switchTab(tab){
+  document.querySelectorAll('.tab-nav button').forEach(b=>{
+    b.classList.toggle('active', b.dataset.tab === tab);
+  });
+  document.getElementById('tab-list').classList.toggle('active', tab === 'list');
+  document.getElementById('tab-print').classList.toggle('active', tab === 'print');
+  if(tab === 'print') renderPrintList();
+}
+
+// ---------------- 印刷用タブ ----------------
+function renderPrintList(){
+  const yearSel = document.getElementById('print-year-filter').value;
+  let rows = requests.slice();
+  if(yearSel){
+    const y = Number(yearSel);
+    rows = rows.filter(r => r._fiscalYears.has(y));
+    document.getElementById('print-title').textContent = `工事支払い一覧（${eraLabel(y)}）`;
+  }else{
+    document.getElementById('print-title').textContent = '工事支払い一覧（全年度）';
+  }
+  rows.sort((a,b)=> (b.created_at||'').localeCompare(a.created_at||''));
+
+  const body = document.getElementById('print-body');
+  if(rows.length === 0){
+    body.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--muted);">該当する工事がありません</td></tr>';
+  }else{
+    body.innerHTML = rows.map(r=>`
+      <tr>
+        <td>${escapeHtml(eraLabel(r.budget_year))}</td>
+        <td>${escapeHtml(r.department||'—')}</td>
+        <td>${escapeHtml(r.subject||'（主題未入力）')}</td>
+        <td>${escapeHtml(r.assignee||'—')}</td>
+        <td class="amt">${yen(r.total_cost)}</td>
+        <td class="amt">${yen(r._paidTotal)}</td>
+        <td class="amt">${yen(r._remaining)}</td>
+      </tr>`).join('');
+  }
+
+  const totalCost = rows.reduce((s,r)=>s+Number(r.total_cost||0),0);
+  const totalPaid = rows.reduce((s,r)=>s+Number(r._paidTotal||0),0);
+  document.getElementById('print-total-cost').textContent = yen(totalCost);
+  document.getElementById('print-total-paid').textContent = yen(totalPaid);
+  document.getElementById('print-total-remaining').textContent = yen(totalCost - totalPaid);
+
+  document.getElementById('print-date').textContent =
+    '出力日：' + new Date().toLocaleDateString('ja-JP');
+}
+
+function doPrint(){
+  renderPrintList();
+  window.print();
 }
 
 function setStatusFilter(s){
