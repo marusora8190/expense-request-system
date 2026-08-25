@@ -108,6 +108,13 @@
   }
   .add-payment-btn:hover{background:#f5e5d8;}
 
+  .manual-complete-row{
+    display:flex;align-items:center;gap:8px;margin-top:14px;font-size:13.5px;color:var(--text);cursor:pointer;
+  }
+  .manual-complete-row input[type="checkbox"]{width:16px;height:16px;cursor:pointer;}
+
+  .badge-manual{background:#e9f5ee;color:var(--green-dark);}
+
   .modal-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:20px;}
   .btn-secondary{background:var(--accent-bg);border:1px solid var(--line);border-radius:7px;padding:10px 18px;font-size:14px;cursor:pointer;color:var(--text);}
   .btn-primary{background:var(--green);color:#fff;border:none;border-radius:7px;padding:10px 20px;font-size:14px;cursor:pointer;font-weight:700;}
@@ -163,6 +170,15 @@
   .verify-summary{margin-top:18px;padding-top:16px;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:8px;font-size:14px;}
   .verify-summary .row{display:flex;justify-content:space-between;max-width:360px;}
   .verify-summary .row span:last-child{font-weight:700;font-variant-numeric:tabular-nums;}
+  .verify-breakdown{background:var(--accent-bg);border-radius:8px;padding:4px 14px;max-width:480px;}
+  .verify-breakdown .b-row{
+    display:flex;justify-content:space-between;gap:10px;padding:6px 0;
+    border-bottom:1px solid #ecdfc9;font-size:13px;
+  }
+  .verify-breakdown .b-row:last-child{border-bottom:none;}
+  .verify-breakdown .b-row .b-subject{color:var(--text);white-space:normal;}
+  .verify-breakdown .b-row .b-amount{color:var(--ink-dark);font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap;}
+  .verify-breakdown .b-empty{color:var(--muted);font-size:13px;padding:8px 0;}
   .verify-result{margin-top:8px;padding:12px 16px;border-radius:8px;font-weight:700;font-size:14px;}
   .verify-result.ok{background:#e9f5ee;color:var(--green-dark);}
   .verify-result.ng{background:#fdecea;color:var(--ink-dark);}
@@ -300,6 +316,7 @@
       <div class="verify-summary">
         <div class="row"><span>入力した合計</span><span id="verify-input-total">¥0</span></div>
         <div class="row"><span>システム内の支払合計</span><span id="verify-system-total">¥0</span></div>
+        <div class="verify-breakdown" id="verify-breakdown"></div>
         <div class="verify-result" id="verify-result">-</div>
       </div>
     </div>
@@ -329,6 +346,11 @@
 
     <div class="payment-list" id="payment-list"></div>
     <button type="button" class="add-payment-btn" onclick="addPaymentRow()">＋ 支払いを追加</button>
+
+    <label class="manual-complete-row">
+      <input type="checkbox" id="manual-complete-check" onchange="renderModalSummary()">
+      支払いを完了として扱う(金額が一致していなくても)
+    </label>
 
     <div class="modal-actions">
       <button type="button" class="btn-secondary" onclick="closeModal()">閉じる</button>
@@ -383,6 +405,7 @@ function escapeHtml(s){
 
 let requests = [];   // expense_requests (with computed payment aggregates attached)
 let payments = [];   // 全支払いレコード
+let overrides = [];  // 手動「完了」フラグ
 let statusFilter = 'all';
 let categoryFilter = '本部'; // '本部' または '教庁'
 let editingRequestId = null;
@@ -393,12 +416,14 @@ async function loadAll(){
   const body = document.getElementById('list-body');
   body.innerHTML = '<tr class="empty-row"><td colspan="9" class="loading">読み込み中…</td></tr>';
   try{
-    const [reqRows, payRows] = await Promise.all([
+    const [reqRows, payRows, ovrRows] = await Promise.all([
       sb('expense_requests?select=id,department,assignee_department,assignee,subject,budget_category,total_cost,budget_year,created_at'),
-      sb('payments?select=*&order=payment_date.asc')
+      sb('payments?select=*&order=payment_date.asc'),
+      sb('payment_overrides?select=*')
     ]);
     requests = reqRows;
     payments = payRows;
+    overrides = ovrRows;
     attachAggregates();
     populateYearFilter();
     renderList();
@@ -413,6 +438,8 @@ function attachAggregates(){
   payments.forEach(p=>{
     (byReq[p.expense_request_id] ||= []).push(p);
   });
+  const overrideByReq = {};
+  overrides.forEach(o=>{ overrideByReq[o.expense_request_id] = o.is_completed; });
   requests.forEach(r=>{
     const list = byReq[r.id] || [];
     r._payments = list;
@@ -421,7 +448,8 @@ function attachAggregates(){
     r._fiscalYears = new Set(list.map(p=>fiscalYear(p.payment_date)));
     if(r.budget_year) r._fiscalYears.add(r.budget_year);
     r._crossYear = r._fiscalYears.size > 1;
-    r._done = list.length > 0 && r._remaining <= 0;
+    r._manualComplete = !!overrideByReq[r.id];
+    r._done = r._manualComplete || (list.length > 0 && r._remaining <= 0);
   });
 }
 
@@ -536,14 +564,44 @@ function calcSystemMonthlyTotal(fy, month){
   return total;
 }
 
+function calcSystemMonthlyDetails(fy, month){
+  if(!fy || !month) return [];
+  const calYear = month >= 4 ? fy : fy + 1;
+  const rows = [];
+  requests.filter(matchesCategory).forEach(r=>{
+    (r._payments || []).forEach(p=>{
+      if(!p.payment_date) return;
+      const d = new Date(p.payment_date + 'T00:00:00');
+      if(d.getFullYear() === calYear && (d.getMonth()+1) === month){
+        rows.push({ subject: r.subject || '（主題未入力）', amount: Number(p.amount || 0) });
+      }
+    });
+  });
+  rows.sort((a,b)=> b.amount - a.amount);
+  return rows;
+}
+
 function calcVerify(){
   const fy = Number(document.getElementById('verify-year').value);
   const month = Number(document.getElementById('verify-month').value);
   const inputTotal = verifyRows.reduce((s,r)=>s + (Number(r.amount) || 0), 0);
   const systemTotal = calcSystemMonthlyTotal(fy, month);
+  const details = calcSystemMonthlyDetails(fy, month);
 
   document.getElementById('verify-input-total').textContent = yen(inputTotal);
   document.getElementById('verify-system-total').textContent = yen(systemTotal);
+
+  const breakdownEl = document.getElementById('verify-breakdown');
+  if(details.length === 0){
+    breakdownEl.innerHTML = '<div class="b-empty">該当する支払い記録がありません</div>';
+  }else{
+    breakdownEl.innerHTML = details.map(d=>`
+      <div class="b-row">
+        <span class="b-subject">${escapeHtml(d.subject)}</span>
+        <span class="b-amount">${yen(d.amount)}</span>
+      </div>
+    `).join('');
+  }
 
   const resultEl = document.getElementById('verify-result');
   if(!fy){
@@ -654,6 +712,7 @@ function renderList(){
     if(r._done) badges.push('<span class="badge badge-done">完了</span>');
     else if(r._paidTotal > 0) badges.push('<span class="badge badge-open">支払い中</span>');
     else badges.push('<span class="badge badge-open">未払い</span>');
+    if(r._manualComplete && r._remaining !== 0) badges.push('<span class="badge badge-manual">手動完了</span>');
 
     return `
       <tr>
@@ -685,6 +744,7 @@ function openModal(id){
   document.getElementById('modal-title').textContent = r.subject || '（主題未入力）';
   document.getElementById('modal-sub').textContent =
     `${eraLabel(r.budget_year)}　${r.department||''}　担当:${r.assignee||'—'}`;
+  document.getElementById('manual-complete-check').checked = !!r._manualComplete;
 
   renderModalSummary();
   renderPaymentRows();
@@ -776,6 +836,19 @@ async function savePayments(){
         await sb('payments', { method:'POST', prefer:'return=minimal', body: JSON.stringify(payload) });
       }
     }
+
+    // 手動「完了」フラグの保存(upsert)
+    const manualComplete = document.getElementById('manual-complete-check').checked;
+    await sb('payment_overrides', {
+      method: 'POST',
+      prefer: 'resolution=merge-duplicates,return=minimal',
+      body: JSON.stringify({
+        expense_request_id: editingRequestId,
+        is_completed: manualComplete,
+        updated_at: new Date().toISOString()
+      })
+    });
+
     showToast('保存しました');
     closeModal();
     await loadAll();
