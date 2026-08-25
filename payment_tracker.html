@@ -183,6 +183,19 @@
   .verify-result.ok{background:#e9f5ee;color:var(--green-dark);}
   .verify-result.ng{background:#fdecea;color:var(--ink-dark);}
 
+  /* 照合タブの印刷テンプレート(申請書合計表 のレイアウトを再現) */
+  .verify-print-sheet{display:none;}
+  .vp-date{text-align:right;font-size:13px;margin-bottom:16px;}
+  .vp-title{text-align:center;font-size:16px;font-weight:700;margin-bottom:28px;}
+  .vp-table{width:100%;border-collapse:collapse;font-size:14px;max-width:520px;margin:0 auto;}
+  .vp-table td{padding:7px 4px;}
+  .vp-table td.vp-num{width:28px;color:var(--text);}
+  .vp-table td.vp-subject{}
+  .vp-table td.vp-amount{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap;}
+  .vp-table tfoot td{border-top:2px solid #333;font-weight:700;padding-top:14px;}
+  .vp-total-label{white-space:nowrap;}
+  .vp-total-amount{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap;}
+
   @media (max-width:720px){
     .summary-grid{grid-template-columns:1fr;}
     table{font-size:12.5px;}
@@ -196,6 +209,13 @@
     #tab-print{display:block !important;}
     .app{padding:0;max-width:none;}
     .print-sheet{border:none;padding:0;}
+
+    /* 照合タブから印刷する場合は、こちらを優先表示 */
+    body.print-mode-verify #tab-print{display:none !important;}
+    body.print-mode-verify #tab-verify{display:block !important;}
+    body.print-mode-verify .verify-toolbar,
+    body.print-mode-verify .verify-sheet{display:none !important;}
+    body.print-mode-verify .verify-print-sheet{display:block !important;}
   }
 </style>
 </head>
@@ -308,6 +328,7 @@
         <option value="2">2月</option>
         <option value="3">3月</option>
       </select>
+      <button type="button" class="btn-print" onclick="doVerifyPrint()">印刷する</button>
     </div>
     <div class="verify-sheet">
       <p class="verify-hint">今月申請した工事名・金額を入力すると、システムに登録済みのその月の支払合計と自動で照合します。</p>
@@ -319,6 +340,21 @@
         <div class="verify-breakdown" id="verify-breakdown"></div>
         <div class="verify-result" id="verify-result">-</div>
       </div>
+    </div>
+
+    <div class="verify-print-sheet" id="verify-print-sheet">
+      <div class="vp-date" id="vp-date"></div>
+      <div class="vp-title" id="vp-title"></div>
+      <table class="vp-table">
+        <tbody id="vp-body"></tbody>
+        <tfoot>
+          <tr>
+            <td></td>
+            <td class="vp-total-label">合　　　　　計</td>
+            <td class="vp-total-amount" id="vp-total"></td>
+          </tr>
+        </tfoot>
+      </table>
     </div>
   </div>
 </div>
@@ -639,6 +675,47 @@ function calcVerify(){
     resultEl.className = 'verify-result ng';
   }
 }
+
+function reiwaDateStr(d){
+  const y = d.getFullYear() - 2018; // 令和1年 = 2019年
+  const m = d.getMonth() + 1;
+  const day = d.getDate();
+  return `令和${y}年${m}月${day}日`;
+}
+
+function doVerifyPrint(){
+  const fy = Number(document.getElementById('verify-year').value);
+  const month = Number(document.getElementById('verify-month').value);
+  const catLabel = categoryFilter === '本部' ? '本部営繕費' : '教庁営繕費';
+
+  document.getElementById('vp-date').textContent = reiwaDateStr(new Date());
+  document.getElementById('vp-title').textContent =
+    fy ? `令和　${fy}年度　${month}月　${catLabel}支出申請合計額` : `${month}月　${catLabel}支出申請合計額`;
+
+  const rows = verifyRows.filter(r => (r.subject && r.subject.trim()) || r.amount);
+  const body = document.getElementById('vp-body');
+  if(rows.length === 0){
+    body.innerHTML = '<tr><td></td><td style="color:var(--muted);">(入力された行がありません)</td><td></td></tr>';
+  }else{
+    body.innerHTML = rows.map((r, idx)=>`
+      <tr>
+        <td class="vp-num">${idx+1}.</td>
+        <td class="vp-subject">${escapeHtml(r.subject || '')}</td>
+        <td class="vp-amount">${Number(r.amount || 0).toLocaleString()}</td>
+      </tr>
+    `).join('');
+  }
+
+  const total = rows.reduce((s,r)=>s + (Number(r.amount) || 0), 0);
+  document.getElementById('vp-total').textContent = total.toLocaleString() + '円';
+
+  document.body.classList.add('print-mode-verify');
+  window.print();
+}
+
+window.addEventListener('afterprint', ()=>{
+  document.body.classList.remove('print-mode-verify');
+});
 
 // ---------------- 印刷用タブ ----------------
 function renderPrintList(){
