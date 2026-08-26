@@ -340,6 +340,7 @@
         <button type="button" data-status="open" onclick="setStatusFilter('open')">支払い中</button>
         <button type="button" data-status="done" onclick="setStatusFilter('done')">完了</button>
       </div>
+      <div class="status-filter" id="list-dept-filter"></div>
       <button type="button" class="btn-print" onclick="doPrint()">印刷する</button>
       <button type="button" class="collapse-toggle-btn" onclick="toggleTopControls()">▲　タブを隠す</button>
     </div>
@@ -412,6 +413,7 @@
         <option value="2">2月</option>
         <option value="3">3月</option>
       </select>
+      <div class="status-filter" id="verify-dept-filter"></div>
       <button type="button" class="btn-print" onclick="doVerifyPrint()">印刷する</button>
       <button type="button" class="collapse-toggle-btn" onclick="toggleTopControls()">▲　タブを隠す</button>
     </div>
@@ -592,6 +594,27 @@ let payments = [];   // 全支払いレコード
 let overrides = [];  // 手動「完了」フラグ
 let ledgerMarks = {}; // 年度合計タブの「済」マーク: `${expense_request_id}_${fiscal_year}` -> boolean
 let statusFilter = 'all';
+const ALL_PAY_DEPTS = ['営繕課', '電気課', '放送通信課', '水道課'];
+let listDeptFilter = new Set(ALL_PAY_DEPTS);
+let verifyDeptFilter = new Set(ALL_PAY_DEPTS);
+
+// 一覧・照合タブ共通: 部署の複数選択フィルターボタンを描画する
+function renderDeptFilterButtons(containerId, selectedSet, onToggle){
+  const el = document.getElementById(containerId);
+  el.innerHTML = ALL_PAY_DEPTS.map(d=>
+    `<button type="button" class="${selectedSet.has(d) ? 'active' : ''}" onclick="${onToggle}('${d}')">${d}</button>`
+  ).join('');
+}
+function toggleListDeptFilter(d){
+  if(listDeptFilter.has(d)) listDeptFilter.delete(d); else listDeptFilter.add(d);
+  renderDeptFilterButtons('list-dept-filter', listDeptFilter, 'toggleListDeptFilter');
+  renderList();
+}
+function toggleVerifyDeptFilter(d){
+  if(verifyDeptFilter.has(d)) verifyDeptFilter.delete(d); else verifyDeptFilter.add(d);
+  renderDeptFilterButtons('verify-dept-filter', verifyDeptFilter, 'toggleVerifyDeptFilter');
+  refreshVerifyRowsFromRequests();
+}
 let categoryFilter = '本部'; // '本部' または '教庁'
 let editingRequestId = null;
 let editingRows = []; // モーダル内で編集中の支払い行
@@ -615,6 +638,8 @@ async function loadAll(){
     markRows.forEach(m=>{ ledgerMarks[`${m.expense_request_id}_${m.fiscal_year}`] = m.is_marked; });
     attachAggregates();
     populateYearFilter();
+    renderDeptFilterButtons('list-dept-filter', listDeptFilter, 'toggleListDeptFilter');
+    renderDeptFilterButtons('verify-dept-filter', verifyDeptFilter, 'toggleVerifyDeptFilter');
     renderList();
     populateDeptTabs();
   }catch(e){
@@ -656,7 +681,7 @@ function matchesCurrentDept(r){
 
 function populateYearFilter(){
   const years = new Set();
-  requests.filter(matchesCategory).forEach(r=>{
+  requests.filter(r => matchesCategory(r) && listDeptFilter.has(r.department)).forEach(r=>{
     r._fiscalYears.forEach(y=>years.add(y));
   });
   const sorted = [...years].sort((a,b)=>b-a);
@@ -742,7 +767,7 @@ function switchTab(tab){
 // ---------------- 照合タブ ----------------
 function populateVerifyYearOptions(){
   const years = new Set();
-  requests.filter(matchesCategory).forEach(r=>{
+  requests.filter(r => matchesCategory(r) && verifyDeptFilter.has(r.department)).forEach(r=>{
     r._fiscalYears.forEach(y=>years.add(y));
   });
   const sorted = [...years].sort((a,b)=>b-a);
@@ -780,7 +805,7 @@ function refreshVerifyRowsFromRequests(){
 
   // 支払日(payment_date)ベースで、この月に入力済みの請求を集める
   const rows = [];
-  requests.filter(matchesCategory).forEach(r=>{
+  requests.filter(r => matchesCategory(r) && verifyDeptFilter.has(r.department)).forEach(r=>{
     (r._payments || []).forEach(p=>{
       if(isThisMonth(p.payment_date)){
         rows.push({ subject: r.subject || '（主題未入力）', amount: String(p.amount || 0), _sortKey: r.created_at || '' });
@@ -1129,7 +1154,7 @@ function monthToDate(fy, month){
 function renderPrintList(){
   const yearSel = document.getElementById('year-filter').value;
   const catLabel = categoryFilter === '本部' ? '本部営繕費' : '教庁営繕費';
-  let rows = requests.filter(matchesCategory);
+  let rows = requests.filter(r => matchesCategory(r) && listDeptFilter.has(r.department));
   if(yearSel){
     const y = Number(yearSel);
     rows = rows.filter(r => r._fiscalYears.has(y));
@@ -1181,7 +1206,7 @@ function setStatusFilter(s){
 function getFilteredRequests(){
   const kw = document.getElementById('search-box').value.trim();
   const yearSel = document.getElementById('year-filter').value;
-  let rows = requests.filter(matchesCategory);
+  let rows = requests.filter(r => matchesCategory(r) && listDeptFilter.has(r.department));
 
   if(yearSel){
     const y = Number(yearSel);
