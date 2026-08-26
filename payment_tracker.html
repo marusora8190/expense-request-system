@@ -181,6 +181,17 @@
   }
   .tab-nav button.active{color:var(--ink-dark);border-bottom-color:var(--ink);}
   #dept-tabs-container{display:contents;}
+  #dept-tabs-container button{
+    padding:9px 14px;border:1px solid #d8d1c2;border-radius:7px;background:#fffefb;
+    color:var(--text);font-size:13.5px;font-family:inherit;font-weight:600;
+    cursor:pointer;margin-bottom:4px;
+  }
+  #dept-tabs-container button:hover{border-color:var(--ink);}
+  #dept-tabs-container button.active{border-color:var(--ink);background:var(--ink);color:#fff;}
+  .dept-filter-count{
+    background:var(--ink);color:#fff;font-size:11px;font-weight:700;
+    border-radius:9px;padding:2px 8px;line-height:1.4;align-self:center;
+  }
   .tab-panel{display:none;}
   .tab-panel.active{display:block;}
 
@@ -333,6 +344,7 @@
       <button type="button" class="active" data-tab="list" onclick="switchTab('list')">一覧</button>
       <button type="button" data-tab="verify" onclick="switchTab('verify')">照合</button>
       <span id="dept-tabs-container"></span>
+      <span id="dept-tab-count" class="dept-filter-count" style="display:none;"></span>
     </div>
   </div>
 
@@ -746,6 +758,15 @@ function updateDeptTabActiveState(){
     b.classList.toggle('active', selected);
     b.textContent = (selected ? '✓ ' : '') + b.dataset.dept;
   });
+  const countEl = document.getElementById('dept-tab-count');
+  if(countEl){
+    if(sharedDeptFilter.size > 0){
+      countEl.textContent = sharedDeptFilter.size;
+      countEl.style.display = 'inline-block';
+    }else{
+      countEl.style.display = 'none';
+    }
+  }
   const hintEl = document.getElementById('dept-tab-hint');
   if(hintEl){
     hintEl.textContent = sharedDeptFilter.size > 0
