@@ -192,15 +192,16 @@
   .verify-result.ng{background:#fdecea;color:var(--ink-dark);}
 
   /* 照合タブの印刷テンプレート(申請書合計表 のレイアウトを再現) */
-  .verify-print-sheet{display:none;}
-  .vp-date{text-align:right;font-size:13px;margin-bottom:16px;}
-  .vp-title{text-align:center;font-size:16px;font-weight:700;margin-bottom:28px;}
-  .vp-table{width:100%;border-collapse:collapse;font-size:14px;max-width:520px;margin:0 auto;}
-  .vp-table td{padding:7px 4px;}
-  .vp-table td.vp-num{width:28px;color:var(--text);}
+  .verify-print-sheet{display:none;font-family:"Hiragino Mincho ProN","Yu Mincho",serif;padding:50px 60px 30px;}
+  .vp-date{text-align:right;font-size:15px;margin-bottom:40px;}
+  .vp-title{text-align:center;font-size:21px;font-weight:700;margin-bottom:44px;letter-spacing:.02em;}
+  .vp-table{width:100%;border-collapse:collapse;font-size:16px;max-width:680px;margin:0 auto;}
+  .vp-table td{padding:9px 6px;}
+  .vp-table td.vp-num{width:30px;color:var(--text);}
   .vp-table td.vp-subject{}
   .vp-table td.vp-amount{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap;}
-  .vp-table tfoot td{border-top:2px solid #333;font-weight:700;padding-top:14px;}
+  .vp-table tfoot td{border-top:2px solid #333;font-weight:700;padding-top:22px;font-size:19px;}
+  .vp-table tfoot tr td{padding-top:70px;}
   .vp-total-label{white-space:nowrap;}
   .vp-total-amount{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap;}
 
@@ -908,7 +909,7 @@ function doVerifyPrint(){
 
   document.getElementById('vp-date').textContent = reiwaDateStr(new Date());
   document.getElementById('vp-title').textContent =
-    fy ? `令和　${fy}年度　${month}月　${catLabel}支出申請合計額` : `${month}月　${catLabel}支出申請合計額`;
+    fy ? `令和　${fy}年度 ${month}月　${catLabel}支出申請合計額` : `${month}月　${catLabel}支出申請合計額`;
 
   const rows = verifyRows.filter(r => (r.subject && r.subject.trim()) || r.amount);
   const body = document.getElementById('vp-body');
