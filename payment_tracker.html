@@ -212,17 +212,19 @@
 
   /* 照合タブの印刷テンプレート(申請書合計表 のレイアウトを再現) */
   .verify-print-sheet{display:none;font-family:"MS Gothic","ＭＳ ゴシック","MS PGothic",sans-serif;padding:50px 60px 30px;}
-  .vp-date{text-align:right;font-size:15px;margin-bottom:40px;}
-  .vp-title{text-align:center;font-size:21px;font-weight:700;margin-bottom:44px;letter-spacing:.02em;}
-  .vp-table{width:100%;border-collapse:collapse;font-size:16px;max-width:680px;margin:0 auto;}
+  .vp-date{text-align:right;font-size:12pt;margin-bottom:40px;}
+  .vp-title{text-align:center;font-size:16pt;font-weight:700;margin-bottom:44px;letter-spacing:.02em;}
+  .vp-table{width:100%;border-collapse:collapse;font-size:12pt;max-width:680px;margin:0 auto;}
   .vp-table td{padding:9px 6px;}
   .vp-table td.vp-num{width:30px;color:var(--text);}
   .vp-table td.vp-subject{}
   .vp-table td.vp-amount{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap;}
-  .vp-table tfoot td{border-top:none;border-bottom:2px solid #333;font-weight:700;padding-top:22px;padding-bottom:10px;font-size:19px;}
-  .vp-table tfoot tr td{padding-top:70px;}
-  .vp-total-label{white-space:nowrap;text-align:right;}
-  .vp-total-amount{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap;}
+  .vp-table tfoot td{padding-top:70px;padding-bottom:10px;text-align:right;}
+  .vp-total-inline{
+    display:inline-block;font-weight:700;font-size:12pt;
+    border-bottom:2px solid #333;padding:0 2px 6px;
+    font-variant-numeric:tabular-nums;white-space:nowrap;
+  }
 
   @media (max-width:720px){
     .summary-grid{grid-template-columns:1fr;}
@@ -245,7 +247,9 @@
     body.print-mode-verify #tab-verify{display:block !important;}
     body.print-mode-verify .verify-toolbar,
     body.print-mode-verify .verify-sheet{display:none !important;}
-    body.print-mode-verify .verify-print-sheet{display:block !important;}
+    body.print-mode-verify .verify-print-sheet{display:block !important;padding-right:0 !important;}
+    body.print-mode-verify .vp-table{max-width:none !important;width:100% !important;margin:0 !important;}
+    body.print-mode-verify .vp-date{padding-right:4mm !important;}
   }
 
   /* 年度合計タブ */
@@ -436,9 +440,9 @@
         <tbody id="vp-body"></tbody>
         <tfoot>
           <tr>
-            <td></td>
-            <td class="vp-total-label">合　　計</td>
-            <td class="vp-total-amount" id="vp-total"></td>
+            <td colspan="3" class="vp-total-cell">
+              <span class="vp-total-inline">合　　計　<span id="vp-total"></span></span>
+            </td>
           </tr>
         </tfoot>
       </table>
@@ -990,7 +994,7 @@ function doVerifyPrint(){
   // 照合タブの印刷はA4横向きにする(@pageはCSSクラスで条件分けできないため、印刷直前だけ一時的に挿入)
   const orientStyle = document.createElement('style');
   orientStyle.id = 'verify-print-orientation';
-  orientStyle.textContent = '@page{size:A4 landscape;margin:15mm;}';
+  orientStyle.textContent = '@page{size:A4 landscape;margin:15mm 18mm 15mm 15mm;}';
   document.head.appendChild(orientStyle);
 
   window.print();
