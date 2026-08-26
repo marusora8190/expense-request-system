@@ -219,9 +219,9 @@
   .vp-table td.vp-num{width:30px;color:var(--text);}
   .vp-table td.vp-subject{}
   .vp-table td.vp-amount{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap;}
-  .vp-table tfoot td{border-top:2px solid #333;font-weight:700;padding-top:22px;font-size:19px;}
+  .vp-table tfoot td{border-top:none;border-bottom:2px solid #333;font-weight:700;padding-top:22px;padding-bottom:10px;font-size:19px;}
   .vp-table tfoot tr td{padding-top:70px;}
-  .vp-total-label{white-space:nowrap;}
+  .vp-total-label{white-space:nowrap;text-align:right;}
   .vp-total-amount{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap;}
 
   @media (max-width:720px){
@@ -437,7 +437,7 @@
         <tfoot>
           <tr>
             <td></td>
-            <td class="vp-total-label">合　　　　　計</td>
+            <td class="vp-total-label">合　　計</td>
             <td class="vp-total-amount" id="vp-total"></td>
           </tr>
         </tfoot>
@@ -987,10 +987,10 @@ function doVerifyPrint(){
 
   document.body.classList.add('print-mode-verify');
 
-  // 照合タブの印刷はA4縦向き・余白多めにする(@pageはCSSクラスで条件分けできないため、印刷直前だけ一時的に挿入)
+  // 照合タブの印刷はA4横向きにする(@pageはCSSクラスで条件分けできないため、印刷直前だけ一時的に挿入)
   const orientStyle = document.createElement('style');
   orientStyle.id = 'verify-print-orientation';
-  orientStyle.textContent = '@page{size:A4 portrait;margin:20mm;}';
+  orientStyle.textContent = '@page{size:A4 landscape;margin:15mm;}';
   document.head.appendChild(orientStyle);
 
   window.print();
