@@ -34,6 +34,12 @@
     display:flex;align-items:center;gap:8px;
   }
   .reload-notice b{font-weight:700;}
+  .reload-notice .rn-text{flex:1;}
+  .reload-notice .rn-close{
+    background:none;border:none;color:#7a5c00;font-size:18px;line-height:1;
+    cursor:pointer;padding:2px 6px;flex-shrink:0;
+  }
+  .reload-notice .rn-close:hover{color:var(--ink-dark);}
   @media print{ .reload-notice{display:none !important;} }
 
   .tabs{display:flex;gap:6px;margin-bottom:20px;}
@@ -418,9 +424,10 @@
     </div>
   </div>
 
-  <div class="reload-notice">
+  <div class="reload-notice" id="reload-notice">
     <span>💡</span>
-    <span>このファイルを開いた場合は、一度 <b>Ctrl+Shift+R</b> でハードリロードしてからお使いください。最新の状態が正しく表示されます。</span>
+    <span class="rn-text">このファイルを開いた場合は、一度 <b>Ctrl+Shift+R</b> でハードリロードしてからお使いください。最新の状態が正しく表示されます。</span>
+    <button type="button" class="rn-close" onclick="dismissReloadNotice()" title="閉じる">×</button>
   </div>
 
   <div class="tabs" id="tabs-bar">
@@ -2003,6 +2010,21 @@ document.getElementById('f-cost').addEventListener('input', (e)=>{
   const newPos = Math.max(0, formatted.length - posFromEnd);
   el.setSelectionRange(newPos, newPos);
 });
+
+// お知らせ帯: 閉じるボタンで非表示にできる。ページが再読み込みされた場合も自動的に非表示にする
+function dismissReloadNotice(){
+  document.getElementById('reload-notice').style.display = 'none';
+  try{ sessionStorage.setItem('reloadNoticeDismissed', '1'); }catch(e){}
+}
+try{
+  const navEntries = performance.getEntriesByType && performance.getEntriesByType('navigation');
+  const isReload = (navEntries && navEntries[0] && navEntries[0].type === 'reload')
+    || (performance.navigation && performance.navigation.type === 1);
+  if(isReload || sessionStorage.getItem('reloadNoticeDismissed') === '1'){
+    document.getElementById('reload-notice').style.display = 'none';
+    try{ sessionStorage.setItem('reloadNoticeDismissed', '1'); }catch(e){}
+  }
+}catch(e){}
 </script>
 </body>
 </html>
