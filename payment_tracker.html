@@ -739,6 +739,11 @@ function populateDeptTabs(){
   const depts = DEPT_TAB_ORDER.filter(d => present.has(d));
   present.forEach(d=>{ if(!DEPT_TAB_ORDER.includes(d)) depts.push(d); });
 
+  // 部署が1つも選ばれていない場合は、詰まないよう全部署を選び直す
+  if(sharedDeptFilter.size === 0){
+    depts.forEach(d=>sharedDeptFilter.add(d));
+  }
+
   const container = document.getElementById('dept-tabs-container');
   container.innerHTML = depts.map(d=>
     `<button type="button" data-dept="${escapeHtml(d)}" onclick="clickDeptTab('${escapeHtml(d)}')">${escapeHtml(d)}</button>`
