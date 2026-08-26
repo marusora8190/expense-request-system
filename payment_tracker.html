@@ -674,9 +674,9 @@ function matchesCategory(r){
 
 // 部署ごとにタブを自動生成するための、表示順(この順にあれば表示、無ければ出さない)
 const DEPT_TAB_ORDER = ['営繕課', '建築課', '造園課', '電気課', '放送通信課', '水道課'];
-let currentDeptTab = null; // 現在選択中の部署タブ
+let deptTabFilter = new Set(); // 現在選択中の部署タブ(複数選択可)
 function matchesCurrentDept(r){
-  return r.department === currentDeptTab;
+  return deptTabFilter.has(r.department);
 }
 
 function populateYearFilter(){
@@ -724,23 +724,29 @@ function populateDeptTabs(){
 
   const container = document.getElementById('dept-tabs-container');
   container.innerHTML = depts.map(d=>
-    `<button type="button" data-dept="${escapeHtml(d)}" onclick="switchToDeptTab('${escapeHtml(d)}')">${escapeHtml(d)}</button>`
+    `<button type="button" data-dept="${escapeHtml(d)}" onclick="toggleDeptTab('${escapeHtml(d)}')">${escapeHtml(d)}</button>`
   ).join('');
 
-  if(!depts.includes(currentDeptTab)) currentDeptTab = depts[0] || null;
+  // 存在しなくなった部署は選択から外しつつ、まだ何も選ばれていなければ全部署を選択状態にする
+  deptTabFilter.forEach(d=>{ if(!depts.includes(d)) deptTabFilter.delete(d); });
+  if(deptTabFilter.size === 0) depts.forEach(d=>deptTabFilter.add(d));
   updateDeptTabActiveState();
 }
 
 function updateDeptTabActiveState(){
-  const ledgerActive = document.getElementById('tab-ledger').classList.contains('active');
   document.querySelectorAll('#dept-tabs-container button').forEach(b=>{
-    b.classList.toggle('active', ledgerActive && b.dataset.dept === currentDeptTab);
+    b.classList.toggle('active', deptTabFilter.has(b.dataset.dept));
   });
+  const hintEl = document.getElementById('dept-tab-hint');
+  if(hintEl){
+    hintEl.textContent = deptTabFilter.size > 0
+      ? `「${[...deptTabFilter].join('」「')}」が支払う工事を表示しています。`
+      : '部署を選択してください。';
+  }
 }
 
-function switchToDeptTab(dept){
-  currentDeptTab = dept;
-  document.getElementById('dept-tab-hint').textContent = `「${dept}」が担当の工事を表示しています。`;
+function toggleDeptTab(dept){
+  if(deptTabFilter.has(dept)) deptTabFilter.delete(dept); else deptTabFilter.add(dept);
   switchTab('ledger');
 }
 
@@ -758,7 +764,6 @@ function switchTab(tab){
     refreshVerifyRowsFromRequests();
   }
   if(tab === 'ledger'){
-    document.getElementById('dept-tab-hint').textContent = currentDeptTab ? `「${currentDeptTab}」が担当の工事を表示しています。` : '';
     populateLedgerYearOptions();
     renderLedger();
   }
