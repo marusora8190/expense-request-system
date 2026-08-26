@@ -70,6 +70,7 @@
   .status-filter button.active{background:var(--ink);color:#fff;border-color:var(--ink);}
 
   .table-scroll{overflow-x:auto;overflow-y:auto;max-height:70vh;background:var(--panel);border-radius:12px;border:1px solid var(--line);}
+  body.controls-hidden .table-scroll{max-height:90vh;}
   table{width:100%;border-collapse:collapse;font-size:13.5px;}
   th{
     text-align:center;padding:11px 12px;background:var(--accent-bg);color:var(--ink-dark);
@@ -251,6 +252,7 @@
   .ledger-toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:16px;}
   .ledger-toolbar select{border:1px solid #d8d1c2;border-radius:7px;padding:9px 12px;font-size:14px;background:var(--panel);}
   .ledger-table-scroll{overflow-x:auto;overflow-y:auto;max-height:65vh;background:var(--panel);border-radius:12px;border:1px solid var(--line);}
+  body.controls-hidden .ledger-table-scroll{max-height:88vh;}
   .ledger-table{border-collapse:collapse;font-size:12.5px;min-width:1500px;width:100%;}
   .ledger-table th, .ledger-table td{padding:8px 9px;border-bottom:1px solid var(--line);border-right:1px solid #f0ebe0;white-space:nowrap;text-align:center;}
   .ledger-table th:last-child, .ledger-table td:last-child{border-right:none;}
@@ -625,8 +627,9 @@ function formatAmountInput(el){
 function scrollTableByColumn(containerId, direction){
   const container = document.getElementById(containerId);
   if(!container) return;
-  // 固定列(済・日付・工事名称・予想経費)以外の、通常の月別セルを1つ見つけて、その幅を「1列分」とする
-  const sampleCell = container.querySelector('td.num:not(.stick-1):not(.stick-2):not(.stick-3):not(.stick-4)');
+  // 「〇月支払分」の列(金額入力欄が入っているセル)を1つ見つけて、その幅を「1列分」とする
+  const sampleInput = container.querySelector('tbody td.num input.amount-input');
+  const sampleCell = sampleInput ? sampleInput.closest('td') : null;
   const colWidth = sampleCell ? sampleCell.getBoundingClientRect().width : 140;
   container.scrollBy({ left: direction * colWidth, behavior: 'smooth' });
 }
@@ -1738,6 +1741,7 @@ function toggleTopControls(){
   const btns = document.querySelectorAll('.collapse-toggle-btn');
   const hidden = el.style.display === 'none';
   el.style.display = hidden ? '' : 'none';
+  document.body.classList.toggle('controls-hidden', !hidden);
   const label = hidden ? '▲　タブを隠す' : '▼　タブを表示';
   btns.forEach(b=> b.textContent = label);
   try{ sessionStorage.setItem('topControlsHidden', hidden ? '0' : '1'); }catch(e){}
@@ -1745,6 +1749,7 @@ function toggleTopControls(){
 try{
   if(sessionStorage.getItem('topControlsHidden') === '1'){
     document.getElementById('top-controls').style.display = 'none';
+    document.body.classList.add('controls-hidden');
     document.querySelectorAll('.collapse-toggle-btn').forEach(b=> b.textContent = '▼　タブを表示');
   }
 }catch(e){}
