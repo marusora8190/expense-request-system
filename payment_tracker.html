@@ -25,10 +25,10 @@
     color:var(--text);
   }
   .app{max-width:1400px;margin:0 auto;padding:28px 20px 80px;}
-  .app-header{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:22px;flex-wrap:wrap;gap:8px;}
+  .app-header{display:flex;align-items:baseline;justify-content:flex-start;margin-bottom:22px;flex-wrap:wrap;gap:12px;}
   .app-header h1{font-size:22px;margin:0;letter-spacing:.04em;}
   .app-header h1 span{color:var(--ink);}
-  .app-header p{margin:4px 0 0;color:var(--muted);font-size:13px;}
+  .app-header p{margin:0;color:var(--muted);font-size:13px;}
 
   .reload-notice{
     background:#fff6e0;border:1px solid #e8cf8a;border-radius:9px;
@@ -293,10 +293,8 @@
 <body>
 <div class="app">
   <div class="app-header">
-    <div>
-      <h1><span>支出</span>申請管理</h1>
-      <p>予想経費申請書システムと連携し、工事ごとの支払い状況をまとめて管理します</p>
-    </div>
+    <h1><span>支出</span>申請管理</h1>
+    <p>予想経費申請書システムと連携し、工事ごとの支払い状況をまとめて管理します</p>
   </div>
 
   <div id="top-controls">
@@ -1730,8 +1728,12 @@ function dismissReloadNotice(){
   try{ sessionStorage.setItem('reloadNoticeDismissed', '1'); }catch(e){}
 }
 try{
-  if(sessionStorage.getItem('reloadNoticeDismissed') === '1'){
+  const navEntries = performance.getEntriesByType && performance.getEntriesByType('navigation');
+  const isReload = (navEntries && navEntries[0] && navEntries[0].type === 'reload')
+    || (performance.navigation && performance.navigation.type === 1);
+  if(isReload || sessionStorage.getItem('reloadNoticeDismissed') === '1'){
     document.getElementById('reload-notice').style.display = 'none';
+    try{ sessionStorage.setItem('reloadNoticeDismissed', '1'); }catch(e){}
   }
 }catch(e){}
 
