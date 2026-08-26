@@ -386,10 +386,15 @@
         <option value="2">2月</option>
         <option value="3">3月</option>
       </select>
+      <select id="verify-source-filter" class="year-filter" onchange="refreshVerifyRowsFromRequests()">
+        <option value="both">営繕課本部営繕費 と 各課本部営繕費 すべて</option>
+        <option value="ledger">営繕課本部営繕費のみ</option>
+        <option value="invoice">各課本部営繕費のみ</option>
+      </select>
       <button type="button" class="btn-print" onclick="doVerifyPrint()">印刷する</button>
     </div>
     <div class="verify-sheet">
-      <p class="verify-hint">この月に登録された予想経費申請書の工事名が自動で並びます。請求書が届いたら、その金額をここに入力してください(登録されていない工事は「＋ 行を追加」で手入力できます)。</p>
+      <p class="verify-hint">「営繕課本部営繕費」「各課本部営繕費」タブでこの月に入力済みの請求金額が、工事名とともに自動で並びます。まだどちらにも入力が無い工事は「＋ 行を追加」で手入力できます。</p>
       <div class="verify-rows" id="verify-rows"></div>
       <button type="button" class="add-payment-btn" onclick="addVerifyRow()">＋ 行を追加</button>
       <div class="verify-summary">
@@ -736,6 +741,7 @@ function populateVerifyYearOptions(){
 function refreshVerifyRowsFromRequests(){
   const fy = Number(document.getElementById('verify-year').value);
   const month = Number(document.getElementById('verify-month').value);
+  const source = document.getElementById('verify-source-filter').value; // 'both' | 'ledger' | 'invoice'
 
   const prevAmounts = {};
   verifyRows.forEach(row=>{
@@ -744,34 +750,36 @@ function refreshVerifyRowsFromRequests(){
 
   if(!fy || !month){
     verifyRows = [{subject:'', amount:''}];
-  }else{
-    const calYear = month >= 4 ? fy : fy + 1;
-    const matched = requests
-      .filter(r => matchesCategory(r) && r.created_at)
-      .filter(r=>{
-        const d = new Date(r.created_at);
-        return d.getFullYear() === calYear && (d.getMonth()+1) === month;
-      })
-      .sort((a,b)=> (a.created_at||'').localeCompare(b.created_at||''));
-
-    verifyRows = matched.length > 0
-      ? matched.map(r => {
-          // 「営繕課本部営繕費」「各課本部営繕費」タブですでに請求金額が入力済みなら、
-          // その金額をここにも自動で反映する(同じ月・同じ工事の請求書年月日 or 支払日で判定)
-          let recordedAmount = 0;
-          (r._payments || []).forEach(p=>{
-            const dStr = p.invoice_date || p.payment_date;
-            if(!dStr) return;
-            const d = new Date(dStr + 'T00:00:00');
-            if(d.getFullYear() === calYear && (d.getMonth()+1) === month){
-              recordedAmount += Number(p.amount || 0);
-            }
-          });
-          const amount = recordedAmount > 0 ? String(recordedAmount) : (prevAmounts[r.subject || ''] || '');
-          return { subject: r.subject || '', amount };
-        })
-      : [{subject:'', amount:''}];
+    renderVerifyRows();
+    calcVerify();
+    return;
   }
+
+  const calYear = month >= 4 ? fy : fy + 1;
+  const isThisMonth = (dStr)=>{
+    if(!dStr) return false;
+    const d = new Date(dStr + 'T00:00:00');
+    return d.getFullYear() === calYear && (d.getMonth()+1) === month;
+  };
+
+  // 「営繕課本部営繕費」タブ = 支払日(payment_date)ベース、
+  // 「各課本部営繕費」タブ = 請求書年月日(invoice_date)ベースで、この月に入力済みの請求を集める
+  const rows = [];
+  requests.filter(matchesCategory).forEach(r=>{
+    (r._payments || []).forEach(p=>{
+      const fromLedger = (source === 'both' || source === 'ledger') && isThisMonth(p.payment_date);
+      const fromInvoice = (source === 'both' || source === 'invoice') && isThisMonth(p.invoice_date);
+      if(fromLedger || fromInvoice){
+        rows.push({ subject: r.subject || '（主題未入力）', amount: String(p.amount || 0), _sortKey: p.invoice_date || p.payment_date || '' });
+      }
+    });
+  });
+
+  rows.sort((a,b)=> a._sortKey.localeCompare(b._sortKey));
+
+  verifyRows = rows.length > 0
+    ? rows.map(({subject, amount})=>({ subject, amount }))
+    : [{subject:'', amount: prevAmounts[''] || ''}];
 
   renderVerifyRows();
   calcVerify();
