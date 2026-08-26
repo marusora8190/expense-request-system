@@ -212,16 +212,16 @@
 
   /* 照合タブの印刷テンプレート(申請書合計表 のレイアウトを再現) */
   .verify-print-sheet{display:none;font-family:"MS Gothic","ＭＳ ゴシック","MS PGothic",sans-serif;padding:50px 60px 30px;}
-  .vp-date{text-align:right;font-size:12pt;margin-bottom:40px;}
-  .vp-title{text-align:center;font-size:16pt;font-weight:700;margin-bottom:44px;letter-spacing:.02em;}
-  .vp-table{width:100%;border-collapse:collapse;font-size:12pt;max-width:680px;margin:0 auto;}
-  .vp-table td{padding:9px 6px;}
+  .vp-date{text-align:right;font-size:14pt;margin-bottom:40px;}
+  .vp-title{text-align:center;font-size:18pt;font-weight:700;margin-bottom:44px;letter-spacing:.02em;}
+  .vp-table{width:100%;border-collapse:collapse;font-size:14pt;max-width:680px;margin:0 auto;}
+  .vp-table td{padding:9px 6px;border-bottom:none;}
   .vp-table td.vp-num{width:30px;color:var(--text);}
   .vp-table td.vp-subject{}
   .vp-table td.vp-amount{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap;}
   .vp-total-block{text-align:right;margin-top:70px;}
   .vp-total-inline{
-    display:inline-block;font-weight:700;font-size:12pt;
+    display:inline-block;font-weight:700;font-size:14pt;
     border-bottom:2px solid #333;padding:0 2px 6px;
     font-variant-numeric:tabular-nums;white-space:nowrap;
   }
@@ -253,6 +253,7 @@
     }
     body.print-mode-verify .vp-table{max-width:none !important;width:100% !important;margin:0 !important;}
     body.print-mode-verify .vp-date{padding-right:4mm !important;}
+    body.print-mode-verify .vp-title{transform:translateX(-40mm) !important;}
     /* 用紙下端から18mm(下余白15mm+さらに3mm)の位置に固定表示する */
     body.print-mode-verify .vp-total-block{
       position:absolute !important;left:0;right:0;bottom:3mm;margin-top:0 !important;
