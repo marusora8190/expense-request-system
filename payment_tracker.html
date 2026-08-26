@@ -219,7 +219,7 @@
   .vp-table td.vp-num{width:30px;color:var(--text);}
   .vp-table td.vp-subject{}
   .vp-table td.vp-amount{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap;}
-  .vp-table tfoot td{padding-top:70px;padding-bottom:10px;text-align:right;}
+  .vp-total-block{text-align:right;margin-top:70px;}
   .vp-total-inline{
     display:inline-block;font-weight:700;font-size:12pt;
     border-bottom:2px solid #333;padding:0 2px 6px;
@@ -247,9 +247,16 @@
     body.print-mode-verify #tab-verify{display:block !important;}
     body.print-mode-verify .verify-toolbar,
     body.print-mode-verify .verify-sheet{display:none !important;}
-    body.print-mode-verify .verify-print-sheet{display:block !important;padding-right:0 !important;}
+    body.print-mode-verify .verify-print-sheet{
+      display:block !important;padding-right:0 !important;
+      position:relative !important;height:180mm !important;
+    }
     body.print-mode-verify .vp-table{max-width:none !important;width:100% !important;margin:0 !important;}
     body.print-mode-verify .vp-date{padding-right:4mm !important;}
+    /* 用紙下端から18mm(下余白15mm+さらに3mm)の位置に固定表示する */
+    body.print-mode-verify .vp-total-block{
+      position:absolute !important;left:0;right:0;bottom:3mm;margin-top:0 !important;
+    }
   }
 
   /* 年度合計タブ */
@@ -438,14 +445,10 @@
       <div class="vp-title" id="vp-title"></div>
       <table class="vp-table">
         <tbody id="vp-body"></tbody>
-        <tfoot>
-          <tr>
-            <td colspan="3" class="vp-total-cell">
-              <span class="vp-total-inline">合　　計　<span id="vp-total"></span></span>
-            </td>
-          </tr>
-        </tfoot>
       </table>
+      <div class="vp-total-block">
+        <span class="vp-total-inline">合　　計　<span id="vp-total"></span></span>
+      </div>
     </div>
   </div>
 
@@ -969,8 +972,9 @@ function doVerifyPrint(){
   const catLabel = categoryFilter === '本部' ? '本部営繕費' : '教庁営繕費';
 
   document.getElementById('vp-date').textContent = reiwaDateStr(new Date());
+  const reiwaYear = fy ? fy - 2018 : null;
   document.getElementById('vp-title').textContent =
-    fy ? `令和　${fy}年度 ${month}月　${catLabel}支出申請合計額` : `${month}月　${catLabel}支出申請合計額`;
+    fy ? `令和　${reiwaYear}年度 ${month}月　${catLabel}支出申請合計額` : `${month}月　${catLabel}支出申請合計額`;
 
   const rows = verifyRows.filter(r => (r.subject && r.subject.trim()) || r.amount);
   const body = document.getElementById('vp-body');
