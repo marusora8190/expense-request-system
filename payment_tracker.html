@@ -36,6 +36,12 @@
     display:flex;align-items:center;gap:8px;
   }
   .reload-notice b{font-weight:700;}
+  .reload-notice .rn-text{flex:1;}
+  .reload-notice .rn-close{
+    background:none;border:none;color:#7a5c00;font-size:18px;line-height:1;
+    cursor:pointer;padding:2px 6px;flex-shrink:0;
+  }
+  .reload-notice .rn-close:hover{color:var(--ink-dark);}
 
   .toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:18px;}
   .search-wrap{position:relative;flex:1;min-width:220px;max-width:360px;}
@@ -51,7 +57,7 @@
   }
   .status-filter button.active{background:var(--ink);color:#fff;border-color:var(--ink);}
 
-  .table-scroll{overflow-x:auto;background:var(--panel);border-radius:12px;border:1px solid var(--line);}
+  .table-scroll{overflow-x:auto;overflow-y:auto;max-height:70vh;background:var(--panel);border-radius:12px;border:1px solid var(--line);}
   table{width:100%;border-collapse:collapse;font-size:13.5px;}
   th{
     text-align:center;padding:11px 12px;background:var(--accent-bg);color:var(--ink-dark);
@@ -279,9 +285,10 @@
     </div>
   </div>
 
-  <div class="reload-notice">
+  <div class="reload-notice" id="reload-notice">
     <span>💡</span>
-    <span>このファイルを開いた場合は、一度 <b>Ctrl+Shift+R</b> でハードリロードしてからお使いください。最新の状態が正しく表示されます。</span>
+    <span class="rn-text">このファイルを開いた場合は、一度 <b>Ctrl+Shift+R</b> でハードリロードしてからお使いください。最新の状態が正しく表示されます。</span>
+    <button type="button" class="rn-close" onclick="dismissReloadNotice()" title="閉じる">×</button>
   </div>
 
   <div class="category-tab-nav" id="tabs-bar">
@@ -449,11 +456,12 @@
             <th>12月支払分</th>
             <th>1月支払分</th>
             <th>2月支払分</th>
-            <th>3月末</th>
+            <th>3月支払分</th>
+            <th>3月末支払分</th>
           </tr>
         </thead>
         <tbody id="ledger-body">
-          <tr><td colspan="21" class="ledger-empty">読み込み中…</td></tr>
+          <tr><td colspan="22" class="ledger-empty">読み込み中…</td></tr>
         </tbody>
         <tfoot id="ledger-foot"></tfoot>
       </table>
@@ -489,11 +497,12 @@
             <th>12月支払分</th>
             <th>1月支払分</th>
             <th>2月支払分</th>
-            <th>3月末</th>
+            <th>3月支払分</th>
+            <th>3月末支払分</th>
           </tr>
         </thead>
         <tbody id="invoice-body">
-          <tr><td colspan="21" class="ledger-empty">読み込み中…</td></tr>
+          <tr><td colspan="22" class="ledger-empty">読み込み中…</td></tr>
         </tbody>
         <tfoot id="invoice-foot"></tfoot>
       </table>
@@ -1043,7 +1052,7 @@ function renderLedger(){
   const foot = document.getElementById('ledger-foot');
 
   if(!fy){
-    body.innerHTML = '<tr><td colspan="21" class="ledger-empty">年度を選択してください</td></tr>';
+    body.innerHTML = '<tr><td colspan="22" class="ledger-empty">年度を選択してください</td></tr>';
     foot.innerHTML = '';
     return;
   }
@@ -1052,13 +1061,14 @@ function renderLedger(){
   rows.sort((a,b) => (a.created_at||'').localeCompare(b.created_at||''));
 
   if(rows.length === 0){
-    body.innerHTML = '<tr><td colspan="21" class="ledger-empty">該当する工事がありません</td></tr>';
+    body.innerHTML = '<tr><td colspan="22" class="ledger-empty">該当する工事がありません</td></tr>';
     foot.innerHTML = '';
     return;
   }
 
   const months = [4,5,6,7,8,9,10,11,12,1,2,3];
   const monthTotals = months.map(()=>0);
+  let yearEndTotal = 0;
   let sumCost=0, sumPrevYear=0, sumThisYear=0, sumTotal=0, sumRemaining=0;
 
   const rowsHtml = rows.map(r=>{
@@ -1066,6 +1076,8 @@ function renderLedger(){
     const byMonth = {};
     const byMonthPayments = {};
     months.forEach(m=>{ byMonth[m] = 0; byMonthPayments[m] = []; });
+    let yearEndAmount = 0;
+    const yearEndPayments = [];
 
     (r._payments || []).forEach(p=>{
       if(!p.payment_date) return;
@@ -1077,8 +1089,13 @@ function renderLedger(){
         thisYearTotal += amt;
         const d = new Date(p.payment_date + 'T00:00:00');
         const m = d.getMonth()+1;
-        byMonth[m] = (byMonth[m] || 0) + amt;
-        byMonthPayments[m].push(p);
+        if(m === 3 && d.getDate() === 31){
+          yearEndAmount += amt;
+          yearEndPayments.push(p);
+        }else{
+          byMonth[m] = (byMonth[m] || 0) + amt;
+          byMonthPayments[m].push(p);
+        }
       }
     });
 
@@ -1091,6 +1108,7 @@ function renderLedger(){
     sumTotal += totalPaid;
     sumRemaining += remaining;
     months.forEach((m,idx)=> monthTotals[idx] += byMonth[m]);
+    yearEndTotal += yearEndAmount;
 
     const monthCells = months.map(m => {
       const list = byMonthPayments[m];
@@ -1104,6 +1122,17 @@ function renderLedger(){
       // 同じ月に複数件の支払いがある場合は合算表示(個別編集は請求書一覧タブから)
       return `<td class="num">${Number(byMonth[m]).toLocaleString()}</td>`;
     }).join('');
+
+    let yearEndCell;
+    if(yearEndPayments.length === 0){
+      yearEndCell = `<td class="num"><input type="text" class="amount-input" oninput="this.value=this.value.replace(/[^0-9]/g,'')" onchange="createLedgerPayment('${r.id}', 'yearend', this.value)"></td>`;
+    }else if(yearEndPayments.length === 1){
+      const p = yearEndPayments[0];
+      yearEndCell = `<td class="num"><input type="text" class="amount-input" value="${p.amount || ''}" oninput="this.value=this.value.replace(/[^0-9]/g,'')" onchange="updateLedgerAmount('${p.id}', this.value)"></td>`;
+    }else{
+      yearEndCell = `<td class="num">${Number(yearEndAmount).toLocaleString()}</td>`;
+    }
+
     const markKey = `${r.id}_${fy}`;
     const isMarked = !!ledgerMarks[markKey];
 
@@ -1119,6 +1148,7 @@ function renderLedger(){
         <td class="num">${totalPaid ? totalPaid.toLocaleString() : ''}</td>
         <td class="num${remaining < 0 ? ' neg' : ''}">${remaining.toLocaleString()}</td>
         ${monthCells}
+        ${yearEndCell}
       </tr>`;
   }).join('');
 
@@ -1126,6 +1156,7 @@ function renderLedger(){
   applyStickyOffsets(body.closest('table'));
 
   const monthFootCells = monthTotals.map(v => `<td class="num">${v ? v.toLocaleString() : ''}</td>`).join('');
+  const yearEndFootCell = `<td class="num">${yearEndTotal ? yearEndTotal.toLocaleString() : ''}</td>`;
   foot.innerHTML = `
     <tr>
       <td colspan="3" class="stick-1">合計</td>
@@ -1136,6 +1167,7 @@ function renderLedger(){
       <td class="num">${sumTotal.toLocaleString()}</td>
       <td class="num${sumRemaining < 0 ? ' neg' : ''}">${sumRemaining.toLocaleString()}</td>
       ${monthFootCells}
+      ${yearEndFootCell}
     </tr>`;
 }
 
@@ -1198,6 +1230,9 @@ async function updateInvoiceAmount(paymentId, value){
 
 // 選択中の年度と月番号(4〜3)から、その月1日の日付文字列を作る
 function monthToDate(fy, month){
+  if(month === 'yearend'){
+    return `${fy + 1}-03-31`;
+  }
   const calYear = month >= 4 ? fy : fy + 1;
   return `${calYear}-${String(month).padStart(2,'0')}-01`;
 }
@@ -1255,13 +1290,14 @@ function renderInvoiceList(){
   const foot = document.getElementById('invoice-foot');
 
   if(!fy){
-    body.innerHTML = '<tr><td colspan="21" class="ledger-empty">年度を選択してください</td></tr>';
+    body.innerHTML = '<tr><td colspan="22" class="ledger-empty">年度を選択してください</td></tr>';
     foot.innerHTML = '';
     return;
   }
 
   const months = [4,5,6,7,8,9,10,11,12,1,2,3];
   const monthTotals = months.map(()=>0);
+  let yearEndTotal = 0;
   let sumCost=0, sumPrevYear=0, sumThisYear=0, sumTotal=0, sumRemaining=0;
   const countedProjects = new Set();
   const entries = [];
@@ -1299,13 +1335,20 @@ function renderInvoiceList(){
       }
 
       let monthIdx = -1;
+      let isYearEnd = false;
       if(invDate && invFy === fy){
         const d = new Date(invDate + 'T00:00:00');
-        monthIdx = months.indexOf(d.getMonth()+1);
-        if(monthIdx >= 0) monthTotals[monthIdx] += Number(p.amount||0);
+        const mm = d.getMonth()+1;
+        if(mm === 3 && d.getDate() === 31){
+          isYearEnd = true;
+          yearEndTotal += Number(p.amount||0);
+        }else{
+          monthIdx = months.indexOf(mm);
+          if(monthIdx >= 0) monthTotals[monthIdx] += Number(p.amount||0);
+        }
       }
 
-      entries.push({ r, p, prevYearTotal, thisYearTotal, totalPaid, remaining, monthIdx });
+      entries.push({ r, p, prevYearTotal, thisYearTotal, totalPaid, remaining, monthIdx, isYearEnd });
     });
 
     // この工事がこの年度に表示される場合は、もう1件請求を追加できる空欄行を末尾に出す。
@@ -1315,12 +1358,12 @@ function renderInvoiceList(){
       || (r.budget_year != null && r.budget_year <= fy && remaining > 0)
       || ((r._payments||[]).length === 0 && r.budget_year === fy);
     if(showBlankRow){
-      entries.push({ r, p: null, prevYearTotal: 0, thisYearTotal: 0, totalPaid: 0, remaining: Number(r.total_cost||0), monthIdx: -1, _blankFor: r.id });
+      entries.push({ r, p: null, prevYearTotal: 0, thisYearTotal: 0, totalPaid: 0, remaining: Number(r.total_cost||0), monthIdx: -1, isYearEnd: false, _blankFor: r.id });
     }
   });
 
   if(entries.length === 0){
-    body.innerHTML = '<tr><td colspan="21" class="ledger-empty">該当する請求がありません</td></tr>';
+    body.innerHTML = '<tr><td colspan="22" class="ledger-empty">該当する請求がありません</td></tr>';
     foot.innerHTML = '';
     return;
   }
@@ -1332,10 +1375,11 @@ function renderInvoiceList(){
     return ((a.p && a.p.invoice_date) || '9999').localeCompare((b.p && b.p.invoice_date) || '9999');
   });
 
-  body.innerHTML = entries.map(({r, p, prevYearTotal, thisYearTotal, totalPaid, remaining, monthIdx})=>{
+  body.innerHTML = entries.map(({r, p, prevYearTotal, thisYearTotal, totalPaid, remaining, monthIdx, isYearEnd})=>{
     if(!p){
       // まだ請求(支払い)が一件も無い工事: 該当する月のマスに金額を入力すると、その場で新しい請求として登録される
       const monthCells = months.map(m => `<td class="num"><input type="text" class="amount-input" placeholder="金額" oninput="this.value=this.value.replace(/[^0-9]/g,'')" onchange="createInvoiceForMonth('${r.id}', ${m}, this.value)"></td>`).join('');
+      const yearEndCell = `<td class="num"><input type="text" class="amount-input" placeholder="金額" oninput="this.value=this.value.replace(/[^0-9]/g,'')" onchange="createInvoiceForMonth('${r.id}', 'yearend', this.value)"></td>`;
       return `
       <tr data-new-request="${r.id}">
         <td class="mark-cell stick-1"><input type="checkbox" disabled></td>
@@ -1348,6 +1392,7 @@ function renderInvoiceList(){
         <td class="num">0</td>
         <td class="num">${remaining.toLocaleString()}</td>
         ${monthCells}
+        ${yearEndCell}
       </tr>`;
     }
 
@@ -1358,6 +1403,9 @@ function renderInvoiceList(){
       }
       return '<td class="num"></td>';
     }).join('');
+    const yearEndCell = isYearEnd
+      ? `<td class="num"><input type="text" class="amount-input" value="${p.amount || ''}" oninput="this.value=this.value.replace(/[^0-9]/g,'')" onchange="updateInvoiceAmount('${p.id}', this.value)"></td>`
+      : '<td class="num"></td>';
     return `
       <tr>
         <td class="mark-cell stick-1"><input type="checkbox" ${isMarked ? 'checked' : ''} onchange="toggleInvoiceMark('${p.id}', this.checked)"></td>
@@ -1370,12 +1418,14 @@ function renderInvoiceList(){
         <td class="num">${totalPaid ? totalPaid.toLocaleString() : ''}</td>
         <td class="num${remaining < 0 ? ' neg' : ''}">${remaining.toLocaleString()}</td>
         ${monthCells}
+        ${yearEndCell}
       </tr>`;
   }).join('');
 
   applyStickyOffsets(body.closest('table'));
 
   const monthFootCells = monthTotals.map(v => `<td class="num">${v ? v.toLocaleString() : ''}</td>`).join('');
+  const yearEndFootCell = `<td class="num">${yearEndTotal ? yearEndTotal.toLocaleString() : ''}</td>`;
   foot.innerHTML = `
     <tr>
       <td colspan="3" class="stick-1">合計</td>
@@ -1386,6 +1436,7 @@ function renderInvoiceList(){
       <td class="num">${sumTotal.toLocaleString()}</td>
       <td class="num${sumRemaining < 0 ? ' neg' : ''}">${sumRemaining.toLocaleString()}</td>
       ${monthFootCells}
+      ${yearEndFootCell}
     </tr>`;
 }
 
@@ -1649,6 +1700,17 @@ document.getElementById('tabs-bar').addEventListener('contextmenu', function(e){
   e.preventDefault();
   window.open('https://marusora8190.github.io/expense-request-system/expense_form.html', '_blank');
 });
+
+// お知らせ帯: 閉じるボタンで非表示にできる(このタブを開いている間だけ記憶)
+function dismissReloadNotice(){
+  document.getElementById('reload-notice').style.display = 'none';
+  try{ sessionStorage.setItem('reloadNoticeDismissed', '1'); }catch(e){}
+}
+try{
+  if(sessionStorage.getItem('reloadNoticeDismissed') === '1'){
+    document.getElementById('reload-notice').style.display = 'none';
+  }
+}catch(e){}
 
 loadAll();
 </script>
