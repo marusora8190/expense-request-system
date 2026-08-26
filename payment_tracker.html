@@ -602,7 +602,7 @@ let verifyDeptFilter = new Set(ALL_PAY_DEPTS);
 function renderDeptFilterButtons(containerId, selectedSet, onToggle){
   const el = document.getElementById(containerId);
   el.innerHTML = ALL_PAY_DEPTS.map(d=>
-    `<button type="button" class="${selectedSet.has(d) ? 'active' : ''}" onclick="${onToggle}('${d}')">${d}</button>`
+    `<button type="button" class="${selectedSet.has(d) ? 'active' : ''}" onclick="${onToggle}('${d}')">${selectedSet.has(d) ? '✓ ' : ''}${d}</button>`
   ).join('');
 }
 function toggleListDeptFilter(d){
@@ -735,7 +735,9 @@ function populateDeptTabs(){
 
 function updateDeptTabActiveState(){
   document.querySelectorAll('#dept-tabs-container button').forEach(b=>{
-    b.classList.toggle('active', deptTabFilter.has(b.dataset.dept));
+    const selected = deptTabFilter.has(b.dataset.dept);
+    b.classList.toggle('active', selected);
+    b.textContent = (selected ? '✓ ' : '') + b.dataset.dept;
   });
   const hintEl = document.getElementById('dept-tab-hint');
   if(hintEl){
