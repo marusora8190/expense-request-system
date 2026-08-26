@@ -72,6 +72,16 @@
   .table-scroll{overflow-x:auto;overflow-y:auto;max-height:70vh;background:var(--panel);border-radius:12px;border:1px solid var(--line);}
   body.controls-hidden .table-scroll{max-height:90vh;}
   table{width:100%;border-collapse:collapse;font-size:13.5px;}
+  .table-scroll table{table-layout:fixed;}
+  .table-scroll table th:nth-child(1), .table-scroll table td:nth-child(1){width:70px;}
+  .table-scroll table th:nth-child(2), .table-scroll table td:nth-child(2){width:90px;}
+  .table-scroll table th:nth-child(3), .table-scroll table td:nth-child(3){width:auto;}
+  .table-scroll table th:nth-child(4), .table-scroll table td:nth-child(4){width:90px;}
+  .table-scroll table th:nth-child(5), .table-scroll table td:nth-child(5),
+  .table-scroll table th:nth-child(6), .table-scroll table td:nth-child(6),
+  .table-scroll table th:nth-child(7), .table-scroll table td:nth-child(7){width:110px;}
+  .table-scroll table th:nth-child(8), .table-scroll table td:nth-child(8){width:90px;}
+  .table-scroll table th:nth-child(9), .table-scroll table td:nth-child(9){width:160px;}
   th{
     text-align:center;padding:11px 12px;background:var(--accent-bg);color:var(--ink-dark);
     font-weight:700;white-space:nowrap;border-bottom:1px solid var(--line);
@@ -595,25 +605,36 @@ let overrides = [];  // 手動「完了」フラグ
 let ledgerMarks = {}; // 年度合計タブの「済」マーク: `${expense_request_id}_${fiscal_year}` -> boolean
 let statusFilter = 'all';
 const ALL_PAY_DEPTS = ['営繕課', '電気課', '放送通信課', '水道課'];
-let listDeptFilter = new Set(ALL_PAY_DEPTS);
-let verifyDeptFilter = new Set(ALL_PAY_DEPTS);
+let sharedDeptFilter = new Set(ALL_PAY_DEPTS); // 一覧・照合・部署タブ、すべて共通の部署絞り込み
 
-// 一覧・照合タブ共通: 部署の複数選択フィルターボタンを描画する
-function renderDeptFilterButtons(containerId, selectedSet, onToggle){
+// 部署の複数選択フィルターボタンを描画する(ピル型ボタン用)
+function renderDeptFilterButtons(containerId){
   const el = document.getElementById(containerId);
+  if(!el) return;
   el.innerHTML = ALL_PAY_DEPTS.map(d=>
-    `<button type="button" class="${selectedSet.has(d) ? 'active' : ''}" onclick="${onToggle}('${d}')">${selectedSet.has(d) ? '✓ ' : ''}${d}</button>`
+    `<button type="button" class="${sharedDeptFilter.has(d) ? 'active' : ''}" onclick="toggleSharedDept('${d}')">${sharedDeptFilter.has(d) ? '✓ ' : ''}${d}</button>`
   ).join('');
 }
-function toggleListDeptFilter(d){
-  if(listDeptFilter.has(d)) listDeptFilter.delete(d); else listDeptFilter.add(d);
-  renderDeptFilterButtons('list-dept-filter', listDeptFilter, 'toggleListDeptFilter');
-  renderList();
+
+// すべての部署絞り込みUI(一覧・照合のピルボタン、部署タブ)を最新の選択状態で再描画する
+function renderAllDeptFilterUI(){
+  renderDeptFilterButtons('list-dept-filter');
+  renderDeptFilterButtons('verify-dept-filter');
+  updateDeptTabActiveState();
 }
-function toggleVerifyDeptFilter(d){
-  if(verifyDeptFilter.has(d)) verifyDeptFilter.delete(d); else verifyDeptFilter.add(d);
-  renderDeptFilterButtons('verify-dept-filter', verifyDeptFilter, 'toggleVerifyDeptFilter');
-  refreshVerifyRowsFromRequests();
+
+function toggleSharedDept(d){
+  if(sharedDeptFilter.has(d)) sharedDeptFilter.delete(d); else sharedDeptFilter.add(d);
+  renderAllDeptFilterUI();
+  if(document.getElementById('tab-list').classList.contains('active')) renderList();
+  if(document.getElementById('tab-verify').classList.contains('active')){
+    populateVerifyYearOptions();
+    refreshVerifyRowsFromRequests();
+  }
+  if(document.getElementById('tab-ledger').classList.contains('active')){
+    populateLedgerYearOptions();
+    renderLedger();
+  }
 }
 let categoryFilter = '本部'; // '本部' または '教庁'
 let editingRequestId = null;
@@ -638,8 +659,8 @@ async function loadAll(){
     markRows.forEach(m=>{ ledgerMarks[`${m.expense_request_id}_${m.fiscal_year}`] = m.is_marked; });
     attachAggregates();
     populateYearFilter();
-    renderDeptFilterButtons('list-dept-filter', listDeptFilter, 'toggleListDeptFilter');
-    renderDeptFilterButtons('verify-dept-filter', verifyDeptFilter, 'toggleVerifyDeptFilter');
+    renderDeptFilterButtons('list-dept-filter');
+    renderDeptFilterButtons('verify-dept-filter');
     renderList();
     populateDeptTabs();
   }catch(e){
@@ -674,14 +695,13 @@ function matchesCategory(r){
 
 // 部署ごとにタブを自動生成するための、表示順(この順にあれば表示、無ければ出さない)
 const DEPT_TAB_ORDER = ['営繕課', '建築課', '造園課', '電気課', '放送通信課', '水道課'];
-let deptTabFilter = new Set(); // 現在選択中の部署タブ(複数選択可)
 function matchesCurrentDept(r){
-  return deptTabFilter.has(r.department);
+  return sharedDeptFilter.has(r.department);
 }
 
 function populateYearFilter(){
   const years = new Set();
-  requests.filter(r => matchesCategory(r) && listDeptFilter.has(r.department)).forEach(r=>{
+  requests.filter(r => matchesCategory(r) && sharedDeptFilter.has(r.department)).forEach(r=>{
     r._fiscalYears.forEach(y=>years.add(y));
   });
   const sorted = [...years].sort((a,b)=>b-a);
@@ -724,32 +744,29 @@ function populateDeptTabs(){
 
   const container = document.getElementById('dept-tabs-container');
   container.innerHTML = depts.map(d=>
-    `<button type="button" data-dept="${escapeHtml(d)}" onclick="toggleDeptTab('${escapeHtml(d)}')">${escapeHtml(d)}</button>`
+    `<button type="button" data-dept="${escapeHtml(d)}" onclick="clickDeptTab('${escapeHtml(d)}')">${escapeHtml(d)}</button>`
   ).join('');
 
-  // 存在しなくなった部署は選択から外しつつ、まだ何も選ばれていなければ全部署を選択状態にする
-  deptTabFilter.forEach(d=>{ if(!depts.includes(d)) deptTabFilter.delete(d); });
-  if(deptTabFilter.size === 0) depts.forEach(d=>deptTabFilter.add(d));
   updateDeptTabActiveState();
+}
+
+function clickDeptTab(d){
+  toggleSharedDept(d);
+  switchTab('ledger');
 }
 
 function updateDeptTabActiveState(){
   document.querySelectorAll('#dept-tabs-container button').forEach(b=>{
-    const selected = deptTabFilter.has(b.dataset.dept);
+    const selected = sharedDeptFilter.has(b.dataset.dept);
     b.classList.toggle('active', selected);
     b.textContent = (selected ? '✓ ' : '') + b.dataset.dept;
   });
   const hintEl = document.getElementById('dept-tab-hint');
   if(hintEl){
-    hintEl.textContent = deptTabFilter.size > 0
-      ? `「${[...deptTabFilter].join('」「')}」が支払う工事を表示しています。`
+    hintEl.textContent = sharedDeptFilter.size > 0
+      ? `「${[...sharedDeptFilter].join('」「')}」が支払う工事を表示しています。`
       : '部署を選択してください。';
   }
-}
-
-function toggleDeptTab(dept){
-  if(deptTabFilter.has(dept)) deptTabFilter.delete(dept); else deptTabFilter.add(dept);
-  switchTab('ledger');
 }
 
 // ---------------- タブ切替 ----------------
@@ -774,7 +791,7 @@ function switchTab(tab){
 // ---------------- 照合タブ ----------------
 function populateVerifyYearOptions(){
   const years = new Set();
-  requests.filter(r => matchesCategory(r) && verifyDeptFilter.has(r.department)).forEach(r=>{
+  requests.filter(r => matchesCategory(r) && sharedDeptFilter.has(r.department)).forEach(r=>{
     r._fiscalYears.forEach(y=>years.add(y));
   });
   const sorted = [...years].sort((a,b)=>b-a);
@@ -812,7 +829,7 @@ function refreshVerifyRowsFromRequests(){
 
   // 支払日(payment_date)ベースで、この月に入力済みの請求を集める
   const rows = [];
-  requests.filter(r => matchesCategory(r) && verifyDeptFilter.has(r.department)).forEach(r=>{
+  requests.filter(r => matchesCategory(r) && sharedDeptFilter.has(r.department)).forEach(r=>{
     (r._payments || []).forEach(p=>{
       if(isThisMonth(p.payment_date)){
         rows.push({ subject: r.subject || '（主題未入力）', amount: String(p.amount || 0), _sortKey: r.created_at || '' });
@@ -1161,7 +1178,7 @@ function monthToDate(fy, month){
 function renderPrintList(){
   const yearSel = document.getElementById('year-filter').value;
   const catLabel = categoryFilter === '本部' ? '本部営繕費' : '教庁営繕費';
-  let rows = requests.filter(r => matchesCategory(r) && listDeptFilter.has(r.department));
+  let rows = requests.filter(r => matchesCategory(r) && sharedDeptFilter.has(r.department));
   if(yearSel){
     const y = Number(yearSel);
     rows = rows.filter(r => r._fiscalYears.has(y));
@@ -1213,7 +1230,7 @@ function setStatusFilter(s){
 function getFilteredRequests(){
   const kw = document.getElementById('search-box').value.trim();
   const yearSel = document.getElementById('year-filter').value;
-  let rows = requests.filter(r => matchesCategory(r) && listDeptFilter.has(r.department));
+  let rows = requests.filter(r => matchesCategory(r) && sharedDeptFilter.has(r.department));
 
   if(yearSel){
     const y = Number(yearSel);
