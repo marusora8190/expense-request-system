@@ -196,13 +196,13 @@
   .verify-summary{margin-top:18px;padding-top:16px;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:8px;font-size:14px;}
   .verify-summary .row{display:flex;justify-content:space-between;max-width:360px;}
   .verify-summary .row span:last-child{font-weight:700;font-variant-numeric:tabular-nums;}
-  .verify-breakdown{background:var(--accent-bg);border-radius:8px;padding:4px 14px;max-width:480px;}
+  .verify-breakdown{background:var(--accent-bg);border-radius:8px;padding:4px 14px;max-width:900px;}
   .verify-breakdown .b-row{
     display:flex;justify-content:space-between;gap:10px;padding:6px 0;
     border-bottom:1px solid #ecdfc9;font-size:13px;
   }
   .verify-breakdown .b-row:last-child{border-bottom:none;}
-  .verify-breakdown .b-row .b-subject{color:var(--text);white-space:normal;flex:1;}
+  .verify-breakdown .b-row .b-subject{color:var(--text);white-space:nowrap;flex:1;overflow:hidden;text-overflow:ellipsis;}
   .verify-breakdown .b-row .b-label{color:var(--muted);white-space:nowrap;}
   .verify-breakdown .b-row .b-amount{color:var(--ink-dark);font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap;}
   .verify-breakdown .b-empty{color:var(--muted);font-size:13px;padding:8px 0;}
@@ -211,7 +211,7 @@
   .verify-result.ng{background:#fdecea;color:var(--ink-dark);}
 
   /* 照合タブの印刷テンプレート(申請書合計表 のレイアウトを再現) */
-  .verify-print-sheet{display:none;font-family:"Hiragino Mincho ProN","Yu Mincho",serif;padding:50px 60px 30px;}
+  .verify-print-sheet{display:none;font-family:"MS Gothic","ＭＳ ゴシック","MS PGothic",sans-serif;padding:50px 60px 30px;}
   .vp-date{text-align:right;font-size:15px;margin-bottom:40px;}
   .vp-title{text-align:center;font-size:21px;font-weight:700;margin-bottom:44px;letter-spacing:.02em;}
   .vp-table{width:100%;border-collapse:collapse;font-size:16px;max-width:680px;margin:0 auto;}
@@ -857,7 +857,7 @@ function renderVerifyRows(){
   wrap.innerHTML = verifyRows.map((row, idx)=>`
     <div class="payment-row" data-idx="${idx}">
       <input type="text" class="note-input" placeholder="工事名(任意)" value="${escapeHtml(row.subject)}" oninput="updateVerifyRow(${idx},'subject',this.value)">
-      <input type="text" class="amount-input" placeholder="金額" value="${row.amount}" oninput="updateVerifyRow(${idx},'amount',this.value.replace(/[^0-9]/g,''))">
+      <input type="text" class="amount-input" placeholder="金額" value="${row.amount ? Number(row.amount).toLocaleString() : ''}" oninput="formatAmountInput(this); updateVerifyRow(${idx},'amount',this.value.replace(/,/g,''))">
       <button type="button" class="del-btn" title="削除" onclick="deleteVerifyRow(${idx})">×</button>
     </div>
   `).join('');
@@ -987,10 +987,10 @@ function doVerifyPrint(){
 
   document.body.classList.add('print-mode-verify');
 
-  // 照合タブの印刷だけはA4横向きにする(@pageはCSSクラスで条件分けできないため、印刷直前だけ一時的に挿入)
+  // 照合タブの印刷はA4縦向き・余白多めにする(@pageはCSSクラスで条件分けできないため、印刷直前だけ一時的に挿入)
   const orientStyle = document.createElement('style');
   orientStyle.id = 'verify-print-orientation';
-  orientStyle.textContent = '@page{size:A4 landscape;margin:15mm;}';
+  orientStyle.textContent = '@page{size:A4 portrait;margin:20mm;}';
   document.head.appendChild(orientStyle);
 
   window.print();
@@ -1621,7 +1621,7 @@ function renderPaymentRows(){
   wrap.innerHTML = visible.map(({row, idx})=>`
     <div class="payment-row" data-idx="${idx}">
       <input type="date" value="${row.payment_date||''}" onchange="updateRow(${idx},'payment_date',this.value)">
-      <input type="text" class="amount-input" placeholder="金額" value="${row.amount||''}" oninput="updateRow(${idx},'amount',this.value.replace(/[^0-9]/g,''))">
+      <input type="text" class="amount-input" placeholder="金額" value="${row.amount ? Number(row.amount).toLocaleString() : ''}" oninput="formatAmountInput(this); updateRow(${idx},'amount',this.value.replace(/,/g,''))">
       <input type="text" class="note-input" placeholder="備考(任意)" value="${escapeHtml(row.note||'')}" oninput="updateRow(${idx},'note',this.value)">
       <button type="button" class="del-btn" title="削除" onclick="deleteRow(${idx})">×</button>
     </div>
