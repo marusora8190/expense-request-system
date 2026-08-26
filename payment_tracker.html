@@ -350,7 +350,6 @@
         <button type="button" data-status="open" onclick="setStatusFilter('open')">支払い中</button>
         <button type="button" data-status="done" onclick="setStatusFilter('done')">完了</button>
       </div>
-      <div class="status-filter" id="list-dept-filter"></div>
       <button type="button" class="btn-print" onclick="doPrint()">印刷する</button>
       <button type="button" class="collapse-toggle-btn" onclick="toggleTopControls()">▲　タブを隠す</button>
     </div>
@@ -423,7 +422,6 @@
         <option value="2">2月</option>
         <option value="3">3月</option>
       </select>
-      <div class="status-filter" id="verify-dept-filter"></div>
       <button type="button" class="btn-print" onclick="doVerifyPrint()">印刷する</button>
       <button type="button" class="collapse-toggle-btn" onclick="toggleTopControls()">▲　タブを隠す</button>
     </div>
@@ -607,19 +605,8 @@ let statusFilter = 'all';
 const ALL_PAY_DEPTS = ['営繕課', '電気課', '放送通信課', '水道課'];
 let sharedDeptFilter = new Set(ALL_PAY_DEPTS); // 一覧・照合・部署タブ、すべて共通の部署絞り込み
 
-// 部署の複数選択フィルターボタンを描画する(ピル型ボタン用)
-function renderDeptFilterButtons(containerId){
-  const el = document.getElementById(containerId);
-  if(!el) return;
-  el.innerHTML = ALL_PAY_DEPTS.map(d=>
-    `<button type="button" class="${sharedDeptFilter.has(d) ? 'active' : ''}" onclick="toggleSharedDept('${d}')">${sharedDeptFilter.has(d) ? '✓ ' : ''}${d}</button>`
-  ).join('');
-}
-
-// すべての部署絞り込みUI(一覧・照合のピルボタン、部署タブ)を最新の選択状態で再描画する
+// すべての部署絞り込みUI(部署タブ)を最新の選択状態で再描画する
 function renderAllDeptFilterUI(){
-  renderDeptFilterButtons('list-dept-filter');
-  renderDeptFilterButtons('verify-dept-filter');
   updateDeptTabActiveState();
 }
 
@@ -659,8 +646,6 @@ async function loadAll(){
     markRows.forEach(m=>{ ledgerMarks[`${m.expense_request_id}_${m.fiscal_year}`] = m.is_marked; });
     attachAggregates();
     populateYearFilter();
-    renderDeptFilterButtons('list-dept-filter');
-    renderDeptFilterButtons('verify-dept-filter');
     renderList();
     populateDeptTabs();
   }catch(e){
