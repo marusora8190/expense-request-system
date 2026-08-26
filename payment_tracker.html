@@ -30,6 +30,13 @@
   .app-header h1 span{color:var(--ink);}
   .app-header p{margin:4px 0 0;color:var(--muted);font-size:13px;}
 
+  .reload-notice{
+    background:#fff6e0;border:1px solid #e8cf8a;border-radius:9px;
+    padding:12px 16px;margin-bottom:18px;font-size:13.5px;color:#7a5c00;
+    display:flex;align-items:center;gap:8px;
+  }
+  .reload-notice b{font-weight:700;}
+
   .toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:18px;}
   .search-wrap{position:relative;flex:1;min-width:220px;max-width:360px;}
   .search-wrap input{
@@ -204,7 +211,7 @@
 
   @media print{
     body{background:#fff;}
-    .app-header, .category-tab-nav, .tab-nav, .print-toolbar, .modal-overlay, .toast{display:none !important;}
+    .app-header, .reload-notice, .category-tab-nav, .tab-nav, .print-toolbar, .modal-overlay, .toast{display:none !important;}
     #tab-list{display:none !important;}
     #tab-verify{display:none !important;}
     #tab-ledger{display:none !important;}
@@ -269,6 +276,11 @@
       <h1><span>支出</span>申請管理</h1>
       <p>予想経費申請書システムと連携し、工事ごとの支払い状況をまとめて管理します</p>
     </div>
+  </div>
+
+  <div class="reload-notice">
+    <span>💡</span>
+    <span>このファイルを開いた場合は、一度 <b>Ctrl+Shift+R</b> でハードリロードしてからお使いください。最新の状態が正しく表示されます。</span>
   </div>
 
   <div class="category-tab-nav" id="tabs-bar">
