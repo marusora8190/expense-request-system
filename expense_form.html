@@ -28,6 +28,14 @@
   .app-header h1 span{color:var(--ink);}
   .app-header p{margin:4px 0 0;color:var(--muted);font-size:12.5px;}
 
+  .reload-notice{
+    background:#fff6e0;border:1px solid #e8cf8a;border-radius:9px;
+    padding:12px 16px;margin-bottom:18px;font-size:13.5px;color:#7a5c00;
+    display:flex;align-items:center;gap:8px;
+  }
+  .reload-notice b{font-weight:700;}
+  @media print{ .reload-notice{display:none !important;} }
+
   .tabs{display:flex;gap:6px;margin-bottom:20px;}
   .tab{
     padding:9px 18px;border:1px solid var(--line);background:var(--panel);
@@ -408,6 +416,11 @@
       <h1><span>予想経費</span>申請書システム</h1>
       <p>入力した内容を原紙レイアウトのまま印刷できます</p>
     </div>
+  </div>
+
+  <div class="reload-notice">
+    <span>💡</span>
+    <span>このファイルを開いた場合は、一度 <b>Ctrl+Shift+R</b> でハードリロードしてからお使いください。最新の状態が正しく表示されます。</span>
   </div>
 
   <div class="tabs" id="tabs-bar">
