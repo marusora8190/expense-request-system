@@ -73,15 +73,16 @@
   body.controls-hidden .table-scroll{max-height:90vh;}
   table{width:100%;border-collapse:collapse;font-size:13.5px;}
   .table-scroll table{table-layout:fixed;}
-  .table-scroll table th:nth-child(1), .table-scroll table td:nth-child(1){width:70px;}
-  .table-scroll table th:nth-child(2), .table-scroll table td:nth-child(2){width:90px;}
-  .table-scroll table th:nth-child(3), .table-scroll table td:nth-child(3){width:auto;}
-  .table-scroll table th:nth-child(4), .table-scroll table td:nth-child(4){width:90px;}
-  .table-scroll table th:nth-child(5), .table-scroll table td:nth-child(5),
+  .table-scroll table th:nth-child(1), .table-scroll table td:nth-child(1){width:64px;}
+  .table-scroll table th:nth-child(2), .table-scroll table td:nth-child(2){width:70px;}
+  .table-scroll table th:nth-child(3), .table-scroll table td:nth-child(3){width:90px;}
+  .table-scroll table th:nth-child(4), .table-scroll table td:nth-child(4){width:auto;}
+  .table-scroll table th:nth-child(5), .table-scroll table td:nth-child(5){width:90px;}
   .table-scroll table th:nth-child(6), .table-scroll table td:nth-child(6),
-  .table-scroll table th:nth-child(7), .table-scroll table td:nth-child(7){width:110px;}
-  .table-scroll table th:nth-child(8), .table-scroll table td:nth-child(8){width:90px;}
-  .table-scroll table th:nth-child(9), .table-scroll table td:nth-child(9){width:160px;}
+  .table-scroll table th:nth-child(7), .table-scroll table td:nth-child(7),
+  .table-scroll table th:nth-child(8), .table-scroll table td:nth-child(8){width:110px;}
+  .table-scroll table th:nth-child(9), .table-scroll table td:nth-child(9){width:90px;}
+  .table-scroll table th:nth-child(10), .table-scroll table td:nth-child(10){width:160px;}
   th{
     text-align:center;padding:11px 12px;background:var(--accent-bg);color:var(--ink-dark);
     font-weight:700;white-space:nowrap;border-bottom:1px solid var(--line);
@@ -370,6 +371,7 @@
       <table>
         <thead>
           <tr>
+            <th>No.</th>
             <th>年度</th>
             <th>部署</th>
             <th>主題</th>
@@ -382,7 +384,7 @@
           </tr>
         </thead>
         <tbody id="list-body">
-          <tr class="empty-row"><td colspan="9" class="loading">読み込み中…</td></tr>
+          <tr class="empty-row"><td colspan="10" class="loading">読み込み中…</td></tr>
         </tbody>
       </table>
     </div>
@@ -395,6 +397,7 @@
       <table class="print-table">
         <thead>
           <tr>
+            <th>No.</th>
             <th>年度</th>
             <th>部署</th>
             <th>主題</th>
@@ -407,7 +410,7 @@
         <tbody id="print-body"></tbody>
         <tfoot>
           <tr>
-            <td colspan="4">合計</td>
+            <td colspan="5">合計</td>
             <td class="amt" id="print-total-cost">¥0</td>
             <td class="amt" id="print-total-paid">¥0</td>
             <td class="amt" id="print-total-remaining">¥0</td>
@@ -578,6 +581,14 @@ function eraLabel(fy){
 function yen(n){
   return '¥' + Number(n||0).toLocaleString();
 }
+function serialLabel(r){
+  if(!r.serial_no) return '—';
+  const fy = r.budget_year;
+  if(fy === null || fy === undefined) return String(r.serial_no);
+  const ry = fy - 2018;
+  const yLabel = ry >= 1 ? `R${ry}` : String(fy);
+  return `${yLabel}-${r.serial_no}`;
+}
 function escapeHtml(s){
   return (s||'').toString().replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
@@ -643,10 +654,10 @@ let verifyDefaultsSet = false; // 照合タブの初期値(今年度・今月)�
 
 async function loadAll(){
   const body = document.getElementById('list-body');
-  body.innerHTML = '<tr class="empty-row"><td colspan="9" class="loading">読み込み中…</td></tr>';
+  body.innerHTML = '<tr class="empty-row"><td colspan="10" class="loading">読み込み中…</td></tr>';
   try{
     const [reqRows, payRows, ovrRows, markRows] = await Promise.all([
-      sb('expense_requests?select=id,department,assignee_department,assignee,subject,budget_category,total_cost,budget_year,created_at'),
+      sb('expense_requests?select=id,department,assignee_department,assignee,subject,budget_category,total_cost,budget_year,created_at,serial_no'),
       sb('payments?select=*&order=payment_date.asc'),
       sb('payment_overrides?select=*'),
       sb('ledger_marks?select=*')
@@ -661,7 +672,7 @@ async function loadAll(){
     renderList();
     populateDeptTabs();
   }catch(e){
-    body.innerHTML = '<tr class="empty-row"><td colspan="9">読み込みに失敗しました: '+escapeHtml(e.message)+'</td></tr>';
+    body.innerHTML = '<tr class="empty-row"><td colspan="10">読み込みに失敗しました: '+escapeHtml(e.message)+'</td></tr>';
     console.error(e);
   }
 }
@@ -1201,10 +1212,11 @@ function renderPrintList(){
 
   const body = document.getElementById('print-body');
   if(rows.length === 0){
-    body.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--muted);">該当する工事がありません</td></tr>';
+    body.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--muted);">該当する工事がありません</td></tr>';
   }else{
     body.innerHTML = rows.map(r=>`
       <tr>
+        <td>${escapeHtml(serialLabel(r))}</td>
         <td>${escapeHtml(eraLabel(r.budget_year))}</td>
         <td>${escapeHtml(r.department||'—')}</td>
         <td>${escapeHtml(r.subject||'（主題未入力）')}</td>
@@ -1270,7 +1282,7 @@ function renderList(){
   const body = document.getElementById('list-body');
   const rows = getFilteredRequests();
   if(rows.length === 0){
-    body.innerHTML = '<tr class="empty-row"><td colspan="9">該当する工事がありません</td></tr>';
+    body.innerHTML = '<tr class="empty-row"><td colspan="10">該当する工事がありません</td></tr>';
     return;
   }
   body.innerHTML = rows.map(r=>{
@@ -1283,6 +1295,7 @@ function renderList(){
 
     return `
       <tr>
+        <td>${escapeHtml(serialLabel(r))}</td>
         <td>${escapeHtml(eraLabel(r.budget_year))}</td>
         <td>${escapeHtml(r.department||'—')}</td>
         <td class="subject-cell">${escapeHtml(r.subject||'（主題未入力）')}</td>
@@ -1310,7 +1323,7 @@ function openModal(id){
 
   document.getElementById('modal-title').textContent = r.subject || '（主題未入力）';
   document.getElementById('modal-sub').textContent =
-    `${eraLabel(r.budget_year)}　${r.department||''}　担当:${r.assignee||'—'}`;
+    `No.${serialLabel(r)}　${eraLabel(r.budget_year)}　${r.department||''}　担当:${r.assignee||'—'}`;
   document.getElementById('manual-complete-check').checked = !!r._manualComplete;
 
   renderModalSummary();
