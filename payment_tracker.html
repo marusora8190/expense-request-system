@@ -338,14 +338,14 @@
     </div>
 
     <div class="category-tab-nav" id="tabs-bar">
-      <button type="button" class="active" data-category="本部" onclick="setCategoryFilter('本部')">本部営繕費</button>
+      <button type="button" class="active" data-category="本部" onclick="setCategoryFilter('本部')">✓ 本部営繕費</button>
       <button type="button" data-category="教庁" onclick="setCategoryFilter('教庁')">教庁営繕費</button>
     </div>
 
     <div class="tab-nav">
       <button type="button" class="active" data-tab="list" onclick="switchTab('list')">一覧</button>
-      <button type="button" data-tab="verify" onclick="switchTab('verify')">支払集計</button>
       <button type="button" data-tab="ledger" onclick="switchTab('ledger')">支払詳細</button>
+      <button type="button" data-tab="verify" onclick="switchTab('verify')">支払明細</button>
       <span id="dept-tabs-container"></span>
     </div>
   </div>
@@ -728,7 +728,9 @@ function populateYearFilter(){
 function setCategoryFilter(cat){
   categoryFilter = cat;
   document.querySelectorAll('.category-tab-nav button').forEach(b=>{
-    b.classList.toggle('active', b.dataset.category === cat);
+    const selected = b.dataset.category === cat;
+    b.classList.toggle('active', selected);
+    b.textContent = (selected ? '✓ ' : '') + b.dataset.category + '営繕費';
   });
   populateYearFilter();
   renderList();
