@@ -1039,12 +1039,12 @@ async function saveRequest(){
     payload.created_at = `${createdDateInput}T12:00:00`;
   }
 
-  // 年度内連番(serial_no)の自動採番
+  // 年度内連番(serial_no)の自動採番(科目〈本部営繕費/教庁営繕費〉ごとに別々に採番する)
   // ・新規申請の場合、または編集中の申請にまだ番号が付いていない場合に採番する
-  // ・一度付いた番号は、以後その申請の予算年度を変えても振り直さない
-  if(payload.budget_year !== null && payload.budget_year !== undefined && (!editingId || !editingSerialNo)){
+  // ・一度付いた番号は、以後その申請の予算年度・科目を変えても振り直さない
+  if(payload.budget_year !== null && payload.budget_year !== undefined && payload.budget_category && (!editingId || !editingSerialNo)){
     try{
-      payload.serial_no = await nextSerialNoForYear(payload.budget_year);
+      payload.serial_no = await nextSerialNoForCategoryYear(payload.budget_category, payload.budget_year);
     }catch(e){
       console.error('連番の自動採番に失敗しました', e);
     }
@@ -1052,11 +1052,11 @@ async function saveRequest(){
 
   try{
     // 保存直前に、連番が他の申請とぶつかっていないか確認する（ほぼ同時保存対策）
-    if(payload.serial_no !== undefined && payload.serial_no !== null && payload.budget_year !== null && payload.budget_year !== undefined){
-      const dupSerial = await sb(`expense_requests?budget_year=eq.${payload.budget_year}&serial_no=eq.${payload.serial_no}&select=id`);
+    if(payload.serial_no !== undefined && payload.serial_no !== null && payload.budget_year !== null && payload.budget_year !== undefined && payload.budget_category){
+      const dupSerial = await sb(`expense_requests?budget_category=eq.${encodeURIComponent(payload.budget_category)}&budget_year=eq.${payload.budget_year}&serial_no=eq.${payload.serial_no}&select=id`);
       const conflicts = dupSerial.filter(d => d.id !== editingId);
       if(conflicts.length > 0){
-        payload.serial_no = await nextSerialNoForYear(payload.budget_year);
+        payload.serial_no = await nextSerialNoForCategoryYear(payload.budget_category, payload.budget_year);
       }
     }
 
@@ -1207,10 +1207,10 @@ async function suggestNextPdfNo(){
   }
 }
 
-// 指定した年度(budget_year)内で、まだ使われていない次の連番を返す
-async function nextSerialNoForYear(fy){
-  if(!fy && fy !== 0) return null;
-  const rows = await sb(`expense_requests?select=serial_no&budget_year=eq.${fy}&serial_no=not.is.null`);
+// 指定した科目(本部営繕費/教庁営繕費)・年度(budget_year)内で、まだ使われていない次の連番を返す
+async function nextSerialNoForCategoryYear(category, fy){
+  if((!fy && fy !== 0) || !category) return null;
+  const rows = await sb(`expense_requests?select=serial_no&budget_category=eq.${encodeURIComponent(category)}&budget_year=eq.${fy}&serial_no=not.is.null`);
   let maxSeq = 0;
   rows.forEach(r=>{
     const n = Number(r.serial_no);
