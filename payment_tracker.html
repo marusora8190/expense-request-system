@@ -278,9 +278,9 @@
   .ledger-table{border-collapse:collapse;font-size:12.5px;min-width:1500px;width:100%;table-layout:fixed;}
   .ledger-table th:nth-child(1), .ledger-table td:nth-child(1){width:46px;}
   .ledger-table th:nth-child(2), .ledger-table td:nth-child(2){width:70px;}
-  .ledger-table th:nth-child(3), .ledger-table td:nth-child(3){width:400px;}
-  .ledger-table th:nth-child(4), .ledger-table td:nth-child(4){width:110px;}
-  .ledger-table th:nth-child(5), .ledger-table td:nth-child(5){width:70px;}
+  .ledger-table th:nth-child(3), .ledger-table td:nth-child(3){width:70px;}
+  .ledger-table th:nth-child(4), .ledger-table td:nth-child(4){width:400px;}
+  .ledger-table th:nth-child(5), .ledger-table td:nth-child(5){width:110px;}
   .ledger-table th:nth-child(6), .ledger-table td:nth-child(6){width:90px;}
   .ledger-table th:nth-child(7), .ledger-table td:nth-child(7),
   .ledger-table th:nth-child(8), .ledger-table td:nth-child(8),
@@ -311,16 +311,18 @@
   /* 済・日付・工事名称・予想経費の4列を固定(横スクロールしても常に表示) */
   .ledger-table .stick-1{ width:46px; min-width:46px; position:sticky; left:0; z-index:3; }
   .ledger-table .stick-2{ width:70px; min-width:70px; position:sticky; left:46px; z-index:3; }
-  .ledger-table .stick-3{ position:sticky; left:116px; z-index:3; }
-  .ledger-table .stick-4{ position:sticky; z-index:3; border-right:2px solid var(--ink); }
-  .ledger-table th.stick-1, .ledger-table th.stick-2, .ledger-table th.stick-3, .ledger-table th.stick-4{ background:var(--accent-bg); z-index:4; }
-  .ledger-table td.stick-1, .ledger-table td.stick-2, .ledger-table td.stick-3, .ledger-table td.stick-4{ background:var(--panel); }
+  .ledger-table .stick-3{ width:70px; min-width:70px; position:sticky; left:116px; z-index:3; }
+  .ledger-table .stick-4{ position:sticky; left:186px; z-index:3; }
+  .ledger-table .stick-5{ position:sticky; z-index:3; border-right:2px solid var(--ink); }
+  .ledger-table th.stick-1, .ledger-table th.stick-2, .ledger-table th.stick-3, .ledger-table th.stick-4, .ledger-table th.stick-5{ background:var(--accent-bg); z-index:4; }
+  .ledger-table td.stick-1, .ledger-table td.stick-2, .ledger-table td.stick-3, .ledger-table td.stick-4, .ledger-table td.stick-5{ background:var(--panel); }
   .ledger-table tbody tr:hover td.stick-1,
   .ledger-table tbody tr:hover td.stick-2,
   .ledger-table tbody tr:hover td.stick-3,
-  .ledger-table tbody tr:hover td.stick-4{ background:#fbf8f2; }
+  .ledger-table tbody tr:hover td.stick-4,
+  .ledger-table tbody tr:hover td.stick-5{ background:#fbf8f2; }
   .ledger-table tfoot td.stick-1{ position:sticky; left:0; z-index:3; background:#faf6ee; }
-  .ledger-table tfoot td.stick-4{ background:#faf6ee; }
+  .ledger-table tfoot td.stick-5{ background:#faf6ee; }
 </style>
 </head>
 <body>
@@ -474,10 +476,10 @@
         <thead>
           <tr>
             <th class="stick-1">済</th>
-            <th class="stick-2">会計承認</th>
-            <th class="stick-3">工事名称</th>
-            <th class="stick-4">予想経費</th>
-            <th>No.</th>
+            <th class="stick-2">No.</th>
+            <th class="stick-3">会計承認</th>
+            <th class="stick-4">工事名称</th>
+            <th class="stick-5">予想経費</th>
             <th>担当</th>
             <th>前年度合計</th>
             <th>支払額合計</th>
@@ -616,10 +618,10 @@ function scrollTableByColumn(containerId, direction){
 
 function applyStickyOffsets(tableEl){
   if(!tableEl) return;
-  const col3 = tableEl.querySelector('thead th.stick-3');
-  if(!col3) return;
-  const offset4 = 116 + col3.getBoundingClientRect().width;
-  tableEl.querySelectorAll('.stick-4').forEach(el=>{ el.style.left = offset4 + 'px'; });
+  const col4 = tableEl.querySelector('thead th.stick-4');
+  if(!col4) return;
+  const offset5 = 186 + col4.getBoundingClientRect().width;
+  tableEl.querySelectorAll('.stick-5').forEach(el=>{ el.style.left = offset5 + 'px'; });
 }
 
 let requests = [];   // expense_requests (with computed payment aggregates attached)
@@ -1149,10 +1151,10 @@ function renderLedger(){
     return `
       <tr>
         <td class="mark-cell stick-1"><input type="checkbox" ${isMarked ? 'checked' : ''} onchange="toggleLedgerMark('${r.id}', ${fy}, this.checked)"></td>
-        <td class="stick-2">${reiwaShortDate(r.created_at)}</td>
-        <td class="subject stick-3">${escapeHtml(r.subject || '（主題未入力）')}</td>
-        <td class="num stick-4">${Number(r.total_cost||0).toLocaleString()}</td>
-        <td>${escapeHtml(serialLabel(r))}</td>
+        <td class="stick-2">${escapeHtml(serialLabel(r))}</td>
+        <td class="stick-3">${reiwaShortDate(r.created_at)}</td>
+        <td class="subject stick-4">${escapeHtml(r.subject || '（主題未入力）')}</td>
+        <td class="num stick-5">${Number(r.total_cost||0).toLocaleString()}</td>
         <td>${escapeHtml(r.assignee_department || r.assignee || '—')}</td>
         <td class="num">${prevYearTotal ? prevYearTotal.toLocaleString() : ''}</td>
         <td class="num">${thisYearTotal ? thisYearTotal.toLocaleString() : ''}</td>
@@ -1170,9 +1172,8 @@ function renderLedger(){
   const yearEndFootCell = `<td class="num">${yearEndTotal ? yearEndTotal.toLocaleString() : ''}</td>`;
   foot.innerHTML = `
     <tr>
-      <td colspan="3" class="stick-1">合計</td>
-      <td class="num stick-4">${sumCost.toLocaleString()}</td>
-      <td></td>
+      <td colspan="4" class="stick-1">合計</td>
+      <td class="num stick-5">${sumCost.toLocaleString()}</td>
       <td></td>
       <td class="num">${sumPrevYear.toLocaleString()}</td>
       <td class="num">${sumThisYear.toLocaleString()}</td>
