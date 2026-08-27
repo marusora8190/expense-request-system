@@ -431,9 +431,9 @@
   </div>
 
   <div class="tabs" id="tabs-bar">
-    <button class="tab" data-tab="new" onclick="switchTab('new')">新規申請</button>
-    <button class="tab active" data-tab="list" onclick="switchTab('list')">申請一覧・印刷</button>
-    <button class="tab" data-tab="help" onclick="switchTab('help')">使い方</button>
+    <button class="tab" data-tab="new" data-label="新規申請" onclick="switchTab('new')">新規申請</button>
+    <button class="tab active" data-tab="list" data-label="申請一覧・印刷" onclick="switchTab('list')">✓ 申請一覧・印刷</button>
+    <button class="tab" data-tab="help" data-label="使い方" onclick="switchTab('help')">使い方</button>
     <span id="project-tabs-container" style="margin-left:auto;display:flex;gap:6px;"></span>
   </div>
 
@@ -895,7 +895,19 @@ async function submitAddTab(){
 }
 
 function switchTab(name){
-  document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active', b.dataset.tab===name));
+  document.querySelectorAll('.tab').forEach(b=>{
+    const active = b.dataset.tab===name;
+    b.classList.toggle('active', active);
+    if(b.dataset.label){
+      b.textContent = (active ? '✓ ' : '') + b.dataset.label;
+    }
+  });
+  document.querySelectorAll('.tab-label-btn').forEach(b=>{
+    const active = b.closest('.tab')?.dataset.tab===name;
+    if(b.dataset.label){
+      b.textContent = (active ? '✓ ' : '') + b.dataset.label;
+    }
+  });
   document.getElementById('tab-new').style.display = name==='new' ? 'block':'none';
   document.getElementById('tab-help').style.display = name==='help' ? 'block':'none';
   const projectTab = PROJECT_TABS.find(t => t.id === name);
@@ -1950,7 +1962,7 @@ function renderProjectTabs(){
   if(!container) return;
   container.innerHTML = PROJECT_TABS.map(t =>
     `<span class="tab tab-removable" data-tab="${t.id}">
-      <button type="button" class="tab-label-btn" onclick="switchTab('${t.id}')">${escapeHtml(t.label)}</button>
+      <button type="button" class="tab-label-btn" data-label="${escapeHtml(t.label)}" onclick="switchTab('${t.id}')">${escapeHtml(t.label)}</button>
       <button type="button" class="tab-del-btn" onclick="event.stopPropagation(); deleteProjectTab('${t.id}', '${escapeHtml(t.label).replace(/'/g,"\\'")}')" title="このタブを削除">×</button>
     </span>`
   ).join('') + `<button type="button" class="tab tab-add" onclick="openAddTabModal()">＋ タブ増設</button>`;
