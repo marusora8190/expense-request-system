@@ -567,6 +567,7 @@
     <div class="table-scroll">
     <table>
       <colgroup>
+        <col style="width:56px;">
         <col style="width:68px;">
         <col style="width:24px;">
         <col style="width:70%;">
@@ -579,6 +580,7 @@
       </colgroup>
       <thead>
         <tr>
+          <th class="date-cell">No.</th>
           <th class="date-cell">作成日</th>
           <th class="category-cell"><span class="category-cell-inner">科目</span></th>
           <th class="subject-header">主題</th>
@@ -591,11 +593,11 @@
         </tr>
       </thead>
       <tbody id="list-body">
-        <tr><td colspan="9" class="loading">読み込み中…</td></tr>
+        <tr><td colspan="10" class="loading">読み込み中…</td></tr>
       </tbody>
       <tfoot>
         <tr class="total-row">
-          <td colspan="3" class="total-label">合計</td>
+          <td colspan="4" class="total-label">合計</td>
           <td id="list-total" class="amt"></td>
           <td colspan="5"></td>
         </tr>
@@ -913,6 +915,7 @@ function switchTab(name){
 let editingId = null;
 let editingSnapshotUpdatedAt = null;
 let editingPdfUrl = null;
+let editingSerialNo = null;
 
 function confirmClearForm(){
   const message = editingId
@@ -947,6 +950,7 @@ function resetForm(){
   editingId = null;
   editingSnapshotUpdatedAt = null;
   editingPdfUrl = null;
+  editingSerialNo = null;
   document.getElementById('form-mode-title').textContent = '新規申請';
   document.getElementById('save-btn').textContent = '保存する';
   document.getElementById('delete-btn').style.display = 'none';
@@ -1025,7 +1029,27 @@ async function saveRequest(){
     payload.created_at = `${createdDateInput}T12:00:00`;
   }
 
+  // 年度内連番(serial_no)の自動採番
+  // ・新規申請の場合、または編集中の申請にまだ番号が付いていない場合に採番する
+  // ・一度付いた番号は、以後その申請の予算年度を変えても振り直さない
+  if(payload.budget_year !== null && payload.budget_year !== undefined && (!editingId || !editingSerialNo)){
+    try{
+      payload.serial_no = await nextSerialNoForYear(payload.budget_year);
+    }catch(e){
+      console.error('連番の自動採番に失敗しました', e);
+    }
+  }
+
   try{
+    // 保存直前に、連番が他の申請とぶつかっていないか確認する（ほぼ同時保存対策）
+    if(payload.serial_no !== undefined && payload.serial_no !== null && payload.budget_year !== null && payload.budget_year !== undefined){
+      const dupSerial = await sb(`expense_requests?budget_year=eq.${payload.budget_year}&serial_no=eq.${payload.serial_no}&select=id`);
+      const conflicts = dupSerial.filter(d => d.id !== editingId);
+      if(conflicts.length > 0){
+        payload.serial_no = await nextSerialNoForYear(payload.budget_year);
+      }
+    }
+
     // 保存直前にもう一度PDF No.の重複がないか確認する
     // (電気課・放送通信課・水道課などがほぼ同時に新規申請画面を開いた場合、
     //  同じ番号が提案されたまま保存されてしまう可能性があるための対策)
@@ -1173,6 +1197,18 @@ async function suggestNextPdfNo(){
   }
 }
 
+// 指定した年度(budget_year)内で、まだ使われていない次の連番を返す
+async function nextSerialNoForYear(fy){
+  if(!fy && fy !== 0) return null;
+  const rows = await sb(`expense_requests?select=serial_no&budget_year=eq.${fy}&serial_no=not.is.null`);
+  let maxSeq = 0;
+  rows.forEach(r=>{
+    const n = Number(r.serial_no);
+    if(Number.isFinite(n)) maxSeq = Math.max(maxSeq, n);
+  });
+  return maxSeq + 1;
+}
+
 function effectiveYear(r){
   return r.budget_year || fiscalYear((r.created_at||'').slice(0,10));
 }
@@ -1314,7 +1350,7 @@ function renderList(){
   document.getElementById('search-clear').style.display = q ? 'flex' : 'none';
 
   if(!rows.length){
-    body.innerHTML = '<tr><td colspan="9" class="empty">該当する申請はありません</td></tr>';
+    body.innerHTML = '<tr><td colspan="10" class="empty">該当する申請はありません</td></tr>';
     document.getElementById('list-total').textContent = '¥0';
     updateSearchStatus(q, 0);
     return;
@@ -1324,6 +1360,7 @@ function renderList(){
   document.getElementById('list-total').textContent = '¥' + total.toLocaleString();
   body.innerHTML = rows.map(r=>`
       <tr>
+        <td class="date-cell">${r.serial_no ? escapeHtml(`${toReiwaYearLabel(effectiveYear(r))||''}-${r.serial_no}`) : '—'}</td>
         <td class="date-cell">${fmtEraShort((r.created_at||'').slice(0,10))}</td>
         <td class="searchable category-cell" onclick="searchByValue('${escapeHtml(r.budget_category||'')}')" title="${escapeHtml(r.budget_category||'')}"><span class="category-cell-inner">${categoryShortLabel(r.budget_category)}</span></td>
         <td class="subject-cell" title="${escapeHtml(r.subject)}">${escapeHtml((r.subject||'').replace(/\n/g, ' '))}</td>
@@ -1550,6 +1587,7 @@ function editRequest(id){
   if(!r) return;
   editingId = id;
   editingSnapshotUpdatedAt = r.updated_at || null;
+  editingSerialNo = r.serial_no || null;
   document.getElementById('f-budget').dataset.autoFilled = '0';
   populateBudgetYearOptions(r.budget_year);
   document.getElementById('f-budget-year').value = r.budget_year || '';
