@@ -55,7 +55,42 @@
   }
   .scroll-btn:hover{background:var(--accent-bg);color:var(--ink-dark);}
 
+  .year-close-btn{
+    background:var(--panel);border:1px solid #d8d1c2;border-radius:7px;
+    padding:6px 12px;font-size:13px;color:var(--text);cursor:pointer;
+  }
+  .year-close-btn:hover{background:var(--accent-bg);color:var(--ink-dark);}
+  .year-closed-badge{
+    display:inline-flex;align-items:center;gap:8px;background:#f2e6da;border:1px solid #d9b98e;
+    border-radius:20px;padding:6px 14px;font-size:13px;color:#7a5324;white-space:nowrap;
+  }
+  .year-closed-badge .unlock-link{
+    color:#a8632a;text-decoration:underline;cursor:pointer;background:none;border:none;
+    padding:0;font-size:12.5px;
+  }
+  .ledger-table.year-locked input.amount-input,
+  .ledger-table.year-locked input[type="checkbox"]{
+    opacity:0.6; cursor:not-allowed;
+  }
+
   .toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:18px;}
+
+  .help-content{max-width:820px;line-height:1.8;}
+  .help-content h2{font-size:19px;color:var(--ink-dark);margin:32px 0 10px;border-left:5px solid var(--ink);padding-left:10px;}
+  .help-content h2:first-child{margin-top:0;}
+  .help-content h3{font-size:15.5px;color:var(--ink-dark);margin:20px 0 8px;}
+  .help-content p{margin:0 0 10px;color:var(--text);}
+  .help-content ul, .help-content ol{margin:0 0 12px;padding-left:22px;color:var(--text);}
+  .help-content li{margin-bottom:6px;}
+  .help-content .help-note{
+    background:#f2e6da;border:1px solid #d9b98e;border-radius:8px;
+    padding:12px 14px;margin:10px 0 16px;font-size:13.5px;color:#7a5324;
+  }
+  .help-content .help-note b{color:#7a5324;}
+  .help-content table{border-collapse:collapse;margin:10px 0 16px;font-size:13.5px;}
+  .help-content table th, .help-content table td{border:1px solid #d8d1c2;padding:7px 10px;text-align:left;}
+  .help-content table th{background:var(--accent-bg);color:var(--ink-dark);}
+  .help-content code{background:#f2ede0;padding:1px 5px;border-radius:4px;font-size:12.5px;}
   .search-wrap{position:relative;flex:1;min-width:220px;max-width:360px;}
   .search-wrap input{
     width:100%;border:1px solid #d8d1c2;border-radius:7px;padding:9px 12px;
@@ -248,6 +283,7 @@
     #tab-list{display:none !important;}
     #tab-verify{display:none !important;}
     #tab-ledger{display:none !important;}
+    #tab-help{display:none !important;}
     #tab-print{display:block !important;}
     .app{padding:0;max-width:none;}
     .print-sheet{border:none;padding:0;}
@@ -349,6 +385,7 @@
       <button type="button" data-tab="ledger" onclick="switchTab('ledger')">支払詳細</button>
       <button type="button" data-tab="verify" onclick="switchTab('verify')">支払明細</button>
       <span id="dept-tabs-container"></span>
+      <button type="button" data-tab="help" onclick="switchTab('help')">使い方</button>
     </div>
   </div>
 
@@ -463,12 +500,86 @@
     </div>
   </div>
 
+  <div class="tab-panel" id="tab-help">
+    <div class="help-content">
+
+      <h2>このシステムについて</h2>
+      <p>「支出申請管理」は、<b>予想経費申請書システム(expense_form.html)</b>で入力された申請(工事名称・予想経費など)を読み込み、実際の<b>支払い状況</b>(いつ・いくら支払ったか、残額はいくらか)を記録・集計するためのシステムです。</p>
+      <p>申請の入力・編集そのものは予想経費申請書側で行います。このシステムでは、申請内容は基本的に閲覧のみで、「支払い」に関する情報だけをこちら側で入力します。</p>
+
+      <h2>科目タブ・部署タブ</h2>
+      <p>画面上部の「本部営繕費」「教庁営繕費」は<b>科目タブ</b>です。どちらか一方を選んだ状態で、その科目に属する工事だけが下の一覧に表示されます。</p>
+      <p>「一覧」「支払詳細」「支払明細」タブの右側に並ぶ「営繕課」「電気課」「放送通信課」「水道課」は<b>部署タブ</b>です。✓が付いている部署の工事だけが表示されます。複数の部署に同時に✓を付けて、まとめて見ることもできます。この選択状態は「一覧」「支払詳細」「支払明細」の3つのタブで共通です。</p>
+
+      <h2>各タブの説明</h2>
+
+      <h3>① 一覧</h3>
+      <p>すべての申請を、年度・部署を問わず一覧表示します。検索(主題・部署・担当)、年度での絞り込み、状態(すべて／未払い／支払い中／完了)での絞り込みができます。「印刷する」ボタンで、この一覧をそのまま紙に印刷できます。</p>
+      <p>一番左の「No.」は、その申請の<b>年度内連番</b>です(例:<code>R8-24</code> = 令和8年度の24件目に作成された申請)。予想経費申請書側で申請を保存した時点で自動的に割り振られる番号で、両システムで共通して使えます。</p>
+
+      <h3>② 支払詳細</h3>
+      <p>年度ごとに、工事1件＝1行として、月別の支払額を入力・確認できるタブです。画面の一番左の「済・No.・会計承認・工事名称・予想経費」の5列は、横にスクロールしても常に見えるように固定されています。</p>
+      <ul>
+        <li><b>済チェック</b>:その工事についてその年度分の処理が終わったら、確認の意味でチェックを入れます。</li>
+        <li><b>月別支払分の入力欄</b>:その月に支払った金額を直接入力できます。入力すると自動的に保存されます。</li>
+        <li><b>3月末支払分</b>:年度末(3/31)に発生した支払いを別枠で入力できます。</li>
+        <li><b>残額</b>:予想経費から、これまでの支払い合計を差し引いた金額です。マイナス(赤字)の場合は、予想経費を超えて支払っていることを示します。</li>
+      </ul>
+      <p>「⇩ Excelに書き出す」ボタンで、現在表示中の年度・部署のデータをそのままExcelファイル(.xlsx)としてダウンロードできます。</p>
+
+      <h3>③ 支払明細</h3>
+      <p>指定した年度・月に、部署ごとに入力済みの請求金額を、工事名とともに自動で並べて表示する集計・印刷用のタブです。会計への提出書類として、そのまま印刷して使うことを想定しています。</p>
+
+      <h2>年度締め機能(支払詳細タブ)</h2>
+      <p>1年度分の処理がすべて終わったら、その年度を「締める」ことができます。締めると、その年度の金額・済チェックが誤って変更されないようにロックされます。</p>
+
+      <h3>締める手順</h3>
+      <ol>
+        <li>「支払詳細」タブで、締めたい年度を選ぶ</li>
+        <li>右上の「🔒 年度締め」ボタンを押す</li>
+        <li>その年度・その科目(本部営繕費/教庁営繕費)に属する<b>すべての工事</b>で「済」チェックが付いているか確認されます(現在選んでいる部署タブに関わらず、全部署分がチェックされます)</li>
+        <li>1件でも「済」が付いていない工事があると、「◯件あるため締められません」と表示され、締められません</li>
+        <li>すべて「済」であれば、確認画面が表示されます。このとき、残額が0円になっていない工事があれば、件数と工事名が一緒に表示されます(締めること自体は止められません。内容を見て、そのまま締めるか、先に金額を確認するか選べます)</li>
+        <li>「OK」を押すと締まり、年度選択の隣に「🔒 締め済み」のバッジが表示されます</li>
+      </ol>
+
+      <h3>締めた後の状態</h3>
+      <ul>
+        <li>その年度の「済」チェック・月別支払額の入力欄は、すべて編集できなくなります(グレー表示)</li>
+        <li>一覧の閲覧・Excelへの書き出しは、締めた後もそのまま行えます</li>
+      </ul>
+
+      <h3>締めを間違えた・後から修正したい場合</h3>
+      <p>「🔒 締め済み」バッジの横にある「解除」を押すと、確認の上で締めが解除され、再び編集できるようになります。3月分の請求が4月に入ってから届いた場合など、締めた後に追加の支払いが判明した時は、いったん解除→金額を追加・修正→再度締める、という流れで対応してください。</p>
+
+      <div class="help-note">
+        <b>ご注意</b><br>
+        ・締めは「年度」×「本部営繕費/教庁営繕費」の組み合わせごとに独立しています。片方の科目のR8年度を締めても、もう片方の科目のR8年度は別扱いです。<br>
+        ・この年度締め機能は、支出申請管理(このシステム)側だけの機能です。予想経費申請書(expense_form.html)側の申請内容の編集には影響しません。
+      </div>
+
+      <h2>用語の整理</h2>
+      <table>
+        <tr><th>用語</th><th>意味</th></tr>
+        <tr><td>No.(年度内連番)</td><td>申請ごとに、予算年度の中で作成順に振られる番号(例:R8-24)。予想経費申請書側で保存した時に自動採番される</td></tr>
+        <tr><td>科目</td><td>本部営繕費・教庁営繕費のどちらの予算に属する工事か</td></tr>
+        <tr><td>部署</td><td>その工事の支払いを担当する課(営繕課・電気課・放送通信課・水道課)</td></tr>
+        <tr><td>済チェック</td><td>支払詳細タブで、その年度分の処理が完了したことを示すためのチェック</td></tr>
+        <tr><td>年度締め</td><td>1年度分の処理が終わったことを確定し、以後の誤編集を防ぐためのロック機能</td></tr>
+      </table>
+
+    </div>
+  </div>
+
+
   <div class="tab-panel" id="tab-ledger">
     <p class="verify-hint" id="dept-tab-hint"></p>
     <div class="ledger-toolbar">
       <select id="ledger-year-filter" class="year-filter" onchange="renderLedger()"></select>
       <button type="button" class="scroll-btn" onclick="scrollTableByColumn('ledger-table-scroll', -1)" title="1列左へ">◀</button>
       <button type="button" class="scroll-btn" onclick="scrollTableByColumn('ledger-table-scroll', 1)" title="1列右へ">▶</button>
+      <button type="button" class="scroll-btn" onclick="exportLedgerToExcel()" title="表示中の年度をExcelファイルとして保存">⇩ Excelに書き出す</button>
+      <span id="year-closure-controls"></span>
       <button type="button" class="collapse-toggle-btn" onclick="toggleTopControls()">▲　タブを隠す</button>
     </div>
     <div class="ledger-table-scroll" id="ledger-table-scroll">
@@ -547,6 +658,7 @@
 
 <div class="toast" id="toast"></div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script>
 const SUPABASE_URL = "https://zhxuntrhxnrssqpvcmvl.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpoeHVudHJoeG5yc3NxcHZjbXZsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIyNDcyNjYsImV4cCI6MjA5NzgyMzI2Nn0.l3pwvKZVVJqDA4HORqt-Op-cTvVF3bkX1ovWgAuSO58";
@@ -628,6 +740,7 @@ let requests = [];   // expense_requests (with computed payment aggregates attac
 let payments = [];   // 全支払いレコード
 let overrides = [];  // 手動「完了」フラグ
 let ledgerMarks = {}; // 年度合計タブの「済」マーク: `${expense_request_id}_${fiscal_year}` -> boolean
+let yearClosures = {}; // 年度締めの記録: `${budget_category}_${fiscal_year}` -> {id, budget_category, fiscal_year, closed_at}
 let statusFilter = 'all';
 const ALL_PAY_DEPTS = ['営繕課', '電気課', '放送通信課', '水道課'];
 let sharedDeptFilter = new Set(ALL_PAY_DEPTS); // 一覧・照合・部署タブ、すべて共通の部署絞り込み
@@ -660,17 +773,20 @@ async function loadAll(){
   const body = document.getElementById('list-body');
   body.innerHTML = '<tr class="empty-row"><td colspan="10" class="loading">読み込み中…</td></tr>';
   try{
-    const [reqRows, payRows, ovrRows, markRows] = await Promise.all([
+    const [reqRows, payRows, ovrRows, markRows, closureRows] = await Promise.all([
       sb('expense_requests?select=id,department,assignee_department,assignee,subject,budget_category,total_cost,budget_year,created_at,serial_no'),
       sb('payments?select=*&order=payment_date.asc'),
       sb('payment_overrides?select=*'),
-      sb('ledger_marks?select=*')
+      sb('ledger_marks?select=*'),
+      sb('year_closures?select=*')
     ]);
     requests = reqRows;
     payments = payRows;
     overrides = ovrRows;
     ledgerMarks = {};
     markRows.forEach(m=>{ ledgerMarks[`${m.expense_request_id}_${m.fiscal_year}`] = m.is_marked; });
+    yearClosures = {};
+    closureRows.forEach(c=>{ yearClosures[`${c.budget_category}_${c.fiscal_year}`] = c; });
     attachAggregates();
     populateYearFilter();
     renderList();
@@ -796,6 +912,7 @@ function switchTab(tab){
   document.getElementById('tab-list').classList.toggle('active', tab === 'list');
   document.getElementById('tab-verify').classList.toggle('active', tab === 'verify');
   document.getElementById('tab-ledger').classList.toggle('active', tab === 'ledger');
+  document.getElementById('tab-help').classList.toggle('active', tab === 'help');
   updateDeptTabActiveState();
   if(tab === 'verify'){
     populateVerifyYearOptions();
@@ -1066,15 +1183,21 @@ function renderLedger(){
   if(!fy){
     body.innerHTML = '<tr><td colspan="23" class="ledger-empty">年度を選択してください</td></tr>';
     foot.innerHTML = '';
+    renderYearClosureControls(null);
     return;
   }
 
   let rows = requests.filter(r => matchesCategory(r) && matchesCurrentDept(r) && r._fiscalYears.has(fy));
   rows.sort((a,b) => (b.created_at||'').localeCompare(a.created_at||''));
 
+  const locked = isYearClosed(categoryFilter, fy);
+  const table = body.closest('table');
+  if(table) table.classList.toggle('year-locked', locked);
+
   if(rows.length === 0){
     body.innerHTML = '<tr><td colspan="23" class="ledger-empty">該当する工事がありません</td></tr>';
     foot.innerHTML = '';
+    renderYearClosureControls(fy);
     return;
   }
 
@@ -1122,14 +1245,15 @@ function renderLedger(){
     months.forEach((m,idx)=> monthTotals[idx] += byMonth[m]);
     yearEndTotal += yearEndAmount;
 
+    const disAttr = locked ? ' disabled' : '';
     const monthCells = months.map(m => {
       const list = byMonthPayments[m];
       if(list.length === 0){
-        return `<td class="num"><input type="text" class="amount-input" oninput="formatAmountInput(this)" onchange="createLedgerPayment('${r.id}', ${m}, this.value)"></td>`;
+        return `<td class="num"><input type="text" class="amount-input" oninput="formatAmountInput(this)" onchange="createLedgerPayment('${r.id}', ${m}, this.value)"${disAttr}></td>`;
       }
       if(list.length === 1){
         const p = list[0];
-        return `<td class="num"><input type="text" class="amount-input" value="${p.amount ? Number(p.amount).toLocaleString() : ''}" oninput="formatAmountInput(this)" onchange="updateLedgerAmount('${p.id}', this.value)"></td>`;
+        return `<td class="num"><input type="text" class="amount-input" value="${p.amount ? Number(p.amount).toLocaleString() : ''}" oninput="formatAmountInput(this)" onchange="updateLedgerAmount('${p.id}', this.value)"${disAttr}></td>`;
       }
       // 同じ月に複数件の支払いがある場合は合算表示(個別編集は請求書一覧タブから)
       return `<td class="num">${Number(byMonth[m]).toLocaleString()}</td>`;
@@ -1137,10 +1261,10 @@ function renderLedger(){
 
     let yearEndCell;
     if(yearEndPayments.length === 0){
-      yearEndCell = `<td class="num"><input type="text" class="amount-input" oninput="formatAmountInput(this)" onchange="createLedgerPayment('${r.id}', 'yearend', this.value)"></td>`;
+      yearEndCell = `<td class="num"><input type="text" class="amount-input" oninput="formatAmountInput(this)" onchange="createLedgerPayment('${r.id}', 'yearend', this.value)"${disAttr}></td>`;
     }else if(yearEndPayments.length === 1){
       const p = yearEndPayments[0];
-      yearEndCell = `<td class="num"><input type="text" class="amount-input" value="${p.amount ? Number(p.amount).toLocaleString() : ''}" oninput="formatAmountInput(this)" onchange="updateLedgerAmount('${p.id}', this.value)"></td>`;
+      yearEndCell = `<td class="num"><input type="text" class="amount-input" value="${p.amount ? Number(p.amount).toLocaleString() : ''}" oninput="formatAmountInput(this)" onchange="updateLedgerAmount('${p.id}', this.value)"${disAttr}></td>`;
     }else{
       yearEndCell = `<td class="num">${Number(yearEndAmount).toLocaleString()}</td>`;
     }
@@ -1150,7 +1274,7 @@ function renderLedger(){
 
     return `
       <tr>
-        <td class="mark-cell stick-1"><input type="checkbox" ${isMarked ? 'checked' : ''} onchange="toggleLedgerMark('${r.id}', ${fy}, this.checked)"></td>
+        <td class="mark-cell stick-1"><input type="checkbox" ${isMarked ? 'checked' : ''} onchange="toggleLedgerMark('${r.id}', ${fy}, this.checked)"${disAttr}></td>
         <td class="stick-2">${escapeHtml(serialLabel(r))}</td>
         <td class="stick-3">${reiwaShortDate(r.created_at)}</td>
         <td class="subject stick-4">${escapeHtml(r.subject || '（主題未入力）')}</td>
@@ -1182,6 +1306,201 @@ function renderLedger(){
       ${monthFootCells}
       ${yearEndFootCell}
     </tr>`;
+  renderYearClosureControls(fy);
+}
+
+// 「支払詳細」タブに表示中の年度・部署のデータを、そのままExcelファイルとして書き出す
+function isYearClosed(category, fy){
+  return !!yearClosures[`${category}_${fy}`];
+}
+
+// 年度締めボタン・締め済みバッジの表示を更新する
+function renderYearClosureControls(fy){
+  const el = document.getElementById('year-closure-controls');
+  if(!el) return;
+  if(!fy){
+    el.innerHTML = '';
+    return;
+  }
+  const closure = yearClosures[`${categoryFilter}_${fy}`];
+  if(closure){
+    const d = new Date(closure.closed_at);
+    const dateLabel = `${d.getFullYear()}/${d.getMonth()+1}/${d.getDate()}`;
+    el.innerHTML = `<span class="year-closed-badge">🔒 締め済み（${escapeHtml(dateLabel)}）<button type="button" class="unlock-link" onclick="unlockCurrentYear()">解除</button></span>`;
+  }else{
+    el.innerHTML = `<button type="button" class="year-close-btn" onclick="closeCurrentYear()">🔒 年度締め</button>`;
+  }
+}
+
+// 現在表示中の年度・科目について、すべての工事が「済」チェック済みか確認してから締める
+async function closeCurrentYear(){
+  const fy = Number(document.getElementById('ledger-year-filter').value);
+  if(!fy) return;
+
+  // 締めの判定は、現在の部署タブの絞り込みに関わらず、その年度・科目に属する全工事を対象にする
+  const targetRows = requests.filter(r => matchesCategory(r) && r._fiscalYears.has(fy));
+  const unmarked = targetRows.filter(r => !ledgerMarks[`${r.id}_${fy}`]);
+
+  if(unmarked.length > 0){
+    showToast(`「済」チェックが付いていない工事が${unmarked.length}件あるため、締められません`, 5000);
+    return;
+  }
+
+  const yearLabel = document.getElementById('ledger-year-filter').selectedOptions[0]?.textContent || `${fy}年度`;
+
+  // 残額が0円になっていない工事がないか、締める前に警告する(締め自体は妨げない)
+  const unresolved = targetRows.filter(r => Number(r._remaining||0) !== 0);
+  let message = `${yearLabel}（${categoryFilter}）を締めますか？\n以後、この年度の金額・「済」チェックは編集できなくなります。\n（あとから「解除」することもできます）`;
+  if(unresolved.length > 0){
+    const sample = unresolved.slice(0, 5)
+      .map(r => `・${r.subject || '（主題未入力）'}（残額 ${yen(r._remaining)}）`)
+      .join('\n');
+    const more = unresolved.length > 5 ? `\n…ほか${unresolved.length - 5}件` : '';
+    message = `⚠ 残額が0円になっていない工事が${unresolved.length}件あります。\n${sample}${more}\n\n${message}`;
+  }
+
+  if(!confirm(message)){
+    return;
+  }
+
+  try{
+    const result = await sb('year_closures', {
+      method: 'POST',
+      prefer: 'return=representation',
+      body: JSON.stringify({ budget_category: categoryFilter, fiscal_year: fy })
+    });
+    yearClosures[`${categoryFilter}_${fy}`] = Array.isArray(result) ? result[0] : result;
+    showToast(`${yearLabel}を締めました`);
+    renderLedger();
+  }catch(e){
+    showToast('年度締めの保存に失敗しました: ' + e.message, 5000);
+    console.error(e);
+  }
+}
+
+// 締めを解除する(誤って締めた場合や、後から訂正が必要になった場合用)
+async function unlockCurrentYear(){
+  const fy = Number(document.getElementById('ledger-year-filter').value);
+  if(!fy) return;
+  const closure = yearClosures[`${categoryFilter}_${fy}`];
+  if(!closure) return;
+
+  const yearLabel = document.getElementById('ledger-year-filter').selectedOptions[0]?.textContent || `${fy}年度`;
+  if(!confirm(`${yearLabel}（${categoryFilter}）の締めを解除しますか？\n以後、再び金額・「済」チェックを編集できるようになります。`)){
+    return;
+  }
+
+  try{
+    await sb(`year_closures?id=eq.${closure.id}`, { method: 'DELETE' });
+    delete yearClosures[`${categoryFilter}_${fy}`];
+    showToast(`${yearLabel}の締めを解除しました`);
+    renderLedger();
+  }catch(e){
+    showToast('締めの解除に失敗しました: ' + e.message, 5000);
+    console.error(e);
+  }
+}
+
+function exportLedgerToExcel(){
+  if(typeof XLSX === 'undefined'){
+    showToast('Excel書き出し機能の読み込みに失敗しました。通信環境をご確認の上、再読み込みしてください。', 6000);
+    return;
+  }
+
+  const fy = Number(document.getElementById('ledger-year-filter').value);
+  if(!fy){
+    showToast('先に年度を選択してください');
+    return;
+  }
+
+  let rows = requests.filter(r => matchesCategory(r) && matchesCurrentDept(r) && r._fiscalYears.has(fy));
+  rows.sort((a,b) => (b.created_at||'').localeCompare(a.created_at||''));
+
+  if(rows.length === 0){
+    showToast('該当する工事がないため、書き出せませんでした');
+    return;
+  }
+
+  const months = [4,5,6,7,8,9,10,11,12,1,2,3];
+  const monthTotals = months.map(()=>0);
+  let yearEndTotal = 0;
+  let sumCost=0, sumPrevYear=0, sumThisYear=0, sumTotal=0, sumRemaining=0;
+
+  const header = ['済','No.','会計承認','工事名称','予想経費','担当','前年度合計','支払額合計','工事総合計','残額',
+    '4月支払分','5月支払分','6月支払分','7月支払分','8月支払分','9月支払分','10月支払分','11月支払分','12月支払分',
+    '1月支払分','2月支払分','3月支払分','3月末支払分'];
+
+  const dataRows = rows.map(r=>{
+    let prevYearTotal = 0, thisYearTotal = 0;
+    const byMonth = {};
+    months.forEach(m=>{ byMonth[m] = 0; });
+    let yearEndAmount = 0;
+
+    (r._payments || []).forEach(p=>{
+      if(!p.payment_date) return;
+      const pfy = fiscalYear(p.payment_date);
+      const amt = Number(p.amount || 0);
+      if(pfy < fy){
+        prevYearTotal += amt;
+      }else if(pfy === fy){
+        thisYearTotal += amt;
+        const d = new Date(p.payment_date + 'T00:00:00');
+        const m = d.getMonth()+1;
+        if(m === 3 && d.getDate() === 31){
+          yearEndAmount += amt;
+        }else{
+          byMonth[m] = (byMonth[m] || 0) + amt;
+        }
+      }
+    });
+
+    const totalPaid = prevYearTotal + thisYearTotal;
+    const remaining = Number(r.total_cost||0) - totalPaid;
+
+    sumCost += Number(r.total_cost||0);
+    sumPrevYear += prevYearTotal;
+    sumThisYear += thisYearTotal;
+    sumTotal += totalPaid;
+    sumRemaining += remaining;
+    months.forEach((m,idx)=> monthTotals[idx] += byMonth[m]);
+    yearEndTotal += yearEndAmount;
+
+    const markKey = `${r.id}_${fy}`;
+    const isMarked = !!ledgerMarks[markKey];
+
+    return [
+      isMarked ? '済' : '',
+      serialLabel(r),
+      reiwaShortDate(r.created_at),
+      r.subject || '（主題未入力）',
+      Number(r.total_cost||0),
+      r.assignee_department || r.assignee || '—',
+      prevYearTotal,
+      thisYearTotal,
+      totalPaid,
+      remaining,
+      ...months.map(m => byMonth[m]),
+      yearEndAmount
+    ];
+  });
+
+  const totalRow = ['合計','','','', sumCost, '', sumPrevYear, sumThisYear, sumTotal, sumRemaining,
+    ...monthTotals, yearEndTotal];
+
+  const sheetData = [header, ...dataRows, totalRow];
+  const ws = XLSX.utils.aoa_to_sheet(sheetData);
+  ws['!cols'] = [
+    {wch:6}, {wch:8}, {wch:10}, {wch:38}, {wch:12}, {wch:10},
+    {wch:12}, {wch:12}, {wch:12}, {wch:12},
+    ...months.map(()=>({wch:11})), {wch:11}
+  ];
+
+  const yearLabel = document.getElementById('ledger-year-filter').selectedOptions[0]?.textContent || `${fy}年度`;
+  const deptLabel = sharedDeptFilter.size > 0 ? [...sharedDeptFilter].join('・') : '全部署';
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, yearLabel.replace(/[\\/?*[\]:]/g, ''));
+  XLSX.writeFile(wb, `支払詳細_${yearLabel}_${deptLabel}.xlsx`);
 }
 
 // 選択中の年度と月番号(4〜3、または'yearend')から、その月1日(または3/31)の日付文字列を作る
