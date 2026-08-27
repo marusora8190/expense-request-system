@@ -567,7 +567,6 @@
     <div class="table-scroll">
     <table>
       <colgroup>
-        <col style="width:56px;">
         <col style="width:68px;">
         <col style="width:24px;">
         <col style="width:70%;">
@@ -580,7 +579,6 @@
       </colgroup>
       <thead>
         <tr>
-          <th class="date-cell">No.</th>
           <th class="date-cell">作成日</th>
           <th class="category-cell"><span class="category-cell-inner">科目</span></th>
           <th class="subject-header">主題</th>
@@ -593,11 +591,11 @@
         </tr>
       </thead>
       <tbody id="list-body">
-        <tr><td colspan="10" class="loading">読み込み中…</td></tr>
+        <tr><td colspan="9" class="loading">読み込み中…</td></tr>
       </tbody>
       <tfoot>
         <tr class="total-row">
-          <td colspan="4" class="total-label">合計</td>
+          <td colspan="3" class="total-label">合計</td>
           <td id="list-total" class="amt"></td>
           <td colspan="5"></td>
         </tr>
@@ -1362,7 +1360,7 @@ function renderList(){
   document.getElementById('search-clear').style.display = q ? 'flex' : 'none';
 
   if(!rows.length){
-    body.innerHTML = '<tr><td colspan="10" class="empty">該当する申請はありません</td></tr>';
+    body.innerHTML = '<tr><td colspan="9" class="empty">該当する申請はありません</td></tr>';
     document.getElementById('list-total').textContent = '¥0';
     updateSearchStatus(q, 0);
     return;
@@ -1372,7 +1370,6 @@ function renderList(){
   document.getElementById('list-total').textContent = '¥' + total.toLocaleString();
   body.innerHTML = rows.map(r=>`
       <tr>
-        <td class="date-cell">${r.serial_no ? escapeHtml(`${toReiwaYearLabel(effectiveYear(r))||''}-${r.serial_no}`) : '—'}</td>
         <td class="date-cell">${fmtEraShort((r.created_at||'').slice(0,10))}</td>
         <td class="searchable category-cell" onclick="searchByValue('${escapeHtml(r.budget_category||'')}')" title="${escapeHtml(r.budget_category||'')}"><span class="category-cell-inner">${categoryShortLabel(r.budget_category)}</span></td>
         <td class="subject-cell" title="${escapeHtml(r.subject)}">${escapeHtml((r.subject||'').replace(/\n/g, ' '))}</td>
