@@ -188,7 +188,7 @@
     cursor:pointer;margin-bottom:4px;
   }
   #dept-tabs-container button:hover{border-color:var(--ink);}
-  #dept-tabs-container button.active{border-color:var(--ink);background:var(--ink);color:#fff;}
+  #dept-tabs-container button.active{border-color:#d99a76;background:#f2d9c4;color:var(--ink-dark);}
   .dept-filter-count{
     background:var(--ink);color:#fff;font-size:11px;font-weight:700;
     border-radius:9px;padding:2px 8px;line-height:1.4;align-self:center;
@@ -280,12 +280,13 @@
   .ledger-table th:nth-child(2), .ledger-table td:nth-child(2){width:70px;}
   .ledger-table th:nth-child(3), .ledger-table td:nth-child(3){width:400px;}
   .ledger-table th:nth-child(4), .ledger-table td:nth-child(4){width:110px;}
-  .ledger-table th:nth-child(5), .ledger-table td:nth-child(5){width:90px;}
-  .ledger-table th:nth-child(6), .ledger-table td:nth-child(6),
+  .ledger-table th:nth-child(5), .ledger-table td:nth-child(5){width:70px;}
+  .ledger-table th:nth-child(6), .ledger-table td:nth-child(6){width:90px;}
   .ledger-table th:nth-child(7), .ledger-table td:nth-child(7),
   .ledger-table th:nth-child(8), .ledger-table td:nth-child(8),
-  .ledger-table th:nth-child(9), .ledger-table td:nth-child(9){width:110px;}
-  .ledger-table th:nth-child(n+10), .ledger-table td:nth-child(n+10){width:100px;}
+  .ledger-table th:nth-child(9), .ledger-table td:nth-child(9),
+  .ledger-table th:nth-child(10), .ledger-table td:nth-child(10){width:110px;}
+  .ledger-table th:nth-child(n+11), .ledger-table td:nth-child(n+11){width:100px;}
   .ledger-table th, .ledger-table td{padding:8px 9px;border-bottom:1px solid var(--line);border-right:1px solid #f0ebe0;white-space:nowrap;text-align:center;}
   .ledger-table th:last-child, .ledger-table td:last-child{border-right:none;}
   .ledger-table th{
@@ -346,7 +347,6 @@
       <button type="button" data-tab="verify" onclick="switchTab('verify')">照合</button>
       <button type="button" data-tab="ledger" onclick="switchTab('ledger')">支払い</button>
       <span id="dept-tabs-container"></span>
-      <span id="dept-tab-count" class="dept-filter-count" style="display:none;"></span>
     </div>
   </div>
 
@@ -373,7 +373,7 @@
         <thead>
           <tr>
             <th>No.</th>
-            <th>年度</th>
+            <th>作成日</th>
             <th>部署</th>
             <th>主題</th>
             <th>担当</th>
@@ -477,6 +477,7 @@
             <th class="stick-2">会計承認</th>
             <th class="stick-3">工事名称</th>
             <th class="stick-4">予想経費</th>
+            <th>No.</th>
             <th>担当</th>
             <th>前年度合計</th>
             <th>支払額合計</th>
@@ -498,7 +499,7 @@
           </tr>
         </thead>
         <tbody id="ledger-body">
-          <tr><td colspan="22" class="ledger-empty">読み込み中…</td></tr>
+          <tr><td colspan="23" class="ledger-empty">読み込み中…</td></tr>
         </tbody>
         <tfoot id="ledger-foot"></tfoot>
       </table>
@@ -775,15 +776,6 @@ function updateDeptTabActiveState(){
     b.classList.toggle('active', selected);
     b.textContent = (selected ? '✓ ' : '') + b.dataset.dept;
   });
-  const countEl = document.getElementById('dept-tab-count');
-  if(countEl){
-    if(sharedDeptFilter.size > 0){
-      countEl.textContent = sharedDeptFilter.size;
-      countEl.style.display = 'inline-block';
-    }else{
-      countEl.style.display = 'none';
-    }
-  }
   const hintEl = document.getElementById('dept-tab-hint');
   if(hintEl){
     hintEl.textContent = sharedDeptFilter.size > 0
@@ -1068,7 +1060,7 @@ function renderLedger(){
   const foot = document.getElementById('ledger-foot');
 
   if(!fy){
-    body.innerHTML = '<tr><td colspan="22" class="ledger-empty">年度を選択してください</td></tr>';
+    body.innerHTML = '<tr><td colspan="23" class="ledger-empty">年度を選択してください</td></tr>';
     foot.innerHTML = '';
     return;
   }
@@ -1077,7 +1069,7 @@ function renderLedger(){
   rows.sort((a,b) => (b.created_at||'').localeCompare(a.created_at||''));
 
   if(rows.length === 0){
-    body.innerHTML = '<tr><td colspan="22" class="ledger-empty">該当する工事がありません</td></tr>';
+    body.innerHTML = '<tr><td colspan="23" class="ledger-empty">該当する工事がありません</td></tr>';
     foot.innerHTML = '';
     return;
   }
@@ -1158,6 +1150,7 @@ function renderLedger(){
         <td class="stick-2">${reiwaShortDate(r.created_at)}</td>
         <td class="subject stick-3">${escapeHtml(r.subject || '（主題未入力）')}</td>
         <td class="num stick-4">${Number(r.total_cost||0).toLocaleString()}</td>
+        <td>${escapeHtml(serialLabel(r))}</td>
         <td>${escapeHtml(r.assignee_department || r.assignee || '—')}</td>
         <td class="num">${prevYearTotal ? prevYearTotal.toLocaleString() : ''}</td>
         <td class="num">${thisYearTotal ? thisYearTotal.toLocaleString() : ''}</td>
@@ -1177,6 +1170,7 @@ function renderLedger(){
     <tr>
       <td colspan="3" class="stick-1">合計</td>
       <td class="num stick-4">${sumCost.toLocaleString()}</td>
+      <td></td>
       <td></td>
       <td class="num">${sumPrevYear.toLocaleString()}</td>
       <td class="num">${sumThisYear.toLocaleString()}</td>
@@ -1297,7 +1291,7 @@ function renderList(){
     return `
       <tr>
         <td>${escapeHtml(serialLabel(r))}</td>
-        <td>${escapeHtml(eraLabel(r.budget_year))}</td>
+        <td>${escapeHtml(reiwaShortDate(r.created_at))}</td>
         <td>${escapeHtml(r.department||'—')}</td>
         <td class="subject-cell">${escapeHtml(r.subject||'（主題未入力）')}</td>
         <td>${escapeHtml(r.assignee||'—')}</td>
