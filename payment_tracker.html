@@ -42,6 +42,11 @@
     cursor:pointer;padding:2px 6px;flex-shrink:0;
   }
   .reload-notice .rn-close:hover{color:var(--ink-dark);}
+  .reload-notice .rn-reload{
+    background:var(--ink);border:1px solid var(--ink);color:#fff;font-weight:700;
+    font-size:13px;padding:7px 14px;border-radius:7px;cursor:pointer;flex-shrink:0;white-space:nowrap;
+  }
+  .reload-notice .rn-reload:hover{background:var(--ink-dark);border-color:var(--ink-dark);}
 
   .collapse-toggle-btn{
     margin-left:auto;background:var(--panel);border:1px solid #d8d1c2;border-radius:20px;
@@ -382,7 +387,8 @@
   <div id="top-controls">
     <div class="reload-notice" id="reload-notice">
       <span>💡</span>
-      <span class="rn-text">このファイルを開いた場合は、一度 <b>Ctrl+Shift+R</b> でハードリロードしてからお使いください。最新の状態が正しく表示されます。</span>
+      <span class="rn-text">このファイルを開いた場合は、下のボタンを押してから使うと、最新の状態が正しく表示されます。</span>
+      <button type="button" class="rn-reload" onclick="hardReloadPage()">🔄 最新の状態に更新</button>
       <button type="button" class="rn-close" onclick="dismissReloadNotice()" title="閉じる">×</button>
     </div>
 
@@ -1842,6 +1848,14 @@ document.getElementById('tabs-bar').addEventListener('contextmenu', function(e){
 function dismissReloadNotice(){
   document.getElementById('reload-notice').style.display = 'none';
   try{ sessionStorage.setItem('reloadNoticeDismissed', '1'); }catch(e){}
+}
+
+// お知らせ帯のボタン: キャッシュを使わず、最新のファイルを取得し直す(Ctrl+Shift+Rと同じ効果)
+function hardReloadPage(){
+  try{ sessionStorage.setItem('reloadNoticeDismissed', '1'); }catch(e){}
+  const url = new URL(window.location.href);
+  url.searchParams.set('_r', Date.now());
+  window.location.replace(url.toString());
 }
 try{
   const navEntries = performance.getEntriesByType && performance.getEntriesByType('navigation');
