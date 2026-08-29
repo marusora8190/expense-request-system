@@ -356,6 +356,11 @@
   .ledger-table .stick-3{ width:70px; min-width:70px; position:sticky; left:116px; z-index:3; }
   .ledger-table .stick-4{ position:sticky; left:186px; z-index:3; }
   .ledger-table .stick-5{ position:sticky; z-index:3; border-right:2px solid var(--ink); }
+  .carry-badge{
+    display:inline-block;background:#e6ecf5;color:#3c5a8a;border:1px solid #b9c9e0;
+    border-radius:5px;padding:1px 6px;font-size:11px;font-weight:700;margin-right:6px;vertical-align:middle;
+  }
+  .ledger-table tr.carry-row td.subject{background:#fbfcfe;}
   .ledger-table th.stick-1, .ledger-table th.stick-2, .ledger-table th.stick-3, .ledger-table th.stick-4, .ledger-table th.stick-5{ background:var(--accent-bg); z-index:4; }
   .ledger-table td.stick-1, .ledger-table td.stick-2, .ledger-table td.stick-3, .ledger-table td.stick-4, .ledger-table td.stick-5{ background:var(--panel); }
   .ledger-table tbody tr:hover td.stick-1,
@@ -536,6 +541,14 @@
       <h3>③ 支払明細</h3>
       <p>指定した年度・月に、部署ごとに入力済みの請求金額を、工事名とともに自動で並べて表示する集計・印刷用のタブです。会計への提出書類として、そのまま印刷して使うことを想定しています。</p>
 
+      <h2>未完了工事の繰り越し(支払詳細タブ)</h2>
+      <p>ある年度の中で、<b>「済」チェックが付いていない</b>工事は、その年度で終わったことにならないため、<b>翌年度の一覧にも自動的に表示され続けます</b>。これは今年度(現時点)まで、毎年繰り返されます。工事費が減額されることもあるため、判断基準は残額の金額ではなく「済」チェックの有無だけを見ています。</p>
+      <ul>
+        <li>繰り越された行の工事名称の先頭には、<span class="carry-badge">繰越</span>というマークが付き、元々その年度に属する工事と区別できます</li>
+        <li>解消(その年度の「済」チェックが付く)されると、それ以降は翌年度への繰り越し表示がされなくなります</li>
+        <li>この一覧・Excelエクスポート・年度締めの判定は、すべてこの繰り越し後の一覧を基準に行われます(繰り越されてきた工事にも、その年度分の「済」チェックが別途必要です)</li>
+      </ul>
+
       <h2>年度締め機能(支払詳細タブ)</h2>
       <p>1年度分の処理がすべて終わったら、その年度を「締める」ことができます。締めると、その年度の金額・済チェックが誤って変更されないようにロックされます。</p>
 
@@ -543,7 +556,7 @@
       <ol>
         <li>「支払詳細」タブで、締めたい年度を選ぶ</li>
         <li>右上の「🔒 年度締め」ボタンを押す</li>
-        <li>その年度・その科目(本部営繕費/教庁営繕費)に属する<b>すべての工事</b>で「済」チェックが付いているか確認されます(現在選んでいる部署タブに関わらず、全部署分がチェックされます)</li>
+        <li>その年度・その科目(本部営繕費/教庁営繕費)に属する<b>すべての工事</b>(繰り越されてきた工事を含む)で「済」チェックが付いているか確認されます(現在選んでいる部署タブに関わらず、全部署分がチェックされます)</li>
         <li>1件でも「済」が付いていない工事があると、「◯件あるため締められません」と表示され、締められません</li>
         <li>すべて「済」であれば、確認画面が表示されます。このとき、残額が0円になっていない工事があれば、件数と工事名が一緒に表示されます(締めること自体は止められません。内容を見て、そのまま締めるか、先に金額を確認するか選べます)</li>
         <li>「OK」を押すと締まり、年度選択の隣に「🔒 締め済み」のバッジが表示されます</li>
@@ -572,6 +585,7 @@
         <tr><td>部署</td><td>その工事の支払いを担当する課(営繕課・電気課・放送通信課・水道課)</td></tr>
         <tr><td>済チェック</td><td>支払詳細タブで、その年度分の処理が完了したことを示すためのチェック</td></tr>
         <tr><td>年度締め</td><td>1年度分の処理が終わったことを確定し、以後の誤編集を防ぐためのロック機能</td></tr>
+        <tr><td>繰越</td><td>「済」チェックが付いていない工事が、翌年度の一覧にも自動的に表示され続けること</td></tr>
       </table>
 
     </div>
@@ -811,6 +825,7 @@ function attachAggregates(){
   });
   const overrideByReq = {};
   overrides.forEach(o=>{ overrideByReq[o.expense_request_id] = o.is_completed; });
+  const currentFy = fiscalYear(new Date().toISOString().slice(0,10));
   requests.forEach(r=>{
     const list = byReq[r.id] || [];
     r._payments = list;
@@ -821,6 +836,21 @@ function attachAggregates(){
     r._crossYear = r._fiscalYears.size > 1;
     r._manualComplete = !!overrideByReq[r.id];
     r._done = r._manualComplete || (list.length > 0 && r._remaining <= 0);
+
+    // 繰り越し: 「済」チェックが付いていない工事は、解消されるまで翌年度以降の
+    // 一覧にも自動的に表示され続ける(現時点の年度まで)。工事費が減額されることも
+    // あるため、判断基準は残額ではなく「済」チェックの有無のみとする
+    r._carryYears = new Set();
+    if(r._fiscalYears.size > 0){
+      let y = Math.max(...r._fiscalYears);
+      while(y < currentFy){
+        const unresolved = !ledgerMarks[`${r.id}_${y}`];
+        if(!unresolved) break;
+        y += 1;
+        r._fiscalYears.add(y);
+        r._carryYears.add(y);
+      }
+    }
   });
 }
 
@@ -1138,6 +1168,9 @@ async function toggleLedgerMark(requestId, fy, checked){
     showToast('「済」の保存に失敗しました: ' + e.message, 5000);
     console.error(e);
   }
+  attachAggregates();
+  populateLedgerYearOptions();
+  renderLedger();
 }
 
 // まだその月に支払いが無いマスに金額が入力されたら、その場で新しい支払いとして登録する
@@ -1282,13 +1315,15 @@ function renderLedger(){
 
     const markKey = `${r.id}_${fy}`;
     const isMarked = !!ledgerMarks[markKey];
+    const isCarry = r._carryYears && r._carryYears.has(fy);
+    const carryBadge = isCarry ? '<span class="carry-badge" title="前年度から未完了のため繰り越されています">繰越</span>' : '';
 
     return `
-      <tr>
+      <tr${isCarry ? ' class="carry-row"' : ''}>
         <td class="mark-cell stick-1"><input type="checkbox" ${isMarked ? 'checked' : ''} onchange="toggleLedgerMark('${r.id}', ${fy}, this.checked)"${disAttr}></td>
         <td class="stick-2">${escapeHtml(serialLabel(r))}</td>
         <td class="stick-3">${reiwaShortDate(r.created_at)}</td>
-        <td class="subject stick-4">${escapeHtml(r.subject || '（主題未入力）')}</td>
+        <td class="subject stick-4">${carryBadge}${escapeHtml(r.subject || '（主題未入力）')}</td>
         <td class="num stick-5">${Number(r.total_cost||0).toLocaleString()}</td>
         <td>${escapeHtml(r.assignee_department || r.assignee || '—')}</td>
         <td class="num">${prevYearTotal ? prevYearTotal.toLocaleString() : ''}</td>
@@ -1478,12 +1513,13 @@ function exportLedgerToExcel(){
 
     const markKey = `${r.id}_${fy}`;
     const isMarked = !!ledgerMarks[markKey];
+    const isCarry = r._carryYears && r._carryYears.has(fy);
 
     return [
       isMarked ? '済' : '',
       serialLabel(r),
       reiwaShortDate(r.created_at),
-      r.subject || '（主題未入力）',
+      (isCarry ? '【繰越】' : '') + (r.subject || '（主題未入力）'),
       Number(r.total_cost||0),
       r.assignee_department || r.assignee || '—',
       prevYearTotal,
