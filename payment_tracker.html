@@ -113,10 +113,10 @@
   .table-scroll table{table-layout:fixed;width:auto;min-width:100%;}
   .table-scroll table th:nth-child(1), .table-scroll table td:nth-child(1){width:52px;}
   .table-scroll table th:nth-child(2), .table-scroll table td:nth-child(2){width:58px;}
-  .table-scroll table th:nth-child(3), .table-scroll table td:nth-child(3){width:74px;}
-  .table-scroll table th:nth-child(4), .table-scroll table td:nth-child(4){width:520px;}
+  .table-scroll table th:nth-child(3), .table-scroll table td:nth-child(3){width:32px;padding-left:6px;padding-right:6px;text-align:center;}
+  .table-scroll table th:nth-child(4), .table-scroll table td:nth-child(4){width:600px;}
   .table-scroll table th:nth-child(4){text-align:left;}
-  .table-scroll table th:nth-child(5), .table-scroll table td:nth-child(5){width:76px;}
+  .table-scroll table th:nth-child(5), .table-scroll table td:nth-child(5){width:48px;text-align:center;}
   .table-scroll table th:nth-child(6), .table-scroll table td:nth-child(6),
   .table-scroll table th:nth-child(7), .table-scroll table td:nth-child(7),
   .table-scroll table th:nth-child(8), .table-scroll table td:nth-child(8){width:96px;}
@@ -1676,9 +1676,9 @@ function renderList(){
       <tr>
         <td>${escapeHtml(serialLabel(r))}</td>
         <td>${escapeHtml(reiwaShortDate(r.created_at))}</td>
-        <td>${escapeHtml(r.department||'—')}</td>
+        <td title="${escapeHtml(r.department||'')}">${escapeHtml((r.department||'—').charAt(0))}</td>
         <td class="subject-cell">${escapeHtml(r.subject||'（主題未入力）')}</td>
-        <td>${escapeHtml(r.assignee||'—')}</td>
+        <td title="${escapeHtml(r.assignee||'')}">${escapeHtml((r.assignee||'—').slice(0,2))}</td>
         <td class="amt">${yen(r.total_cost)}</td>
         <td class="amt">${yen(r._paidTotal)}</td>
         <td class="amt">${yen(r._remaining)}</td>
