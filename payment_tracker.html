@@ -730,6 +730,17 @@ function eraLabel(fy){
 function yen(n){
   return '¥' + Number(n||0).toLocaleString();
 }
+// No.(予算年度＋連番)の順に並べる比較関数: 年度が新しい順、同じ年度の中では連番が大きい順
+function compareByNo(a, b){
+  const ay = a.budget_year ?? -Infinity;
+  const by = b.budget_year ?? -Infinity;
+  if(ay !== by) return by - ay;
+  const as = a.serial_no ?? -Infinity;
+  const bs = b.serial_no ?? -Infinity;
+  if(as !== bs) return bs - as;
+  return (b.created_at||'').localeCompare(a.created_at||'');
+}
+
 function serialLabel(r){
   if(!r.serial_no) return '—';
   const fy = r.budget_year;
@@ -1245,7 +1256,7 @@ function renderLedger(){
   }
 
   let rows = requests.filter(r => matchesCategory(r) && matchesCurrentDept(r) && r._fiscalYears.has(fy));
-  rows.sort((a,b) => (b.created_at||'').localeCompare(a.created_at||''));
+  rows.sort(compareByNo);
 
   const locked = isYearClosed(categoryFilter, fy);
   const table = body.closest('table');
@@ -1467,7 +1478,7 @@ function exportLedgerToExcel(){
   }
 
   let rows = requests.filter(r => matchesCategory(r) && matchesCurrentDept(r) && r._fiscalYears.has(fy));
-  rows.sort((a,b) => (b.created_at||'').localeCompare(a.created_at||''));
+  rows.sort(compareByNo);
 
   if(rows.length === 0){
     showToast('該当する工事がないため、書き出せませんでした');
@@ -1658,16 +1669,7 @@ function getFilteredRequests(){
     rows = rows.filter(r => r._done);
   }
 
-  // No.(予算年度＋連番)の順に並べる: 年度が新しい順、同じ年度の中では連番が大きい順
-  rows.sort((a,b)=>{
-    const ay = a.budget_year ?? -Infinity;
-    const by = b.budget_year ?? -Infinity;
-    if(ay !== by) return by - ay;
-    const as = a.serial_no ?? -Infinity;
-    const bs = b.serial_no ?? -Infinity;
-    if(as !== bs) return bs - as;
-    return (b.created_at||'').localeCompare(a.created_at||'');
-  });
+  rows.sort(compareByNo);
   return rows;
 }
 
