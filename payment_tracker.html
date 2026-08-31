@@ -1658,7 +1658,16 @@ function getFilteredRequests(){
     rows = rows.filter(r => r._done);
   }
 
-  rows.sort((a,b)=> (b.created_at||'').localeCompare(a.created_at||''));
+  // No.(予算年度＋連番)の順に並べる: 年度が新しい順、同じ年度の中では連番が大きい順
+  rows.sort((a,b)=>{
+    const ay = a.budget_year ?? -Infinity;
+    const by = b.budget_year ?? -Infinity;
+    if(ay !== by) return by - ay;
+    const as = a.serial_no ?? -Infinity;
+    const bs = b.serial_no ?? -Infinity;
+    if(as !== bs) return bs - as;
+    return (b.created_at||'').localeCompare(a.created_at||'');
+  });
   return rows;
 }
 
