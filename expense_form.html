@@ -469,8 +469,7 @@
       </div>
       <div class="field">
         <label>担当</label>
-        <input type="text" id="f-assignee" list="assignee-list" placeholder="例）名前・部署名">
-        <datalist id="assignee-list"></datalist>
+        <input type="text" id="f-assignee" placeholder="例）名前・部署名" autocomplete="off">
       </div>
       <div class="field">
         <label>PDF No.</label>
@@ -977,10 +976,6 @@ async function loadOptions(){
       dSel.disabled = true;
       dSel.classList.add('locked-field');
 
-      const assignees = await sb(`expense_requests?select=assignee&assignee=not.is.null&department=eq.${encodeURIComponent(LOCKED_DEPARTMENT)}`);
-      const uniqueAssignees = [...new Set(assignees.map(a=>a.assignee).filter(Boolean))].sort();
-      document.getElementById('assignee-list').innerHTML = uniqueAssignees.map(a=>`<option value="${a}"></option>`).join('');
-
       const deps = await sb('departments?select=name&order=sort_order.asc');
       document.getElementById('assignee-department-list').innerHTML = deps.map(d=>`<option value="${d.name}"></option>`).join('');
       ALL_DEPARTMENTS = deps.map(d=>d.name);
@@ -988,18 +983,12 @@ async function loadOptions(){
       return;
     }
 
-    const [deps, assignees] = await Promise.all([
-      sb('departments?select=name&order=sort_order.asc'),
-      sb('expense_requests?select=assignee&assignee=not.is.null')
-    ]);
+    const deps = await sb('departments?select=name&order=sort_order.asc');
     const dSel = document.getElementById('f-department');
     dSel.innerHTML = '<option value="">選択してください</option>' + deps.map(d=>`<option value="${d.name}">${d.name}</option>`).join('');
     document.getElementById('assignee-department-list').innerHTML = deps.map(d=>`<option value="${d.name}"></option>`).join('');
     ALL_DEPARTMENTS = deps.map(d=>d.name);
     renderDeptFilterOptions();
-
-    const uniqueAssignees = [...new Set(assignees.map(a=>a.assignee).filter(Boolean))].sort();
-    document.getElementById('assignee-list').innerHTML = uniqueAssignees.map(a=>`<option value="${a}"></option>`).join('');
   }catch(e){
     showToast('選択肢の読み込みに失敗しました');
     console.error(e);
