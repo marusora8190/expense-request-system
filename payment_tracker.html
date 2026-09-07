@@ -123,11 +123,11 @@
   .table-scroll table th:nth-child(9), .table-scroll table td:nth-child(9){width:56px;padding-left:4px;padding-right:4px;}
   .table-scroll table th:nth-child(10), .table-scroll table td:nth-child(10){width:148px;}
   th{
-    text-align:center;padding:11px 12px;background:var(--accent-bg);color:var(--ink-dark);
+    text-align:center;padding:4px 12px;background:var(--accent-bg);color:var(--ink-dark);
     font-weight:700;white-space:nowrap;border-bottom:1px solid var(--line);
     position:sticky;top:0;z-index:2;
   }
-  td{padding:11px 12px;border-bottom:1px solid var(--line);white-space:nowrap;}
+  td{padding:2px 12px;border-bottom:1px solid var(--line);white-space:nowrap;}
   tr:last-child td{border-bottom:none;}
   tr:hover td{background:#fbf8f2;}
   td.subject-cell{white-space:nowrap;font-weight:600;}
@@ -250,7 +250,7 @@
   .print-sheet h2{margin:0 0 4px;font-size:18px;text-align:center;}
   .print-sheet .print-date{text-align:right;color:var(--muted);font-size:12px;margin-bottom:14px;}
   .print-table{width:100%;border-collapse:collapse;font-size:13px;}
-  .print-table th, .print-table td{border:1px solid #ccc2ac;padding:7px 9px;}
+  .print-table th, .print-table td{border:1px solid #ccc2ac;padding:2px 9px;}
   .print-table th{background:var(--accent-bg);color:var(--ink-dark);}
   .print-table td.amt{text-align:right;font-variant-numeric:tabular-nums;}
   .print-table tfoot td{font-weight:700;background:#faf6ee;}
@@ -271,7 +271,7 @@
   .vp-date{text-align:right;font-size:14pt;margin-bottom:40px;}
   .vp-title{text-align:center;font-size:18pt;font-weight:700;margin-bottom:44px;letter-spacing:.02em;}
   .vp-table{width:100%;border-collapse:collapse;font-size:14pt;max-width:680px;margin:0 auto;}
-  .vp-table td{padding:9px 6px;border-bottom:none;}
+  .vp-table td{padding:2px 6px;border-bottom:none;}
   .vp-table td.vp-num{width:30px;color:var(--text);}
   .vp-table td.vp-subject{}
   .vp-table td.vp-amount{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap;}
@@ -333,7 +333,7 @@
   .ledger-table th:nth-child(9), .ledger-table td:nth-child(9),
   .ledger-table th:nth-child(10), .ledger-table td:nth-child(10){width:110px;}
   .ledger-table th:nth-child(n+11), .ledger-table td:nth-child(n+11){width:100px;}
-  .ledger-table th, .ledger-table td{padding:8px 9px;border-bottom:1px solid var(--line);border-right:1px solid #f0ebe0;white-space:nowrap;text-align:center;}
+  .ledger-table th, .ledger-table td{padding:3px 9px;border-bottom:1px solid var(--line);border-right:1px solid #f0ebe0;white-space:nowrap;text-align:center;}
   .ledger-table th:last-child, .ledger-table td:last-child{border-right:none;}
   .ledger-table th{
     background:var(--accent-bg);color:var(--ink-dark);font-weight:700;
@@ -351,7 +351,7 @@
     border:1px solid #d8d1c2;border-radius:5px;padding:4px 5px;font-size:12px;width:118px;
   }
   .ledger-table input.amount-input{
-    border:1px solid #d8d1c2;border-radius:5px;padding:4px 6px;font-size:12px;width:100px;text-align:right;
+    border:1px solid #d8d1c2;border-radius:5px;padding:2px 6px;font-size:12px;width:100px;text-align:right;
   }
 
   /* 済・日付・工事名称・予想経費の4列を固定(横スクロールしても常に表示) */
@@ -520,6 +520,13 @@
       <p>「支出申請管理」は、<b>予想経費申請書システム(expense_form.html)</b>で入力された申請(工事名称・予想経費など)を読み込み、実際の<b>支払い状況</b>(いつ・いくら支払ったか、残額はいくらか)を記録・集計するためのシステムです。</p>
       <p>申請の入力・編集そのものは予想経費申請書側で行います。このシステムでは、申請内容は基本的に閲覧のみで、「支払い」に関する情報だけをこちら側で入力します。</p>
 
+      <h2>「🔄 Update」ボタン</h2>
+      <p>画面上部に表示される<b>「🔄 Update」</b>ボタンは、このページのキャッシュ(ブラウザに一時保存されている古いデータ)を使わず、最新のファイルを取得し直すためのボタンです。ファイルを久しぶりに開いた場合や、更新したはずの内容が反映されていないように見える場合は、このボタンを押してください。</p>
+      <ul>
+        <li>ボタンを押すと、ページ全体が自動的に再読み込みされます</li>
+        <li>一度押すと、そのブラウザタブでは(再度ファイルを開き直すまで)表示されなくなります</li>
+      </ul>
+
       <h2>科目タブ・部署タブ</h2>
       <p>画面上部の「本部営繕費」「教庁営繕費」は<b>科目タブ</b>です。どちらか一方を選んだ状態で、その科目に属する工事だけが下の一覧に表示されます。</p>
       <p>「一覧」「支払詳細」「支払明細」タブの右側に並ぶ「営繕課」「電気課」「放送通信課」「水道課」は<b>部署タブ</b>です。✓が付いている部署の工事だけが表示されます。複数の部署に同時に✓を付けて、まとめて見ることもできます。この選択状態は「一覧」「支払詳細」「支払明細」の3つのタブで共通です。</p>
@@ -549,7 +556,7 @@
         <li><b>3月末支払分</b>:年度末(3/31)に発生した支払いを別枠で入力できます。</li>
         <li><b>残額</b>:予想経費から、これまでの支払い合計を差し引いた金額です。マイナス(赤字)の場合は、予想経費を超えて支払っていることを示します。</li>
       </ul>
-      <p>「⇩ Excelに書き出す」ボタンで、現在表示中の年度・部署のデータをそのままExcelファイル(.xlsx)としてダウンロードできます。</p>
+      <p>「📊 Excelで書出す」ボタンで、現在表示中の年度・部署のデータをそのままExcelファイル(.xlsx)としてダウンロードできます。</p>
 
       <h3>③ 支払明細</h3>
       <p>指定した年度・月に、部署ごとに入力済みの請求金額を、工事名とともに自動で並べて表示する集計・印刷用のタブです。会計への提出書類として、そのまま印刷して使うことを想定しています。</p>
@@ -611,7 +618,7 @@
       <select id="ledger-year-filter" class="year-filter" onchange="renderLedger()"></select>
       <button type="button" class="scroll-btn" onclick="scrollTableByColumn('ledger-table-scroll', -1)" title="1列左へ">◀</button>
       <button type="button" class="scroll-btn" onclick="scrollTableByColumn('ledger-table-scroll', 1)" title="1列右へ">▶</button>
-      <button type="button" class="scroll-btn" onclick="exportLedgerToExcel()" title="表示中の年度をExcelファイルとして保存">⇩ Excelに書き出す</button>
+      <button type="button" class="scroll-btn" onclick="exportLedgerToExcel()" title="表示中の年度をExcelファイルとして保存">📊 Excelで書出す</button>
       <span id="year-closure-controls"></span>
       <button type="button" class="collapse-toggle-btn" onclick="toggleTopControls()">▲　タブを隠す</button>
     </div>
