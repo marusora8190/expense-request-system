@@ -249,6 +249,8 @@
   .icon-btn.pdf-attached:hover{background:#2f5f45;}
   .icon-btn.pdf-none{background:#e5e0d5;color:var(--muted);}
   .icon-btn.pdf-none:hover{background:#d8d1c0;}
+  .icon-btn.pdf-row-reload{background:#f1ece1;flex:0 0 auto;padding:5px 8px;}
+  .icon-btn.pdf-row-reload:hover{background:var(--accent-bg);color:var(--ink-dark);}
   .icon-btn.dl{background:#e9e2d0;color:var(--text);}
   .icon-btn.dl:hover{background:#ddd2b3;}
   .icon-btn.del:hover{background:#f4d9d5;}
@@ -637,6 +639,7 @@
         <li>ファイルとして保存・共有したい場合は<strong>「PDFダウンロード」</strong>ボタンを押すと、この内容がPDFファイルとしてダウンロードされます。</li>
         <li>確認だけで印刷しない場合は<strong>「閉じる」</strong>ボタンでプレビューを閉じられます。</li>
         <li>一覧の各行にある<strong>「ファイル」</strong>ボタンからは、その申請に添付した見積書・明細書などのPDFファイルをそのまま開けます（新しいタブで開くので、そこから印刷・保存ができます）。「会計承認日」が入力済みの申請では、開いたPDFの1ページ目の左上に「M/D　会計承認」の赤字スタンプが自動で入ります。</li>
+        <li>「ファイル」ボタンの右にある<strong>「🔄」</strong>ボタンを押すと、一覧を開いたまま、その申請のPDFファイルをその場で選び直して差し替えられます（編集画面を開く必要はありません）。同じファイル名のまま中身だけ変更した場合でも、このボタンから選び直せば確実に新しい中身に差し替わります。</li>
       </ol>
 
       <h2 class="help-h2">3. 申請内容を修正・削除する</h2>
@@ -668,6 +671,7 @@
 </div>
 
 <div class="toast" id="toast"></div>
+<input type="file" id="row-pdf-replace-input" accept="application/pdf" style="display:none;">
 
 <!-- ADD PROJECT TAB MODAL -->
 <div id="add-tab-overlay" class="modal-overlay">
@@ -1396,11 +1400,49 @@ function renderList(){
               ? `<button class="icon-btn pdf pdf-attached" onclick="openAttachedFile('${r.id}', event)" title="添付の見積書・明細書PDFを開く（会計承認日が入力済みの場合はスタンプ入りで開きます。PDF No.: ${escapeHtml(r.pdf_no||'—')}）">file</button>`
               : `<button class="icon-btn pdf pdf-none" onclick="copyPdfNo('${escapeHtml(r.pdf_no||'')}')" title="添付の見積書・明細書PDF未添付。PDF No.: ${escapeHtml(r.pdf_no||'—')}（クリックで番号をコピー）">file</button>`
             }
+            <button class="icon-btn pdf-row-reload" onclick="triggerRowPdfReplace('${r.id}')" title="このPDFファイルを直接差し替える（一覧を開いたまま、新しいファイルを選ぶだけで差し替わります）">🔄</button>
           </div>
         </td>
       </tr>
     `).join('');
 }
+
+// 一覧の「🔄」ボタン: 一覧を開いたまま、その行のPDFファイルを直接差し替える
+let rowPdfReplaceTargetId = null;
+
+function triggerRowPdfReplace(id){
+  rowPdfReplaceTargetId = id;
+  const input = document.getElementById('row-pdf-replace-input');
+  input.value = '';
+  input.click();
+}
+
+document.getElementById('row-pdf-replace-input').addEventListener('change', async (e)=>{
+  const file = e.target.files[0];
+  const id = rowPdfReplaceTargetId;
+  rowPdfReplaceTargetId = null;
+  if(!file || !id) return;
+
+  const target = (cachedList || []).find(r => r.id === id);
+  const oldUrl = target ? target.pdf_url : null;
+
+  showToast('PDFを差し替えています…', 10000);
+  try{
+    const newUrl = await uploadPdfFile(file);
+    await sb(`expense_requests?id=eq.${id}`, {
+      method: 'PATCH',
+      headers: { 'Prefer': 'return=minimal' },
+      body: JSON.stringify({ pdf_url: newUrl })
+    });
+    if(oldUrl) await deletePdfFileByUrl(oldUrl).catch(()=>{});
+    if(target) target.pdf_url = newUrl;
+    renderList();
+    showToast('PDFファイルを差し替えました');
+  }catch(err){
+    showToast('PDFの差し替えに失敗しました: ' + err.message, 6000);
+    console.error(err);
+  }
+});
 
 async function copyPdfNo(pdfNo){
   if(!pdfNo){ showToast('PDF No.が入力されていません'); return; }
