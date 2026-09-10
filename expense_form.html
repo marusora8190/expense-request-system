@@ -119,6 +119,10 @@
   .pdf-current-note a{color:var(--ink);text-decoration:underline;}
   .pdf-current-note button{margin-left:4px;color:#c94f3c;background:none;border:none;text-decoration:underline;cursor:pointer;font-size:12.5px;padding:0;}
   .pdf-file-hint{font-size:11.5px;color:var(--muted);margin-top:4px;}
+  .pdf-file-strong-note{
+    font-size:12.5px;color:#8a5a00;background:#fdf3d9;border:1px solid #e3c777;
+    border-radius:6px;padding:8px 10px;margin-top:8px;line-height:1.6;
+  }
   .pdf-file-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
   .pdf-reload-btn{
     background:var(--panel);border:1px solid #d8d1c2;border-radius:7px;
@@ -491,6 +495,7 @@
           <input type="file" id="f-pdf-file" accept="application/pdf">
           <button type="button" id="f-pdf-reload-btn" class="pdf-reload-btn" onclick="reloadPdfFileInput()" title="同じ名前のファイルを選び直したい時は、こちらを押してから選択し直してください">🔄 ファイルを再読み込み</button>
         </div>
+        <div class="pdf-file-strong-note">⚠ 必ず上の「ファイルを選択」ボタンから、手動でPDFファイルを選んでください。決められた保存場所・ファイル名で用意しても、自動では読み込まれません。選択しない限り、PDFは添付されません。</div>
         <div class="pdf-file-hint">※ 新しいファイルを選ぶと差し替わります。選ばなければ現在のファイルのまま保存されます。同じファイル名のまま中身だけ変えた場合は、上の「🔄 ファイルを再読み込み」を押してから選び直してください。</div>
       </div>
 
