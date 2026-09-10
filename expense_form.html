@@ -180,6 +180,7 @@
   }
   .search-clear-btn:hover{background:var(--ink);color:#fff;}
   .search-status{display:flex;flex-wrap:wrap;align-items:center;gap:6px;font-size:12.5px;color:var(--muted);margin:8px 2px 0;}
+  .list-hint{font-size:12.5px;color:var(--muted);margin:10px 2px 4px;}
   .search-chip{
     display:inline-flex;align-items:center;gap:5px;background:#f1ece1;color:var(--ink-dark);
     font-weight:600;font-size:12.5px;padding:3px 6px 3px 10px;border-radius:12px;
@@ -575,18 +576,19 @@
       <button type="button" class="list-print-btn" onclick="exportCurrentListToExcel()">📊 Excelで書出す</button>
     </div>
     <div id="search-status" class="search-status" style="display:none;"></div>
+    <p class="list-hint">💡 「ファイル」ボタンの右にある「🔄」ボタンを押すと、一覧を開いたまま、その申請のPDFファイルをその場で選び直して差し替えられます。</p>
     <div class="table-scroll">
     <table>
       <colgroup>
         <col style="width:68px;">
         <col style="width:24px;">
-        <col style="width:70%;">
+        <col style="width:64%;">
         <col style="width:100px;">
         <col style="width:24px;">
         <col style="width:92px;">
         <col style="width:68px;">
         <col style="width:68px;">
-        <col style="width:165px;">
+        <col style="width:200px;">
       </colgroup>
       <thead>
         <tr>
