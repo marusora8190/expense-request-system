@@ -119,6 +119,12 @@
   .pdf-current-note a{color:var(--ink);text-decoration:underline;}
   .pdf-current-note button{margin-left:4px;color:#c94f3c;background:none;border:none;text-decoration:underline;cursor:pointer;font-size:12.5px;padding:0;}
   .pdf-file-hint{font-size:11.5px;color:var(--muted);margin-top:4px;}
+  .pdf-file-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+  .pdf-reload-btn{
+    background:var(--panel);border:1px solid #d8d1c2;border-radius:7px;
+    padding:6px 12px;font-size:12.5px;color:var(--text);cursor:pointer;white-space:nowrap;
+  }
+  .pdf-reload-btn:hover{background:var(--accent-bg);color:var(--ink-dark);}
   .form-title{font-size:15px;font-weight:700;margin-bottom:16px;color:var(--ink);}
   .help-content{max-width:760px;}
   .help-h2{font-size:15.5px;font-weight:700;color:var(--ink);margin:26px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--line);}
@@ -478,8 +484,11 @@
       <div class="field">
         <label>PDFファイル（見積書など）</label>
         <div id="f-pdf-current" class="pdf-current-note"></div>
-        <input type="file" id="f-pdf-file" accept="application/pdf">
-        <div class="pdf-file-hint">※ 新しいファイルを選ぶと差し替わります。選ばなければ現在のファイルのまま保存されます。</div>
+        <div class="pdf-file-row">
+          <input type="file" id="f-pdf-file" accept="application/pdf">
+          <button type="button" id="f-pdf-reload-btn" class="pdf-reload-btn" onclick="reloadPdfFileInput()" title="同じ名前のファイルを選び直したい時は、こちらを押してから選択し直してください">🔄 ファイルを再読み込み</button>
+        </div>
+        <div class="pdf-file-hint">※ 新しいファイルを選ぶと差し替わります。選ばなければ現在のファイルのまま保存されます。同じファイル名のまま中身だけ変えた場合は、上の「🔄 ファイルを再読み込み」を押してから選び直してください。</div>
       </div>
 
       <div class="field">
@@ -614,6 +623,7 @@
         <li>見積書・明細書のPDFファイルがあれば添付します。</li>
         <li><strong>「実施の概要」（4行）・「予備」（6行）</strong>には薄い罫線が引いてあり、印刷レイアウトと同じ行数で固定されています（大きさは変更できません）。<strong>Enterキーを押すと次の行（罫線の1行分）に移動</strong>して書き続けられます。</li>
         <li><strong>別紙（予算書・見積書・図面等）を添付する場合は、PDFファイルにしてください。</strong>Word・Excel・画像ファイルなどは添付できません。</li>
+        <li>添付したPDFを<strong>同じファイル名のまま中身だけ差し替えたい</strong>場合、ブラウザによっては「同じファイルだ」と判断されてしまい、新しい中身が反映されないことがあります。そのようなときは、ファイル選択欄の隣にある<strong>「🔄 ファイルを再読み込み」</strong>ボタンを押してから、あらためて同じ(中身を変更した)ファイルを選び直して保存してください。</li>
         <li>入力し終えたら、画面下の<strong>「保存する」</strong>ボタンを押します。</li>
         <li>入力を最初からやり直したい場合は、<strong>「クリア」</strong>ボタンを押すと、入力したすべての項目が空欄に戻ります（保存はされません。押し間違いに注意してください）。</li>
       </ol>
@@ -815,6 +825,14 @@ async function sb(path, opts={}){
 
 const PDF_BUCKET = 'expense-pdfs';
 
+// 「🔄 ファイルを再読み込み」ボタン: 選択欄を一度空にしてからファイル選択ダイアログを開き直す。
+// 同じ名前のファイルを選び直しても、ブラウザに「新しい選択」として認識させるためのもの。
+function reloadPdfFileInput(){
+  const input = document.getElementById('f-pdf-file');
+  input.value = '';
+  input.click();
+}
+
 async function uploadPdfFile(file){
   // ファイル名の衝突を避けるため、日時+元のファイル名でパスを作る
   const safeName = file.name.replace(/[^\w.\-一-龠ぁ-んァ-ヶー]/g, '_');
@@ -1000,6 +1018,9 @@ async function saveRequest(){
 
   const pdfFileInput = document.getElementById('f-pdf-file');
   const pdfFile = pdfFileInput.files[0] || null;
+  // 保存のたびに選択欄をリセットしておく(同じ名前のファイルを選び直した際に、
+  // ブラウザが「変化なし」と判断して読み込みをスキップしてしまうのを防ぐため)
+  pdfFileInput.value = '';
 
   // 作成日を手動で指定した場合はその日付(正午扱いでタイムゾーンのずれを防ぐ)を、
   // 空欄の場合は新規保存時のみ「今」を使う(編集時は元の作成日時のまま変更しない)
