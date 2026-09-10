@@ -576,19 +576,19 @@
       <button type="button" class="list-print-btn" onclick="exportCurrentListToExcel()">📊 Excelで書出す</button>
     </div>
     <div id="search-status" class="search-status" style="display:none;"></div>
-    <p class="list-hint">※ 新しいファイルを選ぶと差し替わります。選ばなければ現在のファイルのまま保存されます。同じファイル名のまま中身だけ変えた場合は、各行の「🔄 ファイルを再読み込み」を押してから選び直してください。</p>
+    <p class="list-hint">※ 新しいファイルを選ぶと差し替わります。選ばなければ現在のファイルのまま保存されます。同じファイル名のまま中身だけ変えた場合は、各行の「🔄」を押してから選び直してください。</p>
     <div class="table-scroll">
     <table>
       <colgroup>
         <col style="width:68px;">
         <col style="width:24px;">
-        <col style="width:58%;">
+        <col style="width:64%;">
         <col style="width:100px;">
         <col style="width:24px;">
         <col style="width:92px;">
         <col style="width:68px;">
         <col style="width:68px;">
-        <col style="width:330px;">
+        <col style="width:200px;">
       </colgroup>
       <thead>
         <tr>
@@ -641,7 +641,7 @@
         <li>ファイルとして保存・共有したい場合は<strong>「PDFダウンロード」</strong>ボタンを押すと、この内容がPDFファイルとしてダウンロードされます。</li>
         <li>確認だけで印刷しない場合は<strong>「閉じる」</strong>ボタンでプレビューを閉じられます。</li>
         <li>一覧の各行にある<strong>「ファイル」</strong>ボタンからは、その申請に添付した見積書・明細書などのPDFファイルをそのまま開けます（新しいタブで開くので、そこから印刷・保存ができます）。「会計承認日」が入力済みの申請では、開いたPDFの1ページ目の左上に「M/D　会計承認」の赤字スタンプが自動で入ります。</li>
-        <li>「ファイル」ボタンの右にある<strong>「🔄 ファイルを再読み込み」</strong>ボタンを押すと、一覧を開いたまま、その申請のPDFファイルをその場で選び直して差し替えられます（編集画面を開く必要はありません）。同じファイル名のまま中身だけ変更した場合でも、このボタンから選び直せば確実に新しい中身に差し替わります。</li>
+        <li>「ファイル」ボタンの右にある<strong>「🔄」</strong>ボタンを押すと、一覧を開いたまま、その申請のPDFファイルをその場で選び直して差し替えられます（編集画面を開く必要はありません）。同じファイル名のまま中身だけ変更した場合でも、このボタンから選び直せば確実に新しい中身に差し替わります。</li>
       </ol>
 
       <h2 class="help-h2">3. 申請内容を修正・削除する</h2>
@@ -1402,7 +1402,7 @@ function renderList(){
               ? `<button class="icon-btn pdf pdf-attached" onclick="openAttachedFile('${r.id}', event)" title="添付の見積書・明細書PDFを開く（会計承認日が入力済みの場合はスタンプ入りで開きます。PDF No.: ${escapeHtml(r.pdf_no||'—')}）">file</button>`
               : `<button class="icon-btn pdf pdf-none" onclick="copyPdfNo('${escapeHtml(r.pdf_no||'')}')" title="添付の見積書・明細書PDF未添付。PDF No.: ${escapeHtml(r.pdf_no||'—')}（クリックで番号をコピー）">file</button>`
             }
-            <button class="icon-btn pdf-row-reload" onclick="triggerRowPdfReplace('${r.id}')" title="同じ名前のファイルを選び直したい時は、こちらを押してから選択し直してください">🔄 ファイルを再読み込み</button>
+            <button class="icon-btn pdf-row-reload" onclick="triggerRowPdfReplace('${r.id}')" title="同じ名前のファイルを選び直したい時は、こちらを押してから選択し直してください">🔄</button>
           </div>
         </td>
       </tr>
