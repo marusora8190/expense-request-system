@@ -227,6 +227,7 @@
   tr:hover td{background:var(--accent-bg);}
   .subject-cell{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .assignee-cell{font-size:13.5px;font-weight:600;color:#000;width:92px;}
+  .assignee-cell .assignee-tail{font-size:10.5px;}
   table th:not(:nth-child(3)), table td:not(:nth-child(3)):not(.sticky-actions){white-space:nowrap;}
   .category-cell{text-align:center;padding-left:2px !important;padding-right:2px !important;width:24px !important;color:#000;font-size:10px;font-weight:400;}
   .category-cell-inner{display:block;writing-mode:vertical-rl;text-orientation:upright;font-size:10px;font-weight:400;color:#000;width:14px;overflow:hidden;margin:0 auto;}
@@ -1396,7 +1397,7 @@ function renderList(){
         <td class="subject-cell" title="${escapeHtml(r.subject)}">${escapeHtml((r.subject||'').replace(/\n/g, ' '))}</td>
         <td class="amt">${r.total_cost ? '¥'+Number(r.total_cost).toLocaleString() : '—'}</td>
         <td class="searchable category-cell" onclick="filterByDept('${escapeHtml(r.assignee_department||'')}')" title="${escapeHtml(r.assignee_department||'')}"><span class="category-cell-inner">${assigneeDeptShortLabel(r.assignee_department)}</span></td>
-        <td class="searchable assignee-cell" onclick="searchByValue('${escapeHtml(r.assignee||'')}')">${r.assignee || '—'}</td>
+        <td class="searchable assignee-cell" onclick="searchByValue('${escapeHtml(r.assignee||'')}')">${formatAssigneeName(r.assignee)}</td>
         <td class="date-cell">${fmtEraShort(r.accounting_submit_date)}</td>
         <td class="date-cell">${fmtEraShort(r.accounting_approve_date)}</td>
         <td class="sticky-actions">
@@ -1604,6 +1605,14 @@ function searchByValue(value){
 
 function escapeHtml(s){
   return (s||'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+// 担当者名の表示: 1〜2文字目はそのまま、3文字目以降は少し小さいフォントで表示する
+function formatAssigneeName(name){
+  if(!name) return '—';
+  const head = escapeHtml(name.slice(0, 2));
+  const tail = escapeHtml(name.slice(2));
+  return tail ? `${head}<span class="assignee-tail">${tail}</span>` : head;
 }
 
 function categoryShortLabel(budgetCategory){
