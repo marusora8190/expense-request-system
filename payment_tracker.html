@@ -255,6 +255,10 @@
   .print-toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:16px;}
   .print-toolbar select{border:1px solid #d8d1c2;border-radius:7px;padding:9px 12px;font-size:14px;background:var(--panel);}
   .btn-print{background:var(--ink);color:#fff;border:none;border-radius:7px;padding:10px 20px;font-size:14px;cursor:pointer;font-weight:700;}
+  .vp-date-picker-label{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted);}
+  .vp-date-picker-label input[type="date"]{
+    border:1px solid #d8d1c2;border-radius:7px;padding:8px 10px;font-size:13.5px;background:var(--panel);
+  }
   .btn-print:hover{background:var(--ink-dark);}
   .print-sheet{background:#fff;border:1px solid var(--line);border-radius:12px;padding:26px 30px;}
   .print-sheet h2{margin:0 0 4px;font-size:18px;text-align:center;}
@@ -502,6 +506,9 @@
         <option value="3">3月</option>
       </select>
       <button type="button" class="btn-print" onclick="doVerifyPrint()">印刷する</button>
+      <label class="vp-date-picker-label">出力日
+        <input type="date" id="vp-date-picker" onchange="updateVerifyPrintDate()">
+      </label>
       <button type="button" class="collapse-toggle-btn" onclick="toggleTopControls()">▲　タブを隠す</button>
     </div>
     <div class="verify-sheet">
@@ -1003,6 +1010,7 @@ function switchTab(tab){
   if(tab === 'verify'){
     populateVerifyYearOptions();
     refreshVerifyRowsFromRequests();
+    initVerifyPrintDatePicker();
   }
   if(tab === 'ledger'){
     populateLedgerYearOptions();
@@ -1123,12 +1131,38 @@ function reiwaDateStr(d){
   return `令和${y}年${m}月${day}日`;
 }
 
+// 「支払明細」印刷の出力日: 日付選択欄で選んだ日があればそれを使い、無ければ今日の日付を使う
+function getVerifyPrintDate(){
+  const picker = document.getElementById('vp-date-picker');
+  if(picker && picker.value){
+    const [y, m, d] = picker.value.split('-').map(Number);
+    return new Date(y, m - 1, d);
+  }
+  return new Date();
+}
+
+// 日付選択欄を今日の日付で初期化する(まだ何も選ばれていない時のみ)
+function initVerifyPrintDatePicker(){
+  const picker = document.getElementById('vp-date-picker');
+  if(picker && !picker.value){
+    picker.value = new Date().toISOString().slice(0, 10);
+  }
+}
+
+// 日付選択欄を変更した時、すでに印刷プレビューが表示されていれば、その場で出力日の表示も更新する
+function updateVerifyPrintDate(){
+  const vpDate = document.getElementById('vp-date');
+  if(vpDate && vpDate.textContent){
+    vpDate.textContent = reiwaDateStr(getVerifyPrintDate());
+  }
+}
+
 function doVerifyPrint(){
   const fy = Number(document.getElementById('verify-year').value);
   const month = Number(document.getElementById('verify-month').value);
   const catLabel = categoryFilter === '本部' ? '本部営繕費' : '教庁営繕費';
 
-  document.getElementById('vp-date').textContent = reiwaDateStr(new Date());
+  document.getElementById('vp-date').textContent = reiwaDateStr(getVerifyPrintDate());
   const reiwaYear = fy ? fy - 2018 : null;
   document.getElementById('vp-title').textContent =
     fy ? `令和　${reiwaYear}年度 ${month}月　${catLabel}支出申請合計額` : `${month}月　${catLabel}支出申請合計額`;
