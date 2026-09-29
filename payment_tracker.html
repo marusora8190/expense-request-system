@@ -743,6 +743,23 @@ async function sb(path, options = {}) {
   return text ? JSON.parse(text) : null;
 }
 
+// Supabase は1回の読み込みで最大1000件までしか返さないため、
+// 全件が必要な読み込みは、1000件ずつ区切って最後まで読み込む。
+// 区切りの順番が毎回同じになるよう、並び順に id を加えてから取得する。
+async function sbAll(path, pageSize = 1000){
+  let p = path.replace(/&limit=\d+/, '');
+  const m = p.match(/[?&]order=([^&]*)/);
+  if(!m) p += (p.includes('?') ? '&' : '?') + 'order=id.asc';
+  else if(!/(^|,)id\./.test(m[1])) p = p.replace(m[0], m[0] + ',id.asc');
+  const all = [];
+  for(let offset = 0; ; offset += pageSize){
+    const page = await sb(`${p}&limit=${pageSize}&offset=${offset}`);
+    all.push(...(page || []));
+    if(!page || page.length < pageSize) break;
+  }
+  return all;
+}
+
 function fiscalYear(dateStr){
   if(!dateStr) return null;
   const d = new Date(dateStr+'T00:00:00');
@@ -847,8 +864,8 @@ async function loadAll(){
   body.innerHTML = '<tr class="empty-row"><td colspan="10" class="loading">読み込み中…</td></tr>';
   try{
     const [reqRows, payRows, ovrRows, markRows, closureRows] = await Promise.all([
-      sb('expense_requests?select=id,department,assignee_department,assignee,subject,budget_category,total_cost,budget_year,created_at,serial_no'),
-      sb('payments?select=*&order=payment_date.asc'),
+      sbAll('expense_requests?select=id,department,assignee_department,assignee,subject,budget_category,total_cost,budget_year,created_at,serial_no'),
+      sbAll('payments?select=*&order=payment_date.asc'),
       sb('payment_overrides?select=*'),
       sb('ledger_marks?select=*'),
       sb('year_closures?select=*')

@@ -841,6 +841,23 @@ async function sb(path, opts={}){
   }
 }
 
+// Supabase は1回の読み込みで最大1000件までしか返さないため、
+// 全件が必要な読み込みは、1000件ずつ区切って最後まで読み込む。
+// 区切りの順番が毎回同じになるよう、並び順に id を加えてから取得する。
+async function sbAll(path, pageSize = 1000){
+  let p = path.replace(/&limit=\d+/, '');
+  const m = p.match(/[?&]order=([^&]*)/);
+  if(!m) p += (p.includes('?') ? '&' : '?') + 'order=id.asc';
+  else if(!/(^|,)id\./.test(m[1])) p = p.replace(m[0], m[0] + ',id.asc');
+  const all = [];
+  for(let offset = 0; ; offset += pageSize){
+    const page = await sb(`${p}&limit=${pageSize}&offset=${offset}`);
+    all.push(...(page || []));
+    if(!page || page.length < pageSize) break;
+  }
+  return all;
+}
+
 const PDF_BUCKET = 'expense-pdfs';
 
 // 「🔄 ファイルを再読み込み」ボタン: 選択欄を一度空にしてからファイル選択ダイアログを開き直す。
@@ -1264,7 +1281,7 @@ async function loadList(){
   body.innerHTML = '<tr><td colspan="9" class="loading">読み込み中…</td></tr>';
   try{
     const deptFilter = LOCKED_DEPARTMENT ? `&department=eq.${encodeURIComponent(LOCKED_DEPARTMENT)}` : '';
-    const rows = await sb(`expense_requests?select=*${deptFilter}&order=created_at.desc,pdf_no.desc.nullslast`);
+    const rows = await sbAll(`expense_requests?select=*${deptFilter}&order=created_at.desc,pdf_no.desc.nullslast`);
     cachedList = rows;
     populateYearFilter();
     renderList();
