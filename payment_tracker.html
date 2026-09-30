@@ -724,55 +724,65 @@
 const SUPABASE_URL = "https://zhxuntrhxnrssqpvcmvl.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpoeHVudHJoeG5yc3NxcHZjbXZsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIyNDcyNjYsImV4cCI6MjA5NzgyMzI2Nn0.l3pwvKZVVJqDA4HORqt-Op-cTvVF3bkX1ovWgAuSO58";
 
-
-// ===== 削除するときだけ管理者パスワードを確認する（2026-09-30 追加） =====
-// 普段の入力・編集・閲覧はパスワード無しで使える。削除だけは管理者アカウントでログインした場合に限り、
-// データベース側でも許可される設定にしている。一度入力すると、このタブを閉じるまでは再入力不要。
+// ===== 管理者パスワード（削除のときだけ必要） =====
+// 普段の入力・編集・閲覧はパスワード無しで使える。削除だけは、データベース側で
+// 「管理者アカウント（admin@marusora-apps.example.com）でログインしている場合のみ可」に
+// なっているため、削除の直前に管理者パスワードを聞いて、一時的に管理者としてログインする。
+// 一度入力すると、このタブを閉じるまで（最長1時間）は再入力不要。
 const ADMIN_EMAIL = 'admin@marusora-apps.example.com';
-const ADMIN_SESSION_KEY = 'adminSession_v1';
-
-function getSavedAdminToken(){
+const ADMIN_SESSION_KEY = 'marusoraAdminSession';
+function adminCachedToken(){
   try{
     const s = JSON.parse(sessionStorage.getItem(ADMIN_SESSION_KEY) || 'null');
     if(s && s.access_token && s.expires_at * 1000 > Date.now() + 60000) return s.access_token;
   }catch(e){}
   return null;
 }
-
 function askAdminPassword(message){
-  return new Promise((resolve) => {
-    const ov = document.createElement('div');
-    ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:2147483647;display:flex;align-items:center;justify-content:center;padding:16px;';
-    ov.innerHTML =
-      '<div style="background:#fff;color:#222;border-radius:10px;padding:20px;width:100%;max-width:340px;box-shadow:0 8px 30px rgba(0,0,0,.3);">' +
-      '<div style="font-weight:bold;font-size:16px;margin-bottom:8px;">管理者パスワード</div>' +
-      '<div data-msg style="font-size:13px;margin-bottom:10px;line-height:1.5;"></div>' +
-      '<input type="password" autocomplete="current-password" style="width:100%;box-sizing:border-box;padding:8px;font-size:16px;border:1px solid #999;border-radius:6px;">' +
-      '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px;">' +
-      '<button type="button" data-cancel style="padding:8px 14px;font-size:14px;">やめる</button>' +
-      '<button type="button" data-ok style="padding:8px 14px;font-size:14px;font-weight:bold;">OK</button>' +
-      '</div></div>';
-    ov.querySelector('[data-msg]').textContent = message;
-    const input = ov.querySelector('input');
-    const done = (v) => { ov.remove(); resolve(v); };
-    ov.querySelector('[data-cancel]').onclick = () => done(null);
-    ov.querySelector('[data-ok]').onclick = () => done(input.value);
-    input.addEventListener('keydown', (e) => {
+  return new Promise(function(resolve){
+    const wrap = document.createElement('div');
+    wrap.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:2147483647;display:flex;align-items:center;justify-content:center;padding:16px;';
+    const box = document.createElement('div');
+    box.style.cssText = 'background:#fff;color:#222;border-radius:10px;padding:20px;max-width:360px;width:100%;box-shadow:0 8px 30px rgba(0,0,0,.3);font-size:15px;line-height:1.5;';
+    const title = document.createElement('div');
+    title.textContent = '管理者パスワード';
+    title.style.cssText = 'font-weight:bold;margin-bottom:6px;';
+    const msg = document.createElement('div');
+    msg.textContent = message;
+    msg.style.cssText = 'font-size:13px;margin-bottom:10px;';
+    const input = document.createElement('input');
+    input.type = 'password';
+    input.autocomplete = 'current-password';
+    input.style.cssText = 'width:100%;box-sizing:border-box;padding:8px;font-size:16px;border:1px solid #999;border-radius:6px;';
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;gap:8px;justify-content:flex-end;margin-top:14px;';
+    const cancel = document.createElement('button');
+    cancel.type = 'button'; cancel.textContent = 'やめる';
+    cancel.style.cssText = 'padding:8px 16px;font-size:14px;border:1px solid #999;background:#f3f3f3;color:#222;border-radius:6px;cursor:pointer;';
+    const ok = document.createElement('button');
+    ok.type = 'button'; ok.textContent = 'OK';
+    ok.style.cssText = 'padding:8px 20px;font-size:14px;border:none;background:#2563eb;color:#fff;border-radius:6px;cursor:pointer;';
+    row.appendChild(cancel); row.appendChild(ok);
+    box.appendChild(title); box.appendChild(msg); box.appendChild(input); box.appendChild(row);
+    wrap.appendChild(box);
+    document.body.appendChild(wrap);
+    function done(v){ wrap.remove(); resolve(v); }
+    cancel.onclick = function(){ done(null); };
+    ok.onclick = function(){ done(input.value); };
+    input.onkeydown = function(e){
       if(e.key === 'Enter'){ e.preventDefault(); done(input.value); }
-      if(e.key === 'Escape'){ done(null); }
-    });
-    document.body.appendChild(ov);
-    setTimeout(() => input.focus(), 0);
+      if(e.key === 'Escape'){ e.preventDefault(); done(null); }
+    };
+    setTimeout(function(){ input.focus(); }, 0);
   });
 }
-
 async function getAdminToken(){
-  const saved = getSavedAdminToken();
-  if(saved) return saved;
-  let msg = '削除するには管理者パスワードを入力してください。';
+  const cached = adminCachedToken();
+  if(cached) return cached;
+  let message = '削除するには管理者パスワードを入力してください。';
   for(;;){
-    const pw = await askAdminPassword(msg);
-    if(!pw) throw new Error('管理者パスワードが入力されなかったため、削除を取りやめました。');
+    const pw = await askAdminPassword(message);
+    if(pw === null || pw === '') throw new Error('管理者パスワードが入力されなかったため、削除しませんでした。');
     const res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
       method: 'POST',
       headers: { apikey: SUPABASE_KEY, 'Content-Type': 'application/json' },
@@ -780,24 +790,23 @@ async function getAdminToken(){
     });
     if(res.ok){
       const j = await res.json();
-      const exp = j.expires_at || (Math.floor(Date.now() / 1000) + (j.expires_in || 3600));
-      try{ sessionStorage.setItem(ADMIN_SESSION_KEY, JSON.stringify({ access_token: j.access_token, expires_at: exp })); }catch(e){}
+      try{ sessionStorage.setItem(ADMIN_SESSION_KEY, JSON.stringify({ access_token: j.access_token, expires_at: j.expires_at })); }catch(e){}
       return j.access_token;
     }
-    if(res.status === 400 || res.status === 401){ msg = 'パスワードが違います。もう一度入力してください。'; continue; }
-    throw new Error('管理者パスワードの確認に失敗しました（通信エラー）。');
+    if(res.status === 400){ message = 'パスワードが違います。もう一度入力してください。'; continue; }
+    throw new Error('接続に失敗しました。しばらくしてからもう一度お試しください。');
   }
 }
-// ===== ここまで =====
+// ===== ここまで：管理者パスワード =====
 
 async function sb(path, options = {}) {
-  // 削除（DELETE）のときだけ、管理者パスワードで得た鍵を使う
-  const __bearer = (String((options||{}).method || 'GET').toUpperCase() === 'DELETE') ? await getAdminToken() : SUPABASE_KEY;
+  // 削除（DELETE）のときだけ管理者としてログインした鍵を使う
+  const bearer = String(options.method || '').toUpperCase() === 'DELETE' ? await getAdminToken() : SUPABASE_KEY;
   const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
     ...options,
     headers: {
       apikey: SUPABASE_KEY,
-      Authorization: `Bearer ${__bearer}`,
+      Authorization: `Bearer ${bearer}`,
       'Content-Type': 'application/json',
       Prefer: options.prefer || 'return=representation',
       ...(options.headers || {})
