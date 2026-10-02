@@ -434,9 +434,10 @@
     }
     @page{size:257mm 182mm;margin:3mm;}
   }
-  /* 古いデータの整理（管理者用URLでのみ表示） */
-  .cleanup-section{margin-top:28px;border:1px solid var(--line);border-radius:8px;background:var(--panel);}
-  .cleanup-section summary{padding:10px 14px;font-size:13.5px;font-weight:600;color:var(--muted);cursor:pointer;}
+  /* 古いデータの整理（管理者用URLでのみ表示。一覧のいちばん上） */
+  .cleanup-section{margin:0 0 14px;border:1px solid var(--ink);border-radius:8px;background:var(--panel);}
+  .cleanup-section summary{padding:10px 14px;font-size:14.5px;font-weight:600;color:var(--ink-dark);cursor:pointer;}
+  .cleanup-summary-hint{font-size:12px;font-weight:400;color:var(--muted);margin-left:8px;}
   .cleanup-body{padding:0 14px 14px;font-size:13px;color:var(--text);line-height:1.7;}
   .cleanup-body p{margin:0 0 8px;}
   .cleanup-oldest{color:var(--muted);}
@@ -580,6 +581,19 @@
 
   <!-- LIST -->
   <div class="panel" id="tab-list">
+    <details class="cleanup-section" id="cleanup-section" style="display:none;" ontoggle="if(this.open) refreshCleanupOldest()">
+      <summary>🗑 古いデータの整理<span class="cleanup-summary-hint">ここを押すと開きます</span></summary>
+      <div class="cleanup-body">
+        <p>入力した日付より前に作成された申請を、見積書PDF・支出申請管理の支払い記録とあわせて削除します。作成日は、申請書に印刷される日付です。削除したデータは元に戻せません。</p>
+        <p id="cleanup-oldest" class="cleanup-oldest">読み込み中…</p>
+        <div class="cleanup-row">
+          <input type="date" id="cleanup-date" oninput="resetCleanupResult()">
+          <span>より前のデータ</span>
+          <button type="button" class="btn-secondary" onclick="checkCleanupTargets()">対象を確認する</button>
+        </div>
+        <div id="cleanup-result" class="cleanup-result" style="display:none;"></div>
+      </div>
+    </details>
     <div class="list-toolbar">
       <div class="search-wrap">
         <input type="text" id="search-box" placeholder="科目・部署・主題・担当で検索" title="スペース区切りで複数のキーワードを入力すると、すべてに一致する申請だけに絞り込めます" oninput="renderList()">
@@ -636,19 +650,6 @@
       </tfoot>
     </table>
     </div>
-    <details class="cleanup-section" id="cleanup-section" style="display:none;" ontoggle="if(this.open) refreshCleanupOldest()">
-      <summary>古いデータの整理</summary>
-      <div class="cleanup-body">
-        <p>入力した日付より前に作成された申請を、見積書PDF・支出申請管理の支払い記録とあわせて削除します。作成日は、申請書に印刷される日付です。削除したデータは元に戻せません。</p>
-        <p id="cleanup-oldest" class="cleanup-oldest">読み込み中…</p>
-        <div class="cleanup-row">
-          <input type="date" id="cleanup-date" oninput="resetCleanupResult()">
-          <span>より前のデータ</span>
-          <button type="button" class="btn-secondary" onclick="checkCleanupTargets()">対象を確認する</button>
-        </div>
-        <div id="cleanup-result" class="cleanup-result" style="display:none;"></div>
-      </div>
-    </details>
   </div>
 
   <div class="panel" id="tab-help" style="display:none;">
@@ -693,14 +694,14 @@
         <li><strong>「📊 Excelで書出す」</strong>ボタンを押すと、今表示している（絞り込み済みの）一覧の内容がExcelファイル（.xlsx）としてダウンロードされます。</li>
         <li id="help-tab-add">特定の工事・案件だけを常に見られるようにしたい場合は、タブの一番右にある<strong>「＋ タブ増設」</strong>から専用タブを追加できます。</li>
         <li id="help-tab-remove">増設したタブは、タブ名の右にある<strong>「×」</strong>ボタンから削除できます（タブを消しても、そこに含まれていた申請データ自体は削除されません）。</li>
-        <li id="help-cleanup">一覧のいちばん下にある<strong>「古いデータの整理」</strong>を開くと、日付を入れて、その日より前に作成された申請をまとめて削除できます。<strong>「対象を確認する」</strong>で件数を確かめてから削除してください（削除のときは管理者パスワードが必要です）。見積書PDFと、支出申請管理の支払い記録も一緒に消え、元に戻せません。※管理者用URLでのみ表示されます。</li>
+        <li id="help-cleanup">一覧のいちばん上にある<strong>「🗑 古いデータの整理」</strong>を開くと、日付を入れて、その日より前に作成された申請をまとめて削除できます。<strong>「対象を確認する」</strong>で件数を確かめてから削除してください（削除のときは管理者パスワードが必要です）。見積書PDFと、支出申請管理の支払い記録も一緒に消え、元に戻せません。※管理者用URLでのみ表示されます。</li>
         <li>タブの並びにある<strong>「支出申請管理 ↗」</strong>ボタンを押すと、実際の支払い状況を管理する別システム「支出申請管理」が新しいタブで開きます（このシステムとは別のファイルです）。</li>
       </ol>
 
-      <h2 class="help-h2">5. 古いデータの自動整理</h2>
+      <h2 class="help-h2">5. 古いデータの整理</h2>
       <ol class="help-steps">
-        <li>作成日から<strong>まる7年経過した申請</strong>は、毎月1回、自動的に添付PDFファイルと申請データ本体の両方が削除されます（元に戻せません）。</li>
-        <li>普段の操作でこの処理を意識する必要はありません。7年より新しい申請には影響ありません。</li>
+        <li>古い申請が<strong>自動的に削除されることはありません</strong>。作成日からどれだけ時間がたった申請も、削除しない限りそのまま残ります。</li>
+        <li>古い申請を片付けるときは、管理者が一覧のいちばん上にある<strong>「🗑 古いデータの整理」</strong>で、日付を決めてまとめて削除します（管理者用URLでのみ表示されます）。</li>
       </ol>
 
       <p class="help-note">※ 印刷や表示がおかしい場合は、ブラウザの再読み込み（Ctrl+Shift+R など）を試してから、改めてご確認ください。ページ上部に <strong>「🔄 Update」</strong> ボタンが表示されている場合は、このボタンを押すことでも同じように最新の状態に更新できます（キャッシュを使わず、最新のファイルを取得し直します）。</p>
