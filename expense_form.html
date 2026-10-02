@@ -434,6 +434,16 @@
     }
     @page{size:257mm 182mm;margin:3mm;}
   }
+  /* 古いデータの整理（管理者用URLでのみ表示） */
+  .cleanup-section{margin-top:28px;border:1px solid var(--line);border-radius:8px;background:var(--panel);}
+  .cleanup-section summary{padding:10px 14px;font-size:13.5px;font-weight:600;color:var(--muted);cursor:pointer;}
+  .cleanup-body{padding:0 14px 14px;font-size:13px;color:var(--text);line-height:1.7;}
+  .cleanup-body p{margin:0 0 8px;}
+  .cleanup-oldest{color:var(--muted);}
+  .cleanup-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+  .cleanup-row input[type=date]{padding:8px;border:1px solid var(--line);border-radius:6px;font-size:14px;font-family:inherit;}
+  .cleanup-result{margin-top:12px;padding:10px 12px;background:var(--accent-bg);border-radius:6px;}
+  .cleanup-result .btn-danger{margin-top:8px;}
 </style>
 </head>
 <body>
@@ -626,6 +636,19 @@
       </tfoot>
     </table>
     </div>
+    <details class="cleanup-section" id="cleanup-section" style="display:none;" ontoggle="if(this.open) refreshCleanupOldest()">
+      <summary>古いデータの整理</summary>
+      <div class="cleanup-body">
+        <p>入力した日付より前に作成された申請を、見積書PDF・支出申請管理の支払い記録とあわせて削除します。作成日は、申請書に印刷される日付です。削除したデータは元に戻せません。</p>
+        <p id="cleanup-oldest" class="cleanup-oldest">読み込み中…</p>
+        <div class="cleanup-row">
+          <input type="date" id="cleanup-date" oninput="resetCleanupResult()">
+          <span>より前のデータ</span>
+          <button type="button" class="btn-secondary" onclick="checkCleanupTargets()">対象を確認する</button>
+        </div>
+        <div id="cleanup-result" class="cleanup-result" style="display:none;"></div>
+      </div>
+    </details>
   </div>
 
   <div class="panel" id="tab-help" style="display:none;">
@@ -670,6 +693,7 @@
         <li><strong>「📊 Excelで書出す」</strong>ボタンを押すと、今表示している（絞り込み済みの）一覧の内容がExcelファイル（.xlsx）としてダウンロードされます。</li>
         <li id="help-tab-add">特定の工事・案件だけを常に見られるようにしたい場合は、タブの一番右にある<strong>「＋ タブ増設」</strong>から専用タブを追加できます。</li>
         <li id="help-tab-remove">増設したタブは、タブ名の右にある<strong>「×」</strong>ボタンから削除できます（タブを消しても、そこに含まれていた申請データ自体は削除されません）。</li>
+        <li id="help-cleanup">一覧のいちばん下にある<strong>「古いデータの整理」</strong>を開くと、日付を入れて、その日より前に作成された申請をまとめて削除できます。<strong>「対象を確認する」</strong>で件数を確かめてから削除してください（削除のときは管理者パスワードが必要です）。見積書PDFと、支出申請管理の支払い記録も一緒に消え、元に戻せません。※管理者用URLでのみ表示されます。</li>
         <li>タブの並びにある<strong>「支出申請管理 ↗」</strong>ボタンを押すと、実際の支払い状況を管理する別システム「支出申請管理」が新しいタブで開きます（このシステムとは別のファイルです）。</li>
       </ol>
 
@@ -1825,6 +1849,144 @@ async function deleteFromForm(){
   }
 }
 
+// ===== 古いデータの整理（管理者用URLでのみ表示） =====
+// 入力した日付より前に作成された申請（作成日＝申請書に印刷される日付）を、まとめて削除する。
+// ・支払い記録など支出申請管理側のデータは、データベースの設定で申請と一緒に自動で削除される。
+// ・見積書PDFは、申請を削除できたものだけ、あとからファイル置き場から削除する。
+// ・作成日の判定は、一覧の「作成日」欄の表示と同じ基準（created_at の日付部分）で行う。
+let cleanupTargets = null; // 「対象を確認する」で確かめた内容 { date, rows }
+
+function cleanupDateLabel(s){
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(s || '');
+  if(!m) return '';
+  return `${Number(m[1])}年${Number(m[2])}月${Number(m[3])}日`;
+}
+
+async function refreshCleanupOldest(){
+  const el = document.getElementById('cleanup-oldest');
+  if(!el) return;
+  try{
+    const rows = await sb('expense_requests?select=created_at&order=created_at.asc&limit=1');
+    el.textContent = (rows && rows.length)
+      ? `いちばん古い申請の作成日：${cleanupDateLabel(rows[0].created_at)}`
+      : '申請データはまだありません。';
+  }catch(e){
+    el.textContent = 'いちばん古い申請の作成日を読み込めませんでした。';
+    console.error(e);
+  }
+}
+
+function resetCleanupResult(){
+  cleanupTargets = null;
+  const box = document.getElementById('cleanup-result');
+  box.innerHTML = '';
+  box.style.display = 'none';
+}
+
+async function checkCleanupTargets(){
+  resetCleanupResult();
+  const date = document.getElementById('cleanup-date').value;
+  if(!date){ showToast('日付を入力してください'); return; }
+  const box = document.getElementById('cleanup-result');
+  box.style.display = 'block';
+  box.textContent = '対象を数えています…';
+  try{
+    const rows = await sbAll(`expense_requests?select=id,pdf_url,created_at&created_at=lt.${date}T00:00:00Z`);
+    if(!rows.length){
+      box.textContent = `${cleanupDateLabel(date)}より前に作成された申請はありません。`;
+      return;
+    }
+    const ids = new Set(rows.map(r => r.id));
+    const pays = await sbAll('payments?select=id,expense_request_id');
+    const payCount = pays.filter(p => ids.has(p.expense_request_id)).length;
+    const pdfCount = rows.filter(r => r.pdf_url).length;
+    cleanupTargets = { date, rows };
+    box.innerHTML =
+      `<div>${cleanupDateLabel(date)}より前に作成された申請：<strong>${rows.length}件</strong></div>` +
+      `<div>一緒に削除されるもの：見積書PDF ${pdfCount}件、支出申請管理の支払い記録 ${payCount}件</div>` +
+      `<button type="button" class="btn-danger" onclick="runCleanup()">この${rows.length}件を削除する</button>`;
+  }catch(e){
+    box.textContent = '対象を数えられませんでした：' + e.message;
+    console.error(e);
+  }
+}
+
+async function deletePdfForCleanup(url){
+  const marker = `/storage/v1/object/public/${PDF_BUCKET}/`;
+  const idx = url.indexOf(marker);
+  if(idx === -1) return true;
+  const path = url.slice(idx + marker.length);
+  try{
+    const token = await getAdminToken();
+    const res = await fetch(`${SUPABASE_URL}/storage/v1/object/${PDF_BUCKET}/${path}`, {
+      method: 'DELETE',
+      headers:{ "apikey": SUPABASE_KEY, "Authorization": `Bearer ${token}` }
+    });
+    return res.ok || res.status === 404;
+  }catch(e){
+    console.error(e);
+    return false;
+  }
+}
+
+async function runCleanup(){
+  if(!cleanupTargets) return;
+  const { date, rows } = cleanupTargets;
+  if(document.getElementById('cleanup-date').value !== date){
+    resetCleanupResult();
+    showToast('日付が変わったため、もう一度「対象を確認する」を押してください', 4000);
+    return;
+  }
+  // 先に管理者パスワードを確認してから、最後の確認を出す
+  try{ await getAdminToken(); }catch(e){ showToast(e.message, 4000); return; }
+  if(!confirm(`${cleanupDateLabel(date)}より前に作成された申請 ${rows.length}件を削除します。\n見積書PDFと、支出申請管理の支払い記録も一緒に削除され、元に戻せません。\n\n本当に削除しますか？`)) return;
+
+  const box = document.getElementById('cleanup-result');
+  box.textContent = '削除しています…（画面を閉じずにお待ちください）';
+  const deleted = [];
+  let errorMsg = '';
+  try{
+    for(let i = 0; i < rows.length; i += 100){
+      const chunk = rows.slice(i, i + 100).map(r => r.id).join(',');
+      const res = await sb(`expense_requests?id=in.(${chunk})&select=id,pdf_url`, {
+        method:'DELETE', headers:{ "Prefer":"return=representation" }
+      });
+      deleted.push(...(res || []));
+    }
+  }catch(e){
+    errorMsg = e.message;
+    console.error(e);
+  }
+
+  // 削除できた申請の見積書PDFを削除（まだ残っている申請が同じPDFを使っていれば残す）
+  let pdfFail = 0;
+  const pdfUrls = [...new Set(deleted.map(r => r.pdf_url).filter(Boolean))];
+  if(pdfUrls.length){
+    let inUse = new Set();
+    try{
+      const remain = await sbAll('expense_requests?select=id,pdf_url&pdf_url=not.is.null');
+      inUse = new Set(remain.map(r => r.pdf_url));
+    }catch(e){ console.error(e); }
+    for(const u of pdfUrls){
+      if(inUse.has(u)) continue;
+      if(!(await deletePdfForCleanup(u))) pdfFail++;
+    }
+  }
+
+  cleanupTargets = null;
+  let msg = `${deleted.length}件の申請を削除しました（見積書PDF・支払い記録も削除）。`;
+  if(deleted.length < rows.length){
+    msg += `\n${rows.length - deleted.length}件は削除できませんでした。` + (errorMsg ? `（${errorMsg}）` : '（管理者パスワードを確認してください）');
+  }
+  if(pdfFail) msg += `\n見積書PDFのうち${pdfFail}件はファイル置き場から削除できませんでした（申請データの削除には影響ありません）。`;
+  box.textContent = msg;
+  box.style.whiteSpace = 'pre-line';
+  showToast(deleted.length ? '古いデータを削除しました' : '削除できませんでした', 3000);
+  loadList();
+  refreshCleanupOldest();
+}
+// ===== ここまで：古いデータの整理 =====
+
 function toReiwaParts(dateStr){
   if(!dateStr) return null;
   const d = new Date(dateStr+'T00:00:00');
@@ -2174,12 +2336,18 @@ if(LOCKED_DEPARTMENT){
   const helpDeptFilter = document.getElementById('help-dept-filter');
   if(helpDeptFilter) helpDeptFilter.style.display = 'none';
   hideProjectTabHelp();
+  // 「古いデータの整理」は管理者用URLでのみ使えるため、使い方の説明も非表示にする
+  document.getElementById('help-cleanup').style.display = 'none';
 }else if(FREE_MODE){
   // 自由入力モード: 提出部署は自由に選べるが、管理者専用タブ(PROJECT_TABS)は表示しない
   hideProjectTabHelp();
+  // 「古いデータの整理」は管理者用URLでのみ使えるため、使い方の説明も非表示にする
+  document.getElementById('help-cleanup').style.display = 'none';
 }else{
   // 管理者モード: SupabaseからPROJECT_TABSを読み込んでタブボタンを自動生成
   loadProjectTabs().then(renderProjectTabs);
+  // 管理者モードでのみ「古いデータの整理」を表示する
+  document.getElementById('cleanup-section').style.display = '';
 }
 
 // 起動時は「申請一覧・印刷」タブを開いた状態にする
