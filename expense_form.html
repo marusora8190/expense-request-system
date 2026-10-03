@@ -435,9 +435,12 @@
     @page{size:257mm 182mm;margin:3mm;}
   }
   /* 古いデータの整理（管理者用URLでのみ表示。一覧のいちばん上） */
-  .cleanup-section{margin:0 0 14px;border:1px solid var(--ink);border-radius:8px;background:var(--panel);}
+  .cleanup-section{margin:0 0 14px;border:1px solid var(--ink);border-radius:8px;background:var(--panel);width:fit-content;max-width:100%;box-sizing:border-box;}
   .cleanup-section summary{padding:10px 14px;font-size:14.5px;font-weight:600;color:var(--ink-dark);cursor:pointer;}
   .cleanup-summary-hint{font-size:12px;font-weight:400;color:var(--muted);margin-left:8px;}
+  .cleanup-section .hint-close{display:none;}
+  .cleanup-section[open] .hint-open{display:none;}
+  .cleanup-section[open] .hint-close{display:inline;}
   .cleanup-body{padding:0 14px 14px;font-size:13px;color:var(--text);line-height:1.7;}
   .cleanup-body p{margin:0 0 8px;}
   .cleanup-oldest{color:var(--muted);}
@@ -582,7 +585,7 @@
   <!-- LIST -->
   <div class="panel" id="tab-list">
     <details class="cleanup-section" id="cleanup-section" style="display:none;" ontoggle="if(this.open) refreshCleanupOldest()">
-      <summary>🗑 古いデータの整理<span class="cleanup-summary-hint">ここを押すと開きます</span></summary>
+      <summary>🗑 古いデータの整理<span class="cleanup-summary-hint"><span class="hint-open">ここを押すと開きます</span><span class="hint-close">ここを押すと閉じます</span></span></summary>
       <div class="cleanup-body">
         <p>入力した日付より前に作成された申請を、見積書PDF・支出申請管理の支払い記録とあわせて削除します。作成日は、申請書に印刷される日付です。削除したデータは元に戻せません。</p>
         <p id="cleanup-oldest" class="cleanup-oldest">読み込み中…</p>
