@@ -1509,7 +1509,6 @@ function renderLedger(){
   }).join('');
 
   body.innerHTML = rowsHtml;
-  applyStickyOffsets(body.closest('table'));
 
   const monthFootCells = monthTotals.map(v => `<td class="num">${v ? v.toLocaleString() : ''}</td>`).join('');
   const yearEndFootCell = `<td class="num">${yearEndTotal ? yearEndTotal.toLocaleString() : ''}</td>`;
@@ -1525,6 +1524,8 @@ function renderLedger(){
       ${monthFootCells}
       ${yearEndFootCell}
     </tr>`;
+  // 合計行(tfoot)の「予想経費」も固定位置を合わせるため、合計行を作った後で計算する
+  applyStickyOffsets(body.closest('table'));
   renderYearClosureControls(fy);
 }
 
