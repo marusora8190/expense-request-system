@@ -448,6 +448,29 @@
   .cleanup-row input[type=date]{padding:8px;border:1px solid var(--line);border-radius:6px;font-size:14px;font-family:inherit;}
   .cleanup-result{margin-top:12px;padding:10px 12px;background:var(--accent-bg);border-radius:6px;}
   .cleanup-result .btn-danger{margin-top:8px;}
+  /* 設定（管理者用URLでのみ表示） */
+  .settings-content{max-width:820px;}
+  .settings-title{font-size:16px;font-weight:700;color:var(--text);margin:0 0 4px;}
+  .settings-lead{font-size:12.5px;color:var(--muted);margin:0 0 16px;line-height:1.7;}
+  .settings-section{margin-bottom:10px;border:1px solid var(--line);border-radius:8px;background:var(--panel);}
+  .settings-section summary{cursor:pointer;padding:10px 14px;font-size:14.5px;font-weight:600;color:var(--text);}
+  .settings-section summary:focus-visible{outline:2px solid var(--ink);outline-offset:2px;}
+  .settings-section .hint-close{display:none;}
+  .settings-section[open] .hint-open{display:none;}
+  .settings-section[open] .hint-close{display:inline;}
+  .settings-hint{font-size:12px;font-weight:400;color:var(--muted);margin-left:8px;}
+  .settings-body{padding:0 16px 14px;font-size:13.5px;color:var(--text);line-height:1.8;}
+  .settings-body p{margin:0 0 6px;}
+  .settings-body ul,.settings-body ol{margin:4px 0 8px;padding-left:1.4em;}
+  .settings-body li{margin-bottom:3px;}
+  .settings-h3{font-size:13.5px;font-weight:700;color:var(--ink-dark);margin:12px 0 4px;}
+  .settings-sub{font-size:12.5px;color:var(--muted);}
+  .settings-body a{color:#1d4ed8;word-break:break-all;}
+  .settings-code{background:var(--accent-bg);border-radius:4px;padding:0 4px;font-family:Consolas,"Courier New",monospace;font-size:12.5px;}
+  .settings-url-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px;}
+  .settings-url-row .settings-url-name{min-width:11em;}
+  .settings-copy-btn{font-size:12px;border:1px solid var(--line);border-radius:4px;padding:2px 8px;background:#fff;color:var(--muted);cursor:pointer;font-family:inherit;}
+  .settings-copy-btn:hover{background:var(--accent-bg);color:var(--text);}
 </style>
 </head>
 <body>
@@ -468,6 +491,7 @@
     <button class="tab active" data-tab="list" data-label="申請一覧・印刷" onclick="switchTab('list')">✓ 申請一覧・印刷</button>
     <button type="button" class="tab external-link-tab" onclick="window.open('https://marusora8190.github.io/expense-request-system/payment_tracker.html', '_blank')" title="支出申請管理システムを新しいタブで開く">支出申請管理 ↗</button>
     <button class="tab" data-tab="help" data-label="使い方" onclick="switchTab('help')">使い方</button>
+    <button class="tab" id="settings-tab-btn" data-tab="settings" data-label="設定" onclick="switchTab('settings')" style="display:none;">設定</button>
     <span id="project-tabs-container" style="margin-left:auto;display:flex;gap:6px;"></span>
   </div>
 
@@ -708,6 +732,163 @@
       </ol>
 
       <p class="help-note">※ 印刷や表示がおかしい場合は、ブラウザの再読み込み（Ctrl+Shift+R など）を試してから、改めてご確認ください。ページ上部に <strong>「🔄 Update」</strong> ボタンが表示されている場合は、このボタンを押すことでも同じように最新の状態に更新できます（キャッシュを使わず、最新のファイルを取得し直します）。</p>
+    </div>
+  </div>
+  <!-- 設定（管理者用URLでのみ表示） -->
+  <!-- マスターファイルと修正依頼メモのうち、③に関係することをまとめた画面。
+       このファイルは公開されているため、個人のメールアドレス・パスワード・
+       共有サーバーの場所などは書かない（それらはマスターファイルを見る）。 -->
+  <div class="panel" id="tab-settings" style="display:none;">
+    <div class="settings-content">
+      <h2 class="settings-title">設定・管理メモ</h2>
+      <p class="settings-lead">このアプリ（③予想経費申請書）の管理に必要なことをまとめています。内容は 2026年10月6日 時点のマスターファイル・修正依頼メモにもとづきます。くわしくは共有サーバーのマスターファイルを見てください。</p>
+
+      <details class="settings-section" open>
+        <summary>🔗 このアプリのURL（配布用）<span class="settings-hint"><span class="hint-open">ここを押すと開きます</span><span class="hint-close">ここを押すと閉じます</span></span></summary>
+        <div class="settings-body">
+          <div class="settings-url-row">
+            <span class="settings-url-name">管理者用（このページ）</span>
+            <a id="settings-admin-url" href="https://marusora8190.github.io/expense-request-system/expense_form.html" target="_blank" rel="noopener noreferrer">https://marusora8190.github.io/expense-request-system/expense_form.html</a>
+          </div>
+          <div class="settings-url-row">
+            <span class="settings-url-name">自由入力用</span>
+            <a id="settings-free-url" href="https://marusora8190.github.io/expense-request-system/expense_form.html?mode=free" target="_blank" rel="noopener noreferrer">https://marusora8190.github.io/expense-request-system/expense_form.html?mode=free</a>
+          </div>
+          <p class="settings-sub">URLの最後に <span class="settings-code">?dept=部署名</span> を付けると、その部署専用の画面になります（提出部署が固定され、その部署の申請だけが一覧に出ます）。<span class="settings-code">?mode=free</span> を付けると、提出部署は自由に選べますが、管理者用の機能は出ません。どちらの場合も「＋ タブ増設」「部署で絞り込み」（部署専用のみ）「古いデータの整理」「設定」は表示されません。</p>
+          <h3 class="settings-h3">部署用のURL</h3>
+          <div id="settings-dept-urls"><p class="settings-sub">読み込み中…</p></div>
+        </div>
+      </details>
+
+      <details class="settings-section">
+        <summary>🛠 修正を頼むとき（Claudeへの依頼の手順）<span class="settings-hint"><span class="hint-open">ここを押すと開きます</span><span class="hint-close">ここを押すと閉じます</span></span></summary>
+        <div class="settings-body">
+          <ol>
+            <li>新しいチャットを開き、「修正を頼むときの依頼メモ.txt」と「マスターファイル（.md）」を添付する。</li>
+            <li>依頼メモのひな形をコピーして、「直したいアプリ」に「③予想経費申請書」、「直したい内容」を書いて送る。</li>
+            <li><strong>アプリのファイル（expense_form.html）は添付しない。</strong>Claudeが作業の直前にGitHubから最新版を取り直して直します（手元の古いファイルをもとに直すと、ほかで加えた修正が消えるため）。</li>
+            <li>受け取ったファイルをアップロードしたら、同じチャットで「アップロードしました。確認してください。」と送る。</li>
+          </ol>
+          <h3 class="settings-h3">アップロード先（ファイルをドラッグして「Commit changes」を押す）</h3>
+          <p><a href="https://github.com/marusora8190/expense-request-system/upload/main" target="_blank" rel="noopener noreferrer">https://github.com/marusora8190/expense-request-system/upload/main</a></p>
+          <ul>
+            <li>③と④は同じ置き場所です。<strong>③は expense_form.html、④は payment_tracker.html</strong>。ファイル名を取り違えないよう注意してください。</li>
+            <li>ダウンロードしたファイル名が「expense_form (1).html」などになっていたら、元の名前に直してからアップロードする。</li>
+            <li>1つのアプリは、1つのチャットでだけ直す。別のチャットで直す前に、前のチャットのアップロードを済ませる。</li>
+            <li>日にちが空いたとき・別のチャットでアップロードしたあとは、「GitHubから最新版を取り直してから続けてください」と伝える。</li>
+            <li>マスターファイルの③に関係する部分を変えたときは、この設定画面もあわせて直すよう頼む。</li>
+          </ul>
+        </div>
+      </details>
+
+      <details class="settings-section">
+        <summary>⚠ 絶対に消してはいけない機能<span class="settings-hint"><span class="hint-open">ここを押すと開きます</span><span class="hint-close">ここを押すと閉じます</span></span></summary>
+        <div class="settings-body">
+          <p class="settings-sub">修正のたびに、Claudeがこれらが残っているかを確認します。</p>
+          <h3 class="settings-h3">削除のときの管理者パスワード</h3>
+          <p><span class="settings-code">ADMIN_EMAIL</span> ／ <span class="settings-code">getAdminToken</span></p>
+          <p class="settings-sub">データベースは、削除を管理者アカウントだけに限っています。これが消えると、削除ボタンを押しても実際には削除されません（再読み込みすると申請が戻ってきます）。</p>
+          <h3 class="settings-h3">1000件対策の部品</h3>
+          <p><span class="settings-code">sbAll</span>（申請一覧の読み込み・「古いデータの整理」で使用）</p>
+          <p class="settings-sub">データベースは1回に1000件までしか返さないため、1000件ずつ区切ってすべて読み込みます。これが消えると、申請が1000件を超えたときに一覧の一部が表示されなくなります。新しく読み込みを追加するときも、この部品を使います。</p>
+        </div>
+      </details>
+
+      <details class="settings-section">
+        <summary>🔒 データの守り方・管理者パスワード<span class="settings-hint"><span class="hint-open">ここを押すと開きます</span><span class="hint-close">ここを押すと閉じます</span></span></summary>
+        <div class="settings-body">
+          <ul>
+            <li>申請の閲覧・入力・編集は、パスワード無しで使えます。</li>
+            <li>申請の削除と、管理者用タブ（「＋ タブ増設」で作ったタブ）の削除だけは、管理者パスワードが必要です。削除しようとするとパスワード欄が出ます（一度入れると、そのタブを閉じるまで再入力不要）。</li>
+            <li>パスワードがわからないときは「やめる」を押せば、削除されずにそのまま残ります。</li>
+            <li>見積書PDFの置き場所（expense-pdfs）は、閲覧・追加は誰でもできますが、上書きはできず、削除は管理者だけです。</li>
+            <li>申請者がPDFを差し替え・取り外した場合、古いPDFは削除されずに残ります（申請には影響なし。容量が少し増えるだけです）。</li>
+            <li>部署名の一覧（departments）は、データベース側で書き換えできない設定になっています。</li>
+            <li>パスワードはこの画面にもマスターファイルにも書いていません（管理者が別に保管）。忘れた・変えたいときは、Claudeに頼めば変更できます。</li>
+          </ul>
+        </div>
+      </details>
+
+      <details class="settings-section">
+        <summary>🗑 古いデータの整理<span class="settings-hint"><span class="hint-open">ここを押すと開きます</span><span class="hint-close">ここを押すと閉じます</span></span></summary>
+        <div class="settings-body">
+          <ul>
+            <li>古い申請が自動で削除されることはありません。</li>
+            <li>片付けるときは、「申請一覧・印刷」タブのいちばん上（検索欄のすぐ上）にある「🗑 古いデータの整理」を使います（管理者用URLのみ）。</li>
+            <li>入力した日付より前に「作成日」（申請書に印刷される日付）がある申請を、まとめて削除します。年数の制限はありません。</li>
+            <li>順番は「対象を確認する」で件数（申請・見積書PDF・④の支払い記録）を確認 → 管理者パスワード → 最終確認 → 削除、です。</li>
+            <li>見積書PDFと、④支出申請管理の支払い記録も一緒に消えます。削除したものは元に戻せません。</li>
+          </ul>
+        </div>
+      </details>
+
+      <details class="settings-section">
+        <summary>💾 バックアップ<span class="settings-hint"><span class="hint-open">ここを押すと開きます</span><span class="hint-close">ここを押すと閉じます</span></span></summary>
+        <div class="settings-body">
+          <h3 class="settings-h3">自動バックアップ（週1回）</h3>
+          <ul>
+            <li>毎週日曜の午前3時ごろ、データベースの全部の表を自動で控えています。</li>
+            <li>直近8週間分はすべて保存。それより古いものは、各月の最初の1回分を1年間保存。</li>
+            <li>元に戻したいときは、Claudeに「backup_auto から ○○テーブルを△月△日の状態に戻して」と頼みます。</li>
+            <li><strong>見積書PDFは自動バックアップに入りません。</strong>PDFが日々増えていくため、③は①〜⑥の中で手動バックアップがいちばん大切なアプリです。</li>
+          </ul>
+          <h3 class="settings-h3">手動バックアップ（③は3〜6か月に1回が目安）</h3>
+          <ul>
+            <li>共有サーバーの「①〜⑥バックアップ」フォルダにある「バックアップを取る.bat」をダブルクリックします。データベースの表と、見積書PDF（まだ保存していないものだけ）が保存されます。</li>
+            <li>年度末や、大きな修正の前にも取っておくと安心です。</li>
+            <li>うまくいかないときは、Supabaseの管理画面「Storage」→「expense-pdfs」からPDFを、「Table Editor」から expense_requests・project_tabs を書き出して保存できます（くわしくはマスターファイルの手順A・B）。</li>
+          </ul>
+        </div>
+      </details>
+
+      <details class="settings-section">
+        <summary>😴 自動休止の対策<span class="settings-hint"><span class="hint-open">ここを押すと開きます</span><span class="hint-close">ここを押すと閉じます</span></span></summary>
+        <div class="settings-body">
+          <ul>
+            <li>データベースは、7日間だれも使わないと自動で休止します。</li>
+            <li>それを防ぐため、3日おきの午前10時ごろに自動で接続しています（非公開の supabase-keepalive で実行）。</li>
+            <li>下のページで「Scheduled」の緑のチェックが3日おきに並んでいれば正常です。赤い×があればClaudeに相談してください。</li>
+          </ul>
+          <p><a href="https://github.com/marusora8190/supabase-keepalive/actions/workflows/keepalive.yml" target="_blank" rel="noopener noreferrer">https://github.com/marusora8190/supabase-keepalive/actions/workflows/keepalive.yml</a></p>
+        </div>
+      </details>
+
+      <details class="settings-section">
+        <summary>🆘 困ったときは<span class="settings-hint"><span class="hint-open">ここを押すと開きます</span><span class="hint-close">ここを押すと閉じます</span></span></summary>
+        <div class="settings-body">
+          <ul>
+            <li>画面が真っ白・古い表示のまま：まずシークレットウィンドウで開いてみる。画面上の「🔄 Update」でも最新にできます。</li>
+            <li>削除しようとしたらパスワード欄が出た：正常な動きです。</li>
+            <li>パスワード欄が出ないのに、削除した申請が再読み込みで戻ってくる：管理者パスワードの仕組みが消えています。Claudeに確認を頼んでください。</li>
+            <li>アップロード後、反映まで数分かかることがあります。GitHubの「Actions」で「pages build and deployment」が緑のチェックになれば公開完了です。</li>
+            <li>心配なときは、Claudeに「1000件対策と管理者パスワードの仕組みが残っているか確認してください」と頼めば、変更履歴から確かめられます。</li>
+          </ul>
+        </div>
+      </details>
+
+      <details class="settings-section">
+        <summary>📋 メモ（このアプリの仕組み）<span class="settings-hint"><span class="hint-open">ここを押すと開きます</span><span class="hint-close">ここを押すと閉じます</span></span></summary>
+        <div class="settings-body">
+          <ul>
+            <li>使っているデータの表：expense_requests（申請データ本体）・departments（部署名の一覧。読み取り専用）・project_tabs（管理者用タブ）。</li>
+            <li>④支出申請管理は、この申請データを読み込んで支払い状況を記録・集計しています（④のデータ：payments・payment_overrides・ledger_marks・year_closures）。</li>
+            <li>見積書PDFは、ファイル置き場「expense-pdfs」に保存しています。①〜⑥の中で、ファイルが日々増えていくのはここだけです。</li>
+            <li>容量の目安（2026年8月31日時点）：データベースは上限500MBに対し約12MB（②〜⑥の合計）、ファイル置き場は上限1GBに対し約9.4MB。当分は余裕があります。</li>
+            <li>データベース（Supabase）は、②④⑤⑥と同じ「スパーベース」プロジェクトを共用しています。</li>
+          </ul>
+        </div>
+      </details>
+
+      <details class="settings-section">
+        <summary>🌐 関連ページ<span class="settings-hint"><span class="hint-open">ここを押すと開きます</span><span class="hint-close">ここを押すと閉じます</span></span></summary>
+        <div class="settings-body">
+          <p>④支出申請管理：<a href="https://marusora8190.github.io/expense-request-system/payment_tracker.html" target="_blank" rel="noopener noreferrer">https://marusora8190.github.io/expense-request-system/payment_tracker.html</a></p>
+          <p>GitHub（ファイルの置き場所）：<a href="https://github.com/marusora8190/expense-request-system" target="_blank" rel="noopener noreferrer">https://github.com/marusora8190/expense-request-system</a></p>
+          <p>変更履歴：<a href="https://github.com/marusora8190/expense-request-system/commits/main/expense_form.html" target="_blank" rel="noopener noreferrer">https://github.com/marusora8190/expense-request-system/commits/main/expense_form.html</a></p>
+          <p>公開状況（Actions）：<a href="https://github.com/marusora8190/expense-request-system/actions" target="_blank" rel="noopener noreferrer">https://github.com/marusora8190/expense-request-system/actions</a></p>
+          <p>Supabase（データベースの管理画面。ログインが必要）：<a href="https://supabase.com/dashboard/project/zhxuntrhxnrssqpvcmvl" target="_blank" rel="noopener noreferrer">https://supabase.com/dashboard/project/zhxuntrhxnrssqpvcmvl</a></p>
+        </div>
+      </details>
     </div>
   </div>
 </div>
@@ -1069,6 +1250,8 @@ function switchTab(name){
   });
   document.getElementById('tab-new').style.display = name==='new' ? 'block':'none';
   document.getElementById('tab-help').style.display = name==='help' ? 'block':'none';
+  document.getElementById('tab-settings').style.display = name==='settings' ? 'block':'none';
+  if(name==='settings') renderSettingsUrls();
   const projectTab = PROJECT_TABS.find(t => t.id === name);
   const isListLike = name==='list' || !!projectTab;
   document.getElementById('tab-list').style.display = isListLike ? 'block':'none';
@@ -2292,6 +2475,56 @@ document.getElementById('f-budget-year').value = fiscalYear(new Date().toISOStri
 loadOptions();
 suggestNextPdfNo();
 
+// ===== 設定（管理者用URLでのみ表示） =====
+// 部署用URLの一覧を、部署名の一覧（ALL_DEPARTMENTS）から作る
+function settingsBaseUrl(){
+  try{ return window.location.origin + window.location.pathname; }
+  catch(e){ return 'https://marusora8190.github.io/expense-request-system/expense_form.html'; }
+}
+async function renderSettingsUrls(){
+  const base = settingsBaseUrl();
+  const adminA = document.getElementById('settings-admin-url');
+  const freeA = document.getElementById('settings-free-url');
+  if(adminA){ adminA.href = base; adminA.textContent = base; }
+  if(freeA){ freeA.href = base + '?mode=free'; freeA.textContent = base + '?mode=free'; }
+  const box = document.getElementById('settings-dept-urls');
+  if(!box) return;
+  let deps = ALL_DEPARTMENTS || [];
+  if(!deps.length){
+    try{
+      const rows = await sb('departments?select=name&order=sort_order.asc');
+      deps = rows.map(d=>d.name);
+    }catch(e){
+      box.innerHTML = '<p class="settings-sub">部署名の一覧を読み込めませんでした。</p>';
+      return;
+    }
+  }
+  box.innerHTML = deps.map(d=>{
+    const url = base + '?dept=' + encodeURIComponent(d);
+    return `<div class="settings-url-row">
+      <span class="settings-url-name">${escapeHtml(d)}</span>
+      <a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(base + '?dept=' + d)}</a>
+      <button type="button" class="settings-copy-btn" data-url="${escapeHtml(url)}" onclick="copySettingsUrl(this)">コピー</button>
+    </div>`;
+  }).join('') || '<p class="settings-sub">部署が登録されていません。</p>';
+}
+async function copySettingsUrl(btn){
+  const text = btn.dataset.url;
+  try{
+    await navigator.clipboard.writeText(text);
+  }catch(e){
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    try{ document.execCommand('copy'); }catch(e2){}
+    document.body.removeChild(ta);
+  }
+  btn.textContent = 'コピーしました';
+  setTimeout(()=>{ btn.textContent = 'コピー'; }, 2000);
+}
+// ===== ここまで：設定 =====
+
 function renderProjectTabs(){
   const container = document.getElementById('project-tabs-container');
   if(!container) return;
@@ -2352,6 +2585,8 @@ if(LOCKED_DEPARTMENT){
   loadProjectTabs().then(renderProjectTabs);
   // 管理者モードでのみ「古いデータの整理」を表示する
   document.getElementById('cleanup-section').style.display = '';
+  // 管理者モードでのみ「設定」ボタンを表示する
+  document.getElementById('settings-tab-btn').style.display = '';
 }
 
 // 起動時は「申請一覧・印刷」タブを開いた状態にする
