@@ -834,6 +834,7 @@
             <li>パスワードがわからないときは「やめる」を押せば、削除されずにそのまま残ります。</li>
             <li>見積書PDFの置き場所（expense-pdfs）は、閲覧・追加は誰でもできますが、上書きはできず、削除は管理者だけです。</li>
             <li>申請者がPDFを差し替え・取り外した場合、古いPDFは削除されずに残ります（申請には影響なし。容量が少し増えるだけです）。</li>
+            <li>会計承認日が入っている申請は、「会計承認」スタンプを押したPDFの控えも同じ置き場に自動で保存します（「ファイル」ボタンですぐに開けるようにするため。ファイル名は「数字_stamped_PDF No..pdf」）。</li>
             <li>部署名の一覧（departments）は、データベース側で書き換えできない設定になっています。</li>
             <li>パスワードはこの画面にもマスターファイルにも書いていません（管理者が別に保管）。忘れた・変えたいときは、Claudeに頼めば変更できます。</li>
           </ul>
@@ -904,6 +905,7 @@
             <li>使っているデータの表：expense_requests（申請データ本体）・departments（部署名の一覧。読み取り専用）・project_tabs（管理者用タブ）。</li>
             <li>④支出申請管理は、この申請データを読み込んで支払い状況を記録・集計しています（④のデータ：payments・payment_overrides・ledger_marks・year_closures）。</li>
             <li>見積書PDFは、ファイル置き場「expense-pdfs」に保存しています。①〜⑥の中で、ファイルが日々増えていくのはここだけです。</li>
+            <li>会計承認日が入っている申請は、スタンプを押したPDFの控えも「expense-pdfs」に保存し、その場所を expense_requests の stamped_pdf_url（元にしたPDFと承認日は stamped_pdf_key）に記録しています。一覧を開いたとき、控えがまだ無い申請の分を裏で自動的に作ります。PDFを差し替えると、控えも自動で作り直します。</li>
             <li>容量の目安（2026年8月31日時点）：データベースは上限500MBに対し約12MB（②〜⑥の合計）、ファイル置き場は上限1GBに対し約9.4MB。当分は余裕があります。</li>
             <li>データベース（Supabase）は、②④⑤⑥と同じ「スパーベース」プロジェクトを共用しています。</li>
           </ul>
@@ -1491,6 +1493,13 @@ async function saveRequest(){
       if(editingId && editingPdfUrl && editingPdfUrl !== payload.pdf_url){
         await deletePdfFileByUrl(editingPdfUrl);
       }
+      // 以前のスタンプ済みPDFは使えなくなるので、記録を外しておく（新しいPDFの分は一覧で自動的に作り直す）
+      if(editingId){
+        const prev = (cachedList || []).find(x => x.id === editingId);
+        if(prev && prev.stamped_pdf_url) await deletePdfFileByUrl(prev.stamped_pdf_url);
+      }
+      payload.stamped_pdf_url = null;
+      payload.stamped_pdf_key = null;
     }
 
     if(editingId){
@@ -1639,6 +1648,7 @@ async function loadList(){
     cachedList = rows;
     populateYearFilter();
     renderList();
+    prepareStampedPdfsInBackground(); // スタンプ済みPDFが無い申請の分を裏で作っておく
   }catch(e){
     body.innerHTML = '<tr><td colspan="9" class="empty">読み込みに失敗しました</td></tr>';
     console.error(e);
@@ -1817,11 +1827,13 @@ document.getElementById('row-pdf-replace-input').addEventListener('change', asyn
     await sb(`expense_requests?id=eq.${id}`, {
       method: 'PATCH',
       headers: { 'Prefer': 'return=minimal' },
-      body: JSON.stringify({ pdf_url: newUrl })
+      body: JSON.stringify({ pdf_url: newUrl, stamped_pdf_url: null, stamped_pdf_key: null })
     });
     if(oldUrl) await deletePdfFileByUrl(oldUrl).catch(()=>{});
-    if(target) target.pdf_url = newUrl;
+    if(target && target.stamped_pdf_url) await deletePdfFileByUrl(target.stamped_pdf_url).catch(()=>{});
+    if(target){ target.pdf_url = newUrl; target.stamped_pdf_url = null; target.stamped_pdf_key = null; }
     renderList();
+    prepareStampedPdfsInBackground(); // 新しいPDFのスタンプ済みを裏で作っておく
     showToast('PDFファイルを差し替えました');
   }catch(err){
     showToast('PDFの差し替えに失敗しました: ' + err.message, 6000);
@@ -1876,6 +1888,8 @@ function buildApproveStampDataUrl(text){
 
 // 「ファイル」ボタン: 添付PDFを開く。会計承認日が入力されていれば、
 // 1ページ目の左上（社印の右隣）に「M/D 会計承認」のスタンプを合成してから開く。
+// スタンプ済みのPDFは一度作るとファイル置き場に保存しておき（stamped_pdf_url）、
+// 2回目からはそれをそのまま開く（合成しないので、すぐに開く）。
 async function openAttachedFile(id, evt){
   const r = cachedList.find(x=>x.id===id);
   if(!r || !r.pdf_url) return;
@@ -1883,6 +1897,12 @@ async function openAttachedFile(id, evt){
   const approveMD = fmtMonthDaySlash(r.accounting_approve_date);
   if(!approveMD){
     window.open(r.pdf_url, '_blank', 'noopener');
+    return;
+  }
+
+  // スタンプ済みのPDFが保存されていれば、それをすぐに開く（最速）
+  if(r.stamped_pdf_url && r.stamped_pdf_key === stampedPdfKeyOf(r)){
+    window.open(r.stamped_pdf_url, '_blank', 'noopener');
     return;
   }
 
@@ -1898,37 +1918,7 @@ async function openAttachedFile(id, evt){
   }
 
   try{
-    if(!window.PDFLib) throw new Error('PDF編集ライブラリの読み込みに失敗しました');
-    const existingPdfBytes = await fetch(r.pdf_url).then(res => {
-      if(!res.ok) throw new Error(`添付PDFの取得に失敗しました(${res.status})`);
-      return res.arrayBuffer();
-    });
-
-    const { PDFDocument, ParseSpeeds } = window.PDFLib;
-    // 読み込み・保存の途中で「ひと休み」を入れない設定にする（速く開くため）。
-    // ひと休みを入れると、新しいタブを開いて元のタブが裏に回ったとき、
-    // ブラウザが裏のタブを遅くするため、1回ごとに最大1秒ほど待たされてしまう。
-    const pdfDoc = await PDFDocument.load(existingPdfBytes, { parseSpeed: ParseSpeeds.Fastest });
-    const page = pdfDoc.getPages()[0];
-    if(!page) throw new Error('PDFにページがありません');
-    const { width: pageWidth, height: pageHeight } = page.getSize();
-
-    const stamp = buildApproveStampDataUrl(`${approveMD} 会計承認`);
-    const pngImage = await pdfDoc.embedPng(stamp.dataUrl);
-
-    // 「正」マークのすぐ右隣（ページ左上付近）に配置する。
-    // 1mm = 2.8346pt として、左上端から右へ約24mm・下へ約14mm の位置を中心に置く
-    const mmToPt = 2.8346;
-    const drawWidth = Math.min(pageWidth * 0.22, 130);
-    const drawHeight = drawWidth * (stamp.height / stamp.width);
-    const centerXPt = 24 * mmToPt;
-    const centerYFromTopPt = 14 * mmToPt;
-    const x = centerXPt;
-    const y = pageHeight - centerYFromTopPt - drawHeight / 2;
-
-    page.drawImage(pngImage, { x, y, width: drawWidth, height: drawHeight });
-
-    const stampedBytes = await pdfDoc.save({ useObjectStreams: false, objectsPerTick: Infinity });
+    const stampedBytes = await buildStampedPdfBytes(r.pdf_url, approveMD);
     const blob = new Blob([stampedBytes], { type: 'application/pdf' });
     const blobUrl = URL.createObjectURL(blob);
     if(newTab && !newTab.closed){
@@ -1936,6 +1926,8 @@ async function openAttachedFile(id, evt){
     }else{
       window.open(blobUrl, '_blank', 'noopener');
     }
+    // 次回からすぐ開けるよう、作ったスタンプ済みPDFを裏で保存しておく
+    saveStampedPdf(r, stampedBytes).catch(e => console.error('スタンプ済みPDFの保存に失敗しました', e));
   }catch(e){
     console.error(e);
     alert('スタンプの合成に失敗したため、元のPDFをそのまま開きます。\n' + e.message);
@@ -1948,6 +1940,107 @@ async function openAttachedFile(id, evt){
     if(btn){ btn.disabled = false; btn.textContent = prevLabel; }
   }
 }
+
+// 元のPDFを読み込み、1ページ目に「M/D 会計承認」のスタンプを合成したPDFの中身を返す
+async function buildStampedPdfBytes(pdfUrl, approveMD){
+  if(!window.PDFLib) throw new Error('PDF編集ライブラリの読み込みに失敗しました');
+  const existingPdfBytes = await fetch(pdfUrl).then(res => {
+    if(!res.ok) throw new Error(`添付PDFの取得に失敗しました(${res.status})`);
+    return res.arrayBuffer();
+  });
+
+  const { PDFDocument, ParseSpeeds } = window.PDFLib;
+  // 読み込み・保存の途中で「ひと休み」を入れない設定にする（速く開くため）。
+  // ひと休みを入れると、新しいタブを開いて元のタブが裏に回ったとき、
+  // ブラウザが裏のタブを遅くするため、1回ごとに最大1秒ほど待たされてしまう。
+  const pdfDoc = await PDFDocument.load(existingPdfBytes, { parseSpeed: ParseSpeeds.Fastest });
+  const page = pdfDoc.getPages()[0];
+  if(!page) throw new Error('PDFにページがありません');
+  const { width: pageWidth, height: pageHeight } = page.getSize();
+
+  const stamp = buildApproveStampDataUrl(`${approveMD} 会計承認`);
+  const pngImage = await pdfDoc.embedPng(stamp.dataUrl);
+
+  // 「正」マークのすぐ右隣（ページ左上付近）に配置する。
+  // 1mm = 2.8346pt として、左上端から右へ約24mm・下へ約14mm の位置を中心に置く
+  const mmToPt = 2.8346;
+  const drawWidth = Math.min(pageWidth * 0.22, 130);
+  const drawHeight = drawWidth * (stamp.height / stamp.width);
+  const centerXPt = 24 * mmToPt;
+  const centerYFromTopPt = 14 * mmToPt;
+  const x = centerXPt;
+  const y = pageHeight - centerYFromTopPt - drawHeight / 2;
+
+  page.drawImage(pngImage, { x, y, width: drawWidth, height: drawHeight });
+
+  return await pdfDoc.save({ useObjectStreams: false, objectsPerTick: Infinity });
+}
+
+// ===== スタンプ済みPDFの保存（2回目から最速で開くため） =====
+// 目印＝「元のPDFのURL｜会計承認日」。PDFを差し替えたときなどは目印が変わるので、自動で作り直す。
+function stampedPdfKeyOf(r){
+  if(!r || !r.pdf_url || !r.accounting_approve_date) return null;
+  return `${r.pdf_url}|${r.accounting_approve_date}`;
+}
+
+// スタンプ済みPDFをファイル置き場に保存し、申請データに記録する
+async function saveStampedPdf(r, stampedBytes){
+  const key = stampedPdfKeyOf(r);
+  if(!key) return;
+  // 他の人がすでに作っていれば、作り直さない
+  const latest = await sb(`expense_requests?id=eq.${r.id}&select=pdf_url,accounting_approve_date,stamped_pdf_url,stamped_pdf_key`);
+  const cur = latest && latest[0];
+  if(!cur || stampedPdfKeyOf(cur) !== key) return; // 途中でPDFや承認日が変わった・削除された
+  if(cur.stamped_pdf_url && cur.stamped_pdf_key === key){
+    r.stamped_pdf_url = cur.stamped_pdf_url;
+    r.stamped_pdf_key = cur.stamped_pdf_key;
+    return;
+  }
+  // ファイル名は半角英数字だけにする（ファイル置き場は日本語の名前を受け付けないことがあるため）
+  const safeNo = String(r.pdf_no || '').replace(/[^0-9A-Za-z_\-]/g, '') || 'file';
+  const file = new File([stampedBytes], `stamped_${safeNo}.pdf`, { type: 'application/pdf' });
+  const url = await uploadPdfFile(file);
+  // 元のPDF・承認日が変わっていないときだけ記録する（updated_at は変えない＝編集の衝突検知に影響させない）
+  await sb(`expense_requests?id=eq.${r.id}&pdf_url=eq.${encodeURIComponent(r.pdf_url)}&accounting_approve_date=eq.${r.accounting_approve_date}`, {
+    method:'PATCH',
+    headers:{ 'Prefer':'return=minimal' },
+    body: JSON.stringify({ stamped_pdf_url: url, stamped_pdf_key: key })
+  });
+  // 古いスタンプ済みPDFがあれば消す（管理者パスワード入力済みのタブのときだけ）
+  if(cur.stamped_pdf_url && cur.stamped_pdf_url !== url) await deletePdfFileByUrl(cur.stamped_pdf_url).catch(()=>{});
+  r.stamped_pdf_url = url;
+  r.stamped_pdf_key = key;
+}
+
+// 一覧を読み込んだあと、まだスタンプ済みPDFが無い申請の分を、裏で1件ずつ作っておく。
+// （これにより、承認日を入れて保存したあと、最初の1回目からすぐに開けるようになる）
+let stampedPdfWorkerRunning = false;
+const stampedPdfFailedKeys = new Set(); // 失敗したものは、このタブを開いている間は再挑戦しない
+async function prepareStampedPdfsInBackground(){
+  if(stampedPdfWorkerRunning) return;
+  stampedPdfWorkerRunning = true;
+  try{
+    while(true){
+      const r = (cachedList || []).find(x => {
+        const key = stampedPdfKeyOf(x);
+        return key && x.stamped_pdf_key !== key && !stampedPdfFailedKeys.has(key);
+      });
+      if(!r) break;
+      const key = stampedPdfKeyOf(r);
+      try{
+        const bytes = await buildStampedPdfBytes(r.pdf_url, fmtMonthDaySlash(r.accounting_approve_date));
+        await saveStampedPdf(r, bytes);
+        if(r.stamped_pdf_key !== key) stampedPdfFailedKeys.add(key); // 途中で内容が変わった等。次の読み込みで改めて
+      }catch(e){
+        stampedPdfFailedKeys.add(key);
+        console.warn('スタンプ済みPDFを作れませんでした（「ファイル」ボタンではその都度合成して開きます）', r.pdf_no, e);
+      }
+    }
+  }finally{
+    stampedPdfWorkerRunning = false;
+  }
+}
+// ===== ここまで：スタンプ済みPDFの保存 =====
 
 function clearSearch(){
   document.getElementById('search-box').value = '';
@@ -2025,10 +2118,12 @@ async function removeCurrentPdf(){
   try{
     await deletePdfFileByUrl(editingPdfUrl);
     if(editingId){
+      const prev = (cachedList || []).find(x => x.id === editingId);
+      if(prev && prev.stamped_pdf_url) await deletePdfFileByUrl(prev.stamped_pdf_url);
       await sb(`expense_requests?id=eq.${editingId}`, {
         method:'PATCH',
         headers:{ 'Prefer':'return=minimal' },
-        body: JSON.stringify({ pdf_url: null })
+        body: JSON.stringify({ pdf_url: null, stamped_pdf_url: null, stamped_pdf_key: null })
       });
     }
     editingPdfUrl = null;
@@ -2204,7 +2299,7 @@ async function runCleanup(){
   try{
     for(let i = 0; i < rows.length; i += 100){
       const chunk = rows.slice(i, i + 100).map(r => r.id).join(',');
-      const res = await sb(`expense_requests?id=in.(${chunk})&select=id,pdf_url`, {
+      const res = await sb(`expense_requests?id=in.(${chunk})&select=id,pdf_url,stamped_pdf_url`, {
         method:'DELETE', headers:{ "Prefer":"return=representation" }
       });
       deleted.push(...(res || []));
@@ -2216,12 +2311,13 @@ async function runCleanup(){
 
   // 削除できた申請の見積書PDFを削除（まだ残っている申請が同じPDFを使っていれば残す）
   let pdfFail = 0;
-  const pdfUrls = [...new Set(deleted.map(r => r.pdf_url).filter(Boolean))];
+  // （会計承認スタンプ入りの控え stamped_pdf_url も一緒に削除する）
+  const pdfUrls = [...new Set(deleted.flatMap(r => [r.pdf_url, r.stamped_pdf_url]).filter(Boolean))];
   if(pdfUrls.length){
     let inUse = new Set();
     try{
-      const remain = await sbAll('expense_requests?select=id,pdf_url&pdf_url=not.is.null');
-      inUse = new Set(remain.map(r => r.pdf_url));
+      const remain = await sbAll('expense_requests?select=id,pdf_url,stamped_pdf_url&or=(pdf_url.not.is.null,stamped_pdf_url.not.is.null)');
+      inUse = new Set(remain.flatMap(r => [r.pdf_url, r.stamped_pdf_url]).filter(Boolean));
     }catch(e){ console.error(e); }
     for(const u of pdfUrls){
       if(inUse.has(u)) continue;
