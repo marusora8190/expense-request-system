@@ -1904,8 +1904,11 @@ async function openAttachedFile(id, evt){
       return res.arrayBuffer();
     });
 
-    const { PDFDocument } = window.PDFLib;
-    const pdfDoc = await PDFDocument.load(existingPdfBytes);
+    const { PDFDocument, ParseSpeeds } = window.PDFLib;
+    // 読み込み・保存の途中で「ひと休み」を入れない設定にする（速く開くため）。
+    // ひと休みを入れると、新しいタブを開いて元のタブが裏に回ったとき、
+    // ブラウザが裏のタブを遅くするため、1回ごとに最大1秒ほど待たされてしまう。
+    const pdfDoc = await PDFDocument.load(existingPdfBytes, { parseSpeed: ParseSpeeds.Fastest });
     const page = pdfDoc.getPages()[0];
     if(!page) throw new Error('PDFにページがありません');
     const { width: pageWidth, height: pageHeight } = page.getSize();
@@ -1925,7 +1928,7 @@ async function openAttachedFile(id, evt){
 
     page.drawImage(pngImage, { x, y, width: drawWidth, height: drawHeight });
 
-    const stampedBytes = await pdfDoc.save({ useObjectStreams: false });
+    const stampedBytes = await pdfDoc.save({ useObjectStreams: false, objectsPerTick: Infinity });
     const blob = new Blob([stampedBytes], { type: 'application/pdf' });
     const blobUrl = URL.createObjectURL(blob);
     if(newTab && !newTab.closed){
