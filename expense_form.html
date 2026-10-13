@@ -448,6 +448,8 @@
   .cleanup-row input[type=date]{padding:8px;border:1px solid var(--line);border-radius:6px;font-size:14px;font-family:inherit;}
   .cleanup-result{margin-top:12px;padding:10px 12px;background:var(--accent-bg);border-radius:6px;}
   .cleanup-result .btn-danger{margin-top:8px;}
+  .cleanup-sep{border:none;border-top:1px solid var(--line);margin:18px 0 12px;}
+  .cleanup-sub-title{font-weight:700;color:var(--ink-dark);}
   /* 設定（管理者用URLでのみ表示） */
   .settings-content{max-width:820px;}
   .settings-title{font-size:16px;font-weight:700;color:var(--text);margin:0 0 4px;}
@@ -654,6 +656,14 @@
           <button type="button" class="btn-secondary" onclick="checkCleanupTargets()">対象を確認する</button>
         </div>
         <div id="cleanup-result" class="cleanup-result" style="display:none;"></div>
+
+        <hr class="cleanup-sep">
+        <p class="cleanup-sub-title">📎 元のPDFの整理（会計承認日から3か月たった申請）</p>
+        <p>会計承認スタンプを押したPDF（全ページ）だけを残し、スタンプの無い元のPDFを削除します。申請そのものは消えません。「ファイル」ボタンでは、これまでどおりスタンプを押したPDFが開きます。削除の前に、2つのPDFのページ数が同じことを1件ずつ確かめ、違うものは削除しません。削除した元のPDFは戻せないため、先に手動バックアップを取っておいてください。</p>
+        <div class="cleanup-row">
+          <button type="button" class="btn-secondary" onclick="checkOriginalPdfTargets()">対象を確認する</button>
+        </div>
+        <div id="orig-cleanup-result" class="cleanup-result" style="display:none;"></div>
       </div>
     </details>
     <div class="table-scroll">
@@ -746,6 +756,7 @@
       <ol class="help-steps">
         <li>古い申請が<strong>自動的に削除されることはありません</strong>。作成日からどれだけ時間がたった申請も、削除しない限りそのまま残ります。</li>
         <li>古い申請を片付けるときは、管理者が一覧表のすぐ上にある<strong>「🗑 古いデータの整理」</strong>で、日付を決めてまとめて削除します（管理者用URLでのみ表示されます）。</li>
+        <li>同じ「🗑 古いデータの整理」の中の<strong>「📎 元のPDFの整理」</strong>では、会計承認日から3か月たった申請について、スタンプを押したPDF（全ページ）だけを残し、スタンプの無い元のPDFを削除できます（申請は消えません。管理者パスワードが必要です）。自動では削除されません。</li>
       </ol>
 
       <p class="help-note">※ 印刷や表示がおかしい場合は、ブラウザの再読み込み（Ctrl+Shift+R など）を試してから、改めてご確認ください。ページ上部に <strong>「🔄 Update」</strong> ボタンが表示されている場合は、このボタンを押すことでも同じように最新の状態に更新できます（キャッシュを使わず、最新のファイルを取得し直します）。</p>
@@ -820,7 +831,7 @@
           <p><span class="settings-code">ADMIN_EMAIL</span> ／ <span class="settings-code">getAdminToken</span></p>
           <p class="settings-sub">データベースは、削除を管理者アカウントだけに限っています。これが消えると、削除ボタンを押しても実際には削除されません（再読み込みすると申請が戻ってきます）。</p>
           <h3 class="settings-h3">1000件対策の部品</h3>
-          <p><span class="settings-code">sbAll</span>（申請一覧の読み込み・「古いデータの整理」で使用）</p>
+          <p><span class="settings-code">sbAll</span>（申請一覧の読み込み・「古いデータの整理」・「元のPDFの整理」で使用）</p>
           <p class="settings-sub">データベースは1回に1000件までしか返さないため、1000件ずつ区切ってすべて読み込みます。これが消えると、申請が1000件を超えたときに一覧の一部が表示されなくなります。新しく読み込みを追加するときも、この部品を使います。</p>
         </div>
       </details>
@@ -850,6 +861,8 @@
             <li>入力した日付より前に「作成日」（申請書に印刷される日付）がある申請を、まとめて削除します。年数の制限はありません。入力できる日付は今日までです（今日より後の日付を入れると「今日より後の日付は選べません」と出て、数えません）。</li>
             <li>順番は「対象を確認する」で件数（申請・見積書PDF・④の支払い記録）を確認 → 管理者パスワード → 最終確認 → 削除、です。</li>
             <li>見積書PDFと、④支出申請管理の支払い記録も一緒に消えます。削除したものは元に戻せません。</li>
+            <li>同じ欄の中の「📎 元のPDFの整理」では、会計承認日から3か月たった申請（今日の3か月前の日以前に承認されたもの）について、スタンプを押したPDF（全ページ）だけを残し、スタンプの無い元のPDFを削除します。申請は消えません。順番は「対象を確認する」で件数を確認 → 管理者パスワード → 最終確認 → 削除、です。</li>
+            <li>削除の前に、元のPDFとスタンプを押したPDFのページ数が同じか1件ずつ確かめ、違うもの・開けないものは削除しません。削除したあとは、申請の添付PDFがスタンプを押したPDFに切り替わります（もう一度スタンプを押すことはありません）。自動では削除されないので、ときどきこのボタンで整理します。</li>
           </ul>
         </div>
       </details>
@@ -1901,8 +1914,9 @@ async function openAttachedFile(id, evt){
   }
 
   // スタンプ済みのPDFが保存されていれば、それをすぐに開く（最速）
-  if(r.stamped_pdf_url && r.stamped_pdf_key === stampedPdfKeyOf(r)){
-    window.open(r.stamped_pdf_url, '_blank', 'noopener');
+  // （「元のPDFの整理」で元のPDFを消した申請は、添付PDFそのものがスタンプ済み）
+  if(isOriginalPdfRemoved(r) || (r.stamped_pdf_url && r.stamped_pdf_key === stampedPdfKeyOf(r))){
+    window.open(r.stamped_pdf_url || r.pdf_url, '_blank', 'noopener');
     return;
   }
 
@@ -1983,6 +1997,12 @@ function stampedPdfKeyOf(r){
   return `${r.pdf_url}|${r.accounting_approve_date}`;
 }
 
+// 「元のPDFの整理」で元のPDFを消し、添付PDFがスタンプ済みのものに切り替わっているか
+// （このときは、もう一度スタンプを押さない）
+function isOriginalPdfRemoved(r){
+  return !!(r && r.pdf_url && r.pdf_url === r.stamped_pdf_url);
+}
+
 // スタンプ済みPDFをファイル置き場に保存し、申請データに記録する
 async function saveStampedPdf(r, stampedBytes){
   const key = stampedPdfKeyOf(r);
@@ -2023,7 +2043,7 @@ async function prepareStampedPdfsInBackground(){
     while(true){
       const r = (cachedList || []).find(x => {
         const key = stampedPdfKeyOf(x);
-        return key && x.stamped_pdf_key !== key && !stampedPdfFailedKeys.has(key);
+        return key && !isOriginalPdfRemoved(x) && x.stamped_pdf_key !== key && !stampedPdfFailedKeys.has(key);
       });
       if(!r) break;
       const key = stampedPdfKeyOf(r);
@@ -2337,6 +2357,116 @@ async function runCleanup(){
   loadList();
   refreshCleanupOldest();
 }
+// ===== 元のPDFの整理（会計承認日から3か月たった申請） =====
+// スタンプを押したPDF（全ページ）だけを残し、スタンプの無い元のPDFを削除する。申請は消さない。
+// ・削除の前に、2つのPDFのページ数が同じか1件ずつ確かめ、違うもの・開けないものは削除しない。
+// ・申請の pdf_url をスタンプ済みPDFに切り替えてから、元のPDFのファイルを削除する。
+let origPdfTargets = null; // 「対象を確認する」で確かめた内容 { cutoff, rows }
+
+// 今日（日本時間）の3か月前の日付。この日以前に会計承認された申請が対象
+function originalPdfCutoffDate(){
+  const [y, m, d] = todayJST().split('-').map(Number);
+  let yy = y, mm = m - 3;
+  if(mm < 1){ mm += 12; yy -= 1; }
+  const lastDay = new Date(yy, mm, 0).getDate(); // 3か月前の月の末日（例：5/31の3か月前は2/28）
+  return `${yy}-${String(mm).padStart(2,'0')}-${String(Math.min(d, lastDay)).padStart(2,'0')}`;
+}
+
+async function fetchPdfPageCount(url){
+  const res = await fetch(url, { cache: 'no-store' });
+  if(!res.ok) throw new Error(`PDFを開けませんでした(${res.status})`);
+  const { PDFDocument, ParseSpeeds } = window.PDFLib;
+  const doc = await PDFDocument.load(await res.arrayBuffer(), { parseSpeed: ParseSpeeds.Fastest, ignoreEncryption: true });
+  return doc.getPageCount();
+}
+
+async function checkOriginalPdfTargets(){
+  origPdfTargets = null;
+  const box = document.getElementById('orig-cleanup-result');
+  box.style.display = 'block';
+  box.style.whiteSpace = '';
+  box.textContent = '対象を数えています…';
+  try{
+    const cutoff = originalPdfCutoffDate();
+    const rows = await sbAll(`expense_requests?select=id,pdf_no,pdf_url,stamped_pdf_url,stamped_pdf_key,accounting_approve_date&accounting_approve_date=lte.${cutoff}&pdf_url=not.is.null&order=accounting_approve_date.asc`);
+    const notYet = rows.filter(r => !isOriginalPdfRemoved(r));
+    const targets = notYet.filter(r => r.stamped_pdf_url && r.stamped_pdf_key === stampedPdfKeyOf(r));
+    const noStamp = notYet.length - targets.length;
+    if(!targets.length){
+      box.textContent = `会計承認日が${cleanupDateLabel(cutoff)}以前の申請で、元のPDFを削除できるものはありません。` +
+        (noStamp ? `（スタンプを押したPDFがまだ無いもの ${noStamp}件は、一覧を開いて作られるのを待ってから、もう一度確かめてください）` : '');
+      return;
+    }
+    origPdfTargets = { cutoff, rows: targets };
+    box.innerHTML =
+      `<div>会計承認日が${cleanupDateLabel(cutoff)}以前の申請で、元のPDFを削除できるもの：<strong>${targets.length}件</strong></div>` +
+      (noStamp ? `<div>※ スタンプを押したPDFがまだ無いもの ${noStamp}件は対象外です（元のPDFを残します）。</div>` : '') +
+      `<div>スタンプを押したPDF（全ページ）は残り、申請も消えません。</div>` +
+      `<button type="button" class="btn-danger" onclick="runOriginalPdfCleanup()">元のPDF ${targets.length}件を削除する</button>`;
+  }catch(e){
+    box.textContent = '対象を数えられませんでした：' + e.message;
+    console.error(e);
+  }
+}
+
+async function runOriginalPdfCleanup(){
+  if(!origPdfTargets) return;
+  const { cutoff, rows } = origPdfTargets;
+  if(cutoff !== originalPdfCutoffDate()){
+    origPdfTargets = null;
+    showToast('日付が変わったため、もう一度「対象を確認する」を押してください', 4000);
+    return;
+  }
+  if(!window.PDFLib){ showToast('PDF編集ライブラリの読み込みに失敗しました。画面を読み込み直してください', 5000); return; }
+  // 先に管理者パスワードを確認してから、最後の確認を出す
+  try{ await getAdminToken(); }catch(e){ showToast(e.message, 4000); return; }
+  if(!confirm(`会計承認日が${cleanupDateLabel(cutoff)}以前の申請 ${rows.length}件について、スタンプの無い元のPDFを削除します。\nスタンプを押したPDF（全ページ）は残ります。削除した元のPDFは元に戻せません。\n\n本当に削除しますか？`)) return;
+
+  origPdfTargets = null;
+  const box = document.getElementById('orig-cleanup-result');
+  box.style.whiteSpace = 'pre-line';
+  let switched = 0, fileFail = 0;
+  const skipped = [];
+  for(let i = 0; i < rows.length; i++){
+    const r = rows[i];
+    const label = r.pdf_no || r.id;
+    box.textContent = `ページ数を確かめながら削除しています…（${i + 1}／${rows.length}件）\n画面を閉じずにお待ちください`;
+    try{
+      const [origPages, stampedPages] = await Promise.all([fetchPdfPageCount(r.pdf_url), fetchPdfPageCount(r.stamped_pdf_url)]);
+      if(origPages !== stampedPages){
+        skipped.push(`${label}：ページ数が違うため残しました（元 ${origPages}ページ／スタンプ済み ${stampedPages}ページ）`);
+        continue;
+      }
+      // 申請の添付PDFを、スタンプを押したPDFに切り替える（途中で内容が変わっていないときだけ）
+      const res = await sb(`expense_requests?id=eq.${r.id}&pdf_url=eq.${encodeURIComponent(r.pdf_url)}&stamped_pdf_url=eq.${encodeURIComponent(r.stamped_pdf_url)}&select=id`, {
+        method:'PATCH',
+        headers:{ 'Prefer':'return=representation' },
+        body: JSON.stringify({ pdf_url: r.stamped_pdf_url, stamped_pdf_key: `${r.stamped_pdf_url}|${r.accounting_approve_date}` })
+      });
+      if(!res || !res.length){
+        skipped.push(`${label}：途中で内容が変わったため残しました`);
+        continue;
+      }
+      switched++;
+      // ほかの申請が同じ元のPDFを使っていなければ、ファイルを削除する
+      const enc = encodeURIComponent(r.pdf_url);
+      const used1 = await sb(`expense_requests?select=id&pdf_url=eq.${enc}&limit=1`);
+      const used2 = await sb(`expense_requests?select=id&stamped_pdf_url=eq.${enc}&limit=1`);
+      if((used1 && used1.length) || (used2 && used2.length)) continue;
+      if(!(await deletePdfForCleanup(r.pdf_url))) fileFail++;
+    }catch(e){
+      skipped.push(`${label}：${e.message}（元のPDFを残しました）`);
+      console.error(e);
+    }
+  }
+  let msg = `${switched}件の申請で、元のPDFを削除しました（スタンプを押したPDFは残っています）。`;
+  if(fileFail) msg += `\nうち${fileFail}件は、ファイル置き場から削除できませんでした（申請はスタンプを押したPDFに切り替わっています）。`;
+  if(skipped.length) msg += `\n\n削除しなかったもの ${skipped.length}件：\n` + skipped.join('\n');
+  box.textContent = msg;
+  showToast(switched ? '元のPDFを整理しました' : '削除したものはありません', 3000);
+  loadList();
+}
+// ===== ここまで：元のPDFの整理 =====
 // ===== ここまで：古いデータの整理 =====
 
 function toReiwaParts(dateStr){
