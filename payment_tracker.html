@@ -468,7 +468,7 @@
   <div class="tab-panel active" id="tab-list">
     <div class="toolbar">
       <div class="search-wrap">
-        <input type="text" id="search-box" placeholder="主題・部署・担当で検索">
+        <input type="text" id="search-box" name="payment-list-search" autocomplete="off" placeholder="主題・部署・担当で検索">
       </div>
       <select id="year-filter" class="year-filter">
         <option value="">すべての年度</option>
@@ -738,7 +738,8 @@
           <div id="settings-lock-box">
             <p>この項目を見るには、パスワードを入れてください。</p>
             <div class="settings-lock-row">
-              <input type="password" id="settings-lock-pw" class="settings-lock-input" placeholder="パスワード" autocomplete="off" aria-label="パスワード" onkeydown="if(event.key==='Enter'){event.preventDefault();unlockSettingsSection();}">
+              <input type="text" name="username" autocomplete="username" value="修正を頼むとき" hidden aria-hidden="true" tabindex="-1">
+              <input type="password" id="settings-lock-pw" class="settings-lock-input" placeholder="パスワード" autocomplete="new-password" aria-label="パスワード" onkeydown="if(event.key==='Enter'){event.preventDefault();unlockSettingsSection();}">
               <button type="button" class="settings-lock-btn" id="settings-lock-btn" onclick="unlockSettingsSection()">開く</button>
             </div>
             <p class="settings-lock-msg" id="settings-lock-msg" role="status"></p>
@@ -974,6 +975,12 @@ function askAdminPassword(message){
     const msg = document.createElement('div');
     msg.textContent = message;
     msg.style.cssText = 'font-size:13px;margin-bottom:10px;';
+    // ブラウザがパスワードを保存するとき、検索欄の文字をユーザー名と取り違えないよう、
+    // 見えない名前の欄（管理者）を横に置いておく
+    const user = document.createElement('input');
+    user.type = 'text'; user.name = 'username'; user.autocomplete = 'username';
+    user.value = '管理者'; user.hidden = true; user.tabIndex = -1;
+    user.setAttribute('aria-hidden', 'true');
     const input = document.createElement('input');
     input.type = 'password';
     input.autocomplete = 'current-password';
@@ -987,7 +994,7 @@ function askAdminPassword(message){
     ok.type = 'button'; ok.textContent = 'OK';
     ok.style.cssText = 'padding:8px 20px;font-size:14px;border:none;background:#2563eb;color:#fff;border-radius:6px;cursor:pointer;';
     row.appendChild(cancel); row.appendChild(ok);
-    box.appendChild(title); box.appendChild(msg); box.appendChild(input); box.appendChild(row);
+    box.appendChild(title); box.appendChild(msg); box.appendChild(user); box.appendChild(input); box.appendChild(row);
     wrap.appendChild(box);
     document.body.appendChild(wrap);
     function done(v){ wrap.remove(); resolve(v); }
@@ -2107,6 +2114,21 @@ function renderList(){
 }
 
 document.getElementById('search-box').addEventListener('input', renderList);
+// ブラウザの自動入力で、開いた直後の検索欄に名前などが入ってしまうのを防ぐ。
+// 自分でキーを押したり貼り付けたりしていないのに文字が入っていたら、消して一覧を元に戻す。
+let searchTypedByUser = false;
+(function(){
+  const box = document.getElementById('search-box');
+  if(!box) return;
+  ['keydown','paste','drop','compositionstart'].forEach(ev => box.addEventListener(ev, ()=>{ searchTypedByUser = true; }));
+  const clearAutofill = ()=>{
+    if(!searchTypedByUser && box.value){
+      box.value = '';
+      renderList();
+    }
+  };
+  [300, 1000, 2500].forEach(ms => setTimeout(clearAutofill, ms));
+})();
 document.getElementById('year-filter').addEventListener('change', renderList);
 
 // ---------------- モーダル ----------------
