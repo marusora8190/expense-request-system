@@ -312,7 +312,6 @@
     #tab-ledger{display:none !important;}
     #tab-help{display:none !important;}
     #tab-settings{display:none !important;}
-    #tab-master{display:none !important;}
     #tab-print{display:block !important;}
     .app{padding:0;max-width:none;}
     .print-sheet{border:none;padding:0;}
@@ -400,17 +399,7 @@
     margin-bottom:4px;
   }
   .tab-nav .settings-tab-btn.active{background:var(--ink);border-color:var(--ink);color:#fff;font-weight:600;}
-  /* マスター管理（「使い方」の左のボタン。管理者パスワードで開く） */
-  .tab-nav .master-tab-btn{
-    margin-left:16px;padding:9px 18px;border:1px solid var(--line);background:var(--panel);
-    border-radius:8px;color:var(--muted);font-weight:400;border-bottom:1px solid var(--line);
-    margin-bottom:4px;
-  }
-  .tab-nav .master-tab-btn.active{background:var(--ink);border-color:var(--ink);color:#fff;font-weight:600;}
-  .tab-nav .master-tab-btn:focus-visible{outline:2px solid var(--ink-dark);outline-offset:2px;}
-  .master-content{max-width:620px;}
-  .master-box{border:1px solid var(--line);border-radius:8px;background:var(--panel);padding:14px 16px;margin-top:12px;}
-  .master-box h3{font-size:14.5px;margin:0 0 6px;color:var(--text);}
+  /* マスター管理（「設定」の中の項目。管理者パスワードで開く） */
   .master-dept-list{display:flex;flex-direction:column;gap:6px;margin:10px 0 14px;}
   .master-dept-list label{display:flex;align-items:center;gap:10px;font-size:15px;cursor:pointer;padding:4px 2px;}
   .master-dept-list input[type=checkbox]{width:18px;height:18px;cursor:pointer;}
@@ -479,7 +468,6 @@
       <button type="button" data-tab="verify" onclick="switchTab('verify')">支払明細</button>
       <span id="dept-tabs-container"></span>
       <button type="button" class="box-tab-btn external-link-tab" onclick="window.open('https://marusora8190.github.io/expense-request-system/expense_form.html', '_blank')" title="予想経費申請書システムを新しいタブで開く">予想経費申請 ↗</button>
-      <button type="button" class="master-tab-btn" data-tab="master" onclick="switchTab('master')">マスター</button>
       <button type="button" class="help-tab-btn" data-tab="help" onclick="switchTab('help')">使い方</button>
       <button type="button" class="settings-tab-btn" data-tab="settings" onclick="switchTab('settings')">設定</button>
     </div>
@@ -619,8 +607,8 @@
       <h2>「設定」ボタン</h2>
       <p>「使い方」の右にある<b>「設定」</b>ボタンを押すと、このシステムを管理するためのメモ(URL・修正を頼むときの手順・バックアップ・困ったときなど)が見られます。普段の入力では使いません。</p>
 
-      <h2>「マスター」ボタン</h2>
-      <p>「使い方」の左にある<b>「マスター」</b>ボタンは、管理者が使う画面です。開くときに管理者パスワード(削除のときと同じもの)を聞かれます。</p>
+      <h2>マスター管理(「設定」の中)</h2>
+      <p>「設定」の画面の<b>「🗂 マスター管理」</b>は、管理者が使う項目です。開くときに管理者パスワード(削除のときと同じもの)を聞かれます。</p>
       <ul>
         <li>「画面を開いたときに、はじめから✓を付ける部署」を、部署ごとにチェックして「保存する」を押します</li>
         <li>保存した内容は、だれのパソコンで開いても同じです。次に画面を開いたとき(「🔄 Update」や読み込み直しのとき)から使われます</li>
@@ -629,7 +617,7 @@
 
       <h2>科目タブ・部署タブ</h2>
       <p>画面上部の「本部営繕費」「教庁営繕費」は<b>科目タブ</b>です。どちらか一方を選んだ状態で、その科目に属する工事だけが下の一覧に表示されます。</p>
-      <p>「一覧」「支払詳細」「支払明細」タブの右側に並ぶ「営繕課」「建築課」「電気課」「放送通信課」「水道課」などは<b>部署タブ</b>です。✓が付いている部署の工事だけが表示されます。画面を開いたときにどの部署に✓が付いているかは、「マスター」で決められます。複数の部署に同時に✓を付けて、まとめて見ることもできます。この選択状態は「一覧」「支払詳細」「支払明細」の3つのタブで共通です。</p>
+      <p>「一覧」「支払詳細」「支払明細」タブの右側に並ぶ「営繕課」「建築課」「電気課」「放送通信課」「水道課」などは<b>部署タブ</b>です。✓が付いている部署の工事だけが表示されます。画面を開いたときにどの部署に✓が付いているかは、「設定」の「マスター管理」で決められます。複数の部署に同時に✓を付けて、まとめて見ることもできます。この選択状態は「一覧」「支払詳細」「支払明細」の3つのタブで共通です。</p>
 
       <h2>各タブの説明</h2>
 
@@ -713,28 +701,6 @@
   </div>
 
 
-  <!-- マスター管理（「使い方」の左のボタン。削除のときと同じ管理者パスワードで開く） -->
-  <div class="tab-panel" id="tab-master">
-    <div class="master-content">
-      <h2 class="settings-title">マスター管理</h2>
-      <div id="master-lock-box" class="master-box">
-        <p style="margin:0 0 10px;">この画面を使うには、管理者パスワード（削除のときと同じもの）が必要です。</p>
-        <button type="button" class="master-btn" onclick="unlockMasterTab()">🔑 パスワードを入れて開く</button>
-        <p class="master-msg" id="master-lock-msg" role="status"></p>
-      </div>
-      <div id="master-main" hidden>
-        <div class="master-box">
-          <h3>画面を開いたときに、はじめから✓を付ける部署</h3>
-          <p class="settings-sub" style="margin:0;">チェックを付けた部署は、だれのパソコンで開いても、はじめから部署タブに「✓」が付きます。保存した内容は、次に画面を開いたとき（「🔄 Update」や読み込み直しのとき）から使われます。</p>
-          <div class="master-dept-list" id="master-dept-list"></div>
-          <button type="button" class="master-btn" id="master-save-btn" onclick="saveMasterDeptDefaults()">保存する</button>
-          <p class="master-msg" id="master-save-msg" role="status"></p>
-        </div>
-      </div>
-    </div>
-  </div>
-
-
   <!-- 設定（「使い方」の右のボタン） -->
   <!-- マスターファイルと修正依頼メモのうち、④に関係することをまとめた画面。
        このファイルは公開されているため、個人のメールアドレス・パスワード・
@@ -762,6 +728,23 @@
         </div>
       </details>
 
+      <details class="settings-section" id="settings-master-section" ontoggle="if(this.open) showMasterTab()">
+        <summary>🗂 マスター管理（はじめから✓を付ける部署・🔒管理者パスワードが必要）<span class="settings-hint"><span class="hint-open">ここを押すと開きます</span><span class="hint-close">ここを押すと閉じます</span></span></summary>
+        <div class="settings-body">
+          <div id="master-lock-box">
+            <p>この項目を使うには、管理者パスワード（削除のときと同じもの）が必要です。</p>
+            <button type="button" class="master-btn" onclick="unlockMasterTab()">🔑 パスワードを入れて開く</button>
+            <p class="master-msg" id="master-lock-msg" role="status"></p>
+          </div>
+          <div id="master-main" hidden>
+            <h3 class="settings-h3">画面を開いたときに、はじめから✓を付ける部署</h3>
+            <p class="settings-sub">チェックを付けた部署は、だれのパソコンで開いても、はじめから部署タブに「✓」が付きます。保存した内容は、次に画面を開いたとき（「🔄 Update」や読み込み直しのとき）から使われます。部署のボタンは、③にその部署の申請が1件以上あるときだけ出ます。</p>
+            <div class="master-dept-list" id="master-dept-list"></div>
+            <button type="button" class="master-btn" id="master-save-btn" onclick="saveMasterDeptDefaults()">保存する</button>
+            <p class="master-msg" id="master-save-msg" role="status"></p>
+          </div>
+        </div>
+      </details>
       <details class="settings-section">
         <summary>⬇ GitHubから最新のファイルをダウンロードするときのURL<span class="settings-hint"><span class="hint-open">ここを押すと開きます</span><span class="hint-close">ここを押すと閉じます</span></span></summary>
         <div class="settings-body">
@@ -817,7 +800,7 @@
           <ul>
             <li>閲覧・支払い金額の入力・日付の修正・「済」チェック・年度の締めは、パスワード無しで使えます。</li>
             <li>次の2つだけは、管理者パスワードが必要です。①「支払いを記録」の画面で行を「×」で消して保存するとき、②年度の「締め」を解除するとき。</li>
-            <li>「マスター」（はじめから✓を付ける部署の設定）も、開くときに同じ管理者パスワードが必要です。データベースでも、この設定（payment_dept_defaults）を書き換えられるのは管理者アカウントだけにしています（2026年10月21日〜）。</li>
+            <li>この画面の「🗂 マスター管理」（はじめから✓を付ける部署の設定）も、開くときに同じ管理者パスワードが必要です。データベースでも、この設定（payment_dept_defaults）を書き換えられるのは管理者アカウントだけにしています（2026年10月21日〜）。</li>
             <li>パスワード欄は一度入れると、そのタブを閉じるまで再入力不要です。わからないときは「やめる」を押せば、削除されずにそのまま残ります。</li>
             <li>③の申請データは、④からは読むだけです。申請の中身（工事名称・予想経費など）は③で直します。</li>
             <li>パスワードはこの画面にもマスターファイルにも書いていません（管理者が別に保管）。忘れた・変えたいときは、Claudeに頼めば変更できます。</li>
@@ -889,7 +872,7 @@
           <ul>
             <li>使っているデータの表：payments（支払い記録）・payment_overrides（「完了として扱う」などの個別の設定）・ledger_marks（「済」チェック）・year_closures（年度の締め）・payment_dept_defaults（はじめから✓を付ける部署。2026年10月21日〜）。</li>
             <li>③の expense_requests（申請データ）を読み込んで、工事ごとの支払い状況をまとめています。④から申請データを書き換えることはありません。</li>
-            <li>部署のタブは、申請データに出てくる部署から自動で作り、並び順はこのファイルの中に書いてあります（営繕課・建築課・電気課・放送通信課・水道課・造園課）。画面を開いたときにどの部署に✓を付けるかは、「マスター」で決めて payment_dept_defaults の表に保存しています（2026年10月21日〜。表が読めないときは、このファイルの中の一覧〔営繕課・建築課・電気課・放送通信課・水道課〕を使います）。並び順を変えたいときはClaudeに頼んでください。</li>
+            <li>部署のタブは、申請データに出てくる部署から自動で作り、並び順はこのファイルの中に書いてあります（営繕課・建築課・電気課・放送通信課・水道課・造園課）。画面を開いたときにどの部署に✓を付けるかは、この画面の「マスター管理」で決めて payment_dept_defaults の表に保存しています（2026年10月21日〜。表が読めないときは、このファイルの中の一覧〔営繕課・建築課・電気課・放送通信課・水道課〕を使います）。並び順を変えたいときはClaudeに頼んでください。</li>
             <li>データベース（Supabase）は、②③⑤⑥と同じ「スパーベース」プロジェクトを共用しています。</li>
             <li>容量の目安（2026年8月31日時点）：データベースは上限500MBに対し約12MB（②〜⑥の合計）。当分は余裕があります。</li>
           </ul>
@@ -1401,7 +1384,7 @@ function updateDeptTabActiveState(){
   }
 }
 
-// ---------------- マスター管理 ----------------
+// ---------------- マスター管理（「設定」の中の項目） ----------------
 // 開くときに、削除のときと同じ管理者パスワードを聞く（一度入れると、タブを閉じるまで最長1時間は再入力不要）。
 // 保存も管理者としてログインした鍵で行う（データベースは、この表の書き換えを管理者アカウントだけに限っている）。
 const MASTER_PW_MSG = 'マスター管理を開くには、管理者パスワード（削除のときと同じもの）を入力してください。';
@@ -1489,18 +1472,13 @@ function switchTab(tab){
     if(b.classList.contains('settings-tab-btn')){
       b.textContent = (active ? '✓ ' : '') + '設定';
     }
-    if(b.classList.contains('master-tab-btn')){
-      b.textContent = (active ? '✓ ' : '') + 'マスター';
-    }
   });
   document.getElementById('tab-list').classList.toggle('active', tab === 'list');
   document.getElementById('tab-verify').classList.toggle('active', tab === 'verify');
   document.getElementById('tab-ledger').classList.toggle('active', tab === 'ledger');
   document.getElementById('tab-help').classList.toggle('active', tab === 'help');
   document.getElementById('tab-settings').classList.toggle('active', tab === 'settings');
-  document.getElementById('tab-master').classList.toggle('active', tab === 'master');
   if(tab === 'settings') renderSettingsUrls();
-  if(tab === 'master') showMasterTab();
   updateDeptTabActiveState();
   if(tab === 'verify'){
     populateVerifyYearOptions();
