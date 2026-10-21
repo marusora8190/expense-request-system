@@ -312,6 +312,7 @@
     #tab-ledger{display:none !important;}
     #tab-help{display:none !important;}
     #tab-settings{display:none !important;}
+    #tab-master{display:none !important;}
     #tab-print{display:block !important;}
     .app{padding:0;max-width:none;}
     .print-sheet{border:none;padding:0;}
@@ -399,6 +400,24 @@
     margin-bottom:4px;
   }
   .tab-nav .settings-tab-btn.active{background:var(--ink);border-color:var(--ink);color:#fff;font-weight:600;}
+  /* マスター管理（「使い方」の左のボタン。管理者パスワードで開く） */
+  .tab-nav .master-tab-btn{
+    margin-left:16px;padding:9px 18px;border:1px solid var(--line);background:var(--panel);
+    border-radius:8px;color:var(--muted);font-weight:400;border-bottom:1px solid var(--line);
+    margin-bottom:4px;
+  }
+  .tab-nav .master-tab-btn.active{background:var(--ink);border-color:var(--ink);color:#fff;font-weight:600;}
+  .tab-nav .master-tab-btn:focus-visible{outline:2px solid var(--ink-dark);outline-offset:2px;}
+  .master-content{max-width:620px;}
+  .master-box{border:1px solid var(--line);border-radius:8px;background:var(--panel);padding:14px 16px;margin-top:12px;}
+  .master-box h3{font-size:14.5px;margin:0 0 6px;color:var(--text);}
+  .master-dept-list{display:flex;flex-direction:column;gap:6px;margin:10px 0 14px;}
+  .master-dept-list label{display:flex;align-items:center;gap:10px;font-size:15px;cursor:pointer;padding:4px 2px;}
+  .master-dept-list input[type=checkbox]{width:18px;height:18px;cursor:pointer;}
+  .master-btn{padding:8px 18px;font-size:14px;border-radius:7px;cursor:pointer;font-family:inherit;border:1px solid var(--ink);background:var(--ink);color:#fff;}
+  .master-btn.secondary{background:#fff;color:var(--text);border-color:var(--line);}
+  .master-btn:disabled{opacity:.6;cursor:default;}
+  .master-msg{font-size:13px;margin-top:8px;min-height:1.4em;}
   .tab-nav .settings-tab-btn:focus-visible, .tab-nav .help-tab-btn:focus-visible{outline:2px solid var(--ink-dark);outline-offset:2px;}
   .settings-content{max-width:820px;}
   .settings-title{font-size:16px;font-weight:700;color:var(--text);margin:0 0 4px;}
@@ -460,6 +479,7 @@
       <button type="button" data-tab="verify" onclick="switchTab('verify')">支払明細</button>
       <span id="dept-tabs-container"></span>
       <button type="button" class="box-tab-btn external-link-tab" onclick="window.open('https://marusora8190.github.io/expense-request-system/expense_form.html', '_blank')" title="予想経費申請書システムを新しいタブで開く">予想経費申請 ↗</button>
+      <button type="button" class="master-tab-btn" data-tab="master" onclick="switchTab('master')">マスター</button>
       <button type="button" class="help-tab-btn" data-tab="help" onclick="switchTab('help')">使い方</button>
       <button type="button" class="settings-tab-btn" data-tab="settings" onclick="switchTab('settings')">設定</button>
     </div>
@@ -599,9 +619,17 @@
       <h2>「設定」ボタン</h2>
       <p>「使い方」の右にある<b>「設定」</b>ボタンを押すと、このシステムを管理するためのメモ(URL・修正を頼むときの手順・バックアップ・困ったときなど)が見られます。普段の入力では使いません。</p>
 
+      <h2>「マスター」ボタン</h2>
+      <p>「使い方」の左にある<b>「マスター」</b>ボタンは、管理者が使う画面です。開くときに管理者パスワード(削除のときと同じもの)を聞かれます。</p>
+      <ul>
+        <li>「画面を開いたときに、はじめから✓を付ける部署」を、部署ごとにチェックして「保存する」を押します</li>
+        <li>保存した内容は、だれのパソコンで開いても同じです。次に画面を開いたとき(「🔄 Update」や読み込み直しのとき)から使われます</li>
+        <li>ふだんの画面で部署タブの✓を付け外しするのは、今までどおり自由です(その画面の中だけの切り替えで、保存した内容は変わりません)</li>
+      </ul>
+
       <h2>科目タブ・部署タブ</h2>
       <p>画面上部の「本部営繕費」「教庁営繕費」は<b>科目タブ</b>です。どちらか一方を選んだ状態で、その科目に属する工事だけが下の一覧に表示されます。</p>
-      <p>「一覧」「支払詳細」「支払明細」タブの右側に並ぶ「営繕課」「電気課」「放送通信課」「水道課」は<b>部署タブ</b>です。✓が付いている部署の工事だけが表示されます。複数の部署に同時に✓を付けて、まとめて見ることもできます。この選択状態は「一覧」「支払詳細」「支払明細」の3つのタブで共通です。</p>
+      <p>「一覧」「支払詳細」「支払明細」タブの右側に並ぶ「営繕課」「建築課」「電気課」「放送通信課」「水道課」などは<b>部署タブ</b>です。✓が付いている部署の工事だけが表示されます。画面を開いたときにどの部署に✓が付いているかは、「マスター」で決められます。複数の部署に同時に✓を付けて、まとめて見ることもできます。この選択状態は「一覧」「支払詳細」「支払明細」の3つのタブで共通です。</p>
 
       <h2>各タブの説明</h2>
 
@@ -685,6 +713,28 @@
   </div>
 
 
+  <!-- マスター管理（「使い方」の左のボタン。削除のときと同じ管理者パスワードで開く） -->
+  <div class="tab-panel" id="tab-master">
+    <div class="master-content">
+      <h2 class="settings-title">マスター管理</h2>
+      <div id="master-lock-box" class="master-box">
+        <p style="margin:0 0 10px;">この画面を使うには、管理者パスワード（削除のときと同じもの）が必要です。</p>
+        <button type="button" class="master-btn" onclick="unlockMasterTab()">🔑 パスワードを入れて開く</button>
+        <p class="master-msg" id="master-lock-msg" role="status"></p>
+      </div>
+      <div id="master-main" hidden>
+        <div class="master-box">
+          <h3>画面を開いたときに、はじめから✓を付ける部署</h3>
+          <p class="settings-sub" style="margin:0;">チェックを付けた部署は、だれのパソコンで開いても、はじめから部署タブに「✓」が付きます。保存した内容は、次に画面を開いたとき（「🔄 Update」や読み込み直しのとき）から使われます。</p>
+          <div class="master-dept-list" id="master-dept-list"></div>
+          <button type="button" class="master-btn" id="master-save-btn" onclick="saveMasterDeptDefaults()">保存する</button>
+          <p class="master-msg" id="master-save-msg" role="status"></p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
   <!-- 設定（「使い方」の右のボタン） -->
   <!-- マスターファイルと修正依頼メモのうち、④に関係することをまとめた画面。
        このファイルは公開されているため、個人のメールアドレス・パスワード・
@@ -692,7 +742,7 @@
   <div class="tab-panel" id="tab-settings">
     <div class="settings-content">
       <h2 class="settings-title">設定・管理メモ</h2>
-      <p class="settings-lead">このアプリ（④支出申請管理）の管理に必要なことをまとめています。内容は 2026年10月8日 時点のマスターファイル・修正依頼メモにもとづきます。くわしくは共有サーバーのマスターファイルを見てください。</p>
+      <p class="settings-lead">このアプリ（④支出申請管理）の管理に必要なことをまとめています。内容は 2026年10月21日 時点のマスターファイル・修正依頼メモにもとづきます。くわしくは共有サーバーのマスターファイルを見てください。</p>
 
       <details class="settings-section" open>
         <summary>🔗 このアプリのURL<span class="settings-hint"><span class="hint-open">ここを押すと開きます</span><span class="hint-close">ここを押すと閉じます</span></span></summary>
@@ -767,6 +817,7 @@
           <ul>
             <li>閲覧・支払い金額の入力・日付の修正・「済」チェック・年度の締めは、パスワード無しで使えます。</li>
             <li>次の2つだけは、管理者パスワードが必要です。①「支払いを記録」の画面で行を「×」で消して保存するとき、②年度の「締め」を解除するとき。</li>
+            <li>「マスター」（はじめから✓を付ける部署の設定）も、開くときに同じ管理者パスワードが必要です。データベースでも、この設定（payment_dept_defaults）を書き換えられるのは管理者アカウントだけにしています（2026年10月21日〜）。</li>
             <li>パスワード欄は一度入れると、そのタブを閉じるまで再入力不要です。わからないときは「やめる」を押せば、削除されずにそのまま残ります。</li>
             <li>③の申請データは、④からは読むだけです。申請の中身（工事名称・予想経費など）は③で直します。</li>
             <li>パスワードはこの画面にもマスターファイルにも書いていません（管理者が別に保管）。忘れた・変えたいときは、Claudeに頼めば変更できます。</li>
@@ -836,9 +887,9 @@
         <summary>📋 メモ（このアプリの仕組み）<span class="settings-hint"><span class="hint-open">ここを押すと開きます</span><span class="hint-close">ここを押すと閉じます</span></span></summary>
         <div class="settings-body">
           <ul>
-            <li>使っているデータの表：payments（支払い記録）・payment_overrides（「完了として扱う」などの個別の設定）・ledger_marks（「済」チェック）・year_closures（年度の締め）。</li>
+            <li>使っているデータの表：payments（支払い記録）・payment_overrides（「完了として扱う」などの個別の設定）・ledger_marks（「済」チェック）・year_closures（年度の締め）・payment_dept_defaults（はじめから✓を付ける部署。2026年10月21日〜）。</li>
             <li>③の expense_requests（申請データ）を読み込んで、工事ごとの支払い状況をまとめています。④から申請データを書き換えることはありません。</li>
-            <li>部署のタブ（営繕課・電気課・放送通信課・水道課）は、このファイルの中に名前を書いて作っています。部署を増やす・名前を変えるときは、Claudeに修正を頼みます。</li>
+            <li>部署のタブは、申請データに出てくる部署から自動で作り、並び順はこのファイルの中に書いてあります（営繕課・建築課・造園課・電気課・放送通信課・水道課）。画面を開いたときにどの部署に✓を付けるかは、「マスター」で決めて payment_dept_defaults の表に保存しています（2026年10月21日〜。表が読めないときは、このファイルの中の一覧〔営繕課・建築課・電気課・放送通信課・水道課〕を使います）。並び順を変えたいときはClaudeに頼んでください。</li>
             <li>データベース（Supabase）は、②③⑤⑥と同じ「スパーベース」プロジェクトを共用しています。</li>
             <li>容量の目安（2026年8月31日時点）：データベースは上限500MBに対し約12MB（②〜⑥の合計）。当分は余裕があります。</li>
           </ul>
@@ -1007,13 +1058,13 @@ function askAdminPassword(message){
     setTimeout(function(){ input.focus(); }, 0);
   });
 }
-async function getAdminToken(){
+async function getAdminToken(firstMessage, cancelMessage){
   const cached = adminCachedToken();
   if(cached) return cached;
-  let message = '削除するには管理者パスワードを入力してください。';
+  let message = firstMessage || '削除するには管理者パスワードを入力してください。';
   for(;;){
     const pw = await askAdminPassword(message);
-    if(pw === null || pw === '') throw new Error('管理者パスワードが入力されなかったため、削除しませんでした。');
+    if(pw === null || pw === '') throw new Error(cancelMessage || '管理者パスワードが入力されなかったため、削除しませんでした。');
     const res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
       method: 'POST',
       headers: { apikey: SUPABASE_KEY, 'Content-Type': 'application/json' },
@@ -1032,9 +1083,12 @@ async function getAdminToken(){
 
 async function sb(path, options = {}) {
   // 削除（DELETE）のときだけ管理者としてログインした鍵を使う
-  const bearer = String(options.method || '').toUpperCase() === 'DELETE' ? await getAdminToken() : SUPABASE_KEY;
+  // マスター管理の保存（options.admin）も、管理者としてログインした鍵を使う
+  const bearer = String(options.method || '').toUpperCase() === 'DELETE' ? await getAdminToken()
+    : options.admin ? await getAdminToken(options.adminMessage, options.adminCancelMessage) : SUPABASE_KEY;
+  const { admin: _admin, adminMessage: _am, adminCancelMessage: _acm, ...fetchOptions } = options;
   const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
-    ...options,
+    ...fetchOptions,
     headers: {
       apikey: SUPABASE_KEY,
       Authorization: `Bearer ${bearer}`,
@@ -1148,8 +1202,27 @@ let overrides = [];  // 手動「完了」フラグ
 let ledgerMarks = {}; // 年度合計タブの「済」マーク: `${expense_request_id}_${fiscal_year}` -> boolean
 let yearClosures = {}; // 年度締めの記録: `${budget_category}_${fiscal_year}` -> {id, budget_category, fiscal_year, closed_at}
 let statusFilter = 'all';
-const ALL_PAY_DEPTS = ['営繕課', '電気課', '放送通信課', '水道課'];
+// はじめから✓を付ける部署。マスター管理で保存した内容（payment_dept_defaults）があればそちらを使い、
+// 読み込めなかったとき・まだ保存されていない部署は、この一覧で判断する
+const ALL_PAY_DEPTS = ['営繕課', '建築課', '電気課', '放送通信課', '水道課'];
 let sharedDeptFilter = new Set(ALL_PAY_DEPTS); // 一覧・照合・部署タブ、すべて共通の部署絞り込み
+let deptDefaultRows = null;      // マスター管理で保存した内容（読み込めなければ null）
+let deptDefaultsApplied = false; // 画面を開いたときの1回だけ当てはめる
+
+function applyDeptDefaults(rows){
+  if(deptDefaultsApplied) return;
+  deptDefaultsApplied = true;
+  if(!rows || rows.length === 0) return;
+  const saved = {};
+  rows.forEach(r=>{ saved[r.department] = !!r.is_checked; });
+  const names = new Set([...ALL_PAY_DEPTS, ...Object.keys(saved)]);
+  const next = new Set();
+  names.forEach(d=>{
+    const on = (d in saved) ? saved[d] : ALL_PAY_DEPTS.includes(d);
+    if(on) next.add(d);
+  });
+  sharedDeptFilter = next; // 1つも無いときは、部署タブを作るときに全部署が選ばれる
+}
 
 // すべての部署絞り込みUI(部署タブ)を最新の選択状態で再描画する
 function renderAllDeptFilterUI(){
@@ -1184,8 +1257,10 @@ async function loadAll(){
       sbAll('payments?select=*&order=payment_date.asc'),
       sbAll('payment_overrides?select=*', 1000, 'expense_request_id.asc'),
       sbAll('ledger_marks?select=*', 1000, 'expense_request_id.asc,fiscal_year.asc'),
-      sbAll('year_closures?select=*')
-    ]);
+      sbAll('year_closures?select=*'),
+      sb('payment_dept_defaults?select=department,is_checked').catch(e=>{ console.warn('部署の初期チェックを読み込めませんでした', e); return null; })
+    ]).then(([a,b,c,d,e,f])=>{ deptDefaultRows = f; return [a,b,c,d,e]; });
+    applyDeptDefaults(deptDefaultRows);
     requests = reqRows;
     payments = payRows;
     overrides = ovrRows;
@@ -1326,6 +1401,83 @@ function updateDeptTabActiveState(){
   }
 }
 
+// ---------------- マスター管理 ----------------
+// 開くときに、削除のときと同じ管理者パスワードを聞く（一度入れると、タブを閉じるまで最長1時間は再入力不要）。
+// 保存も管理者としてログインした鍵で行う（データベースは、この表の書き換えを管理者アカウントだけに限っている）。
+const MASTER_PW_MSG = 'マスター管理を開くには、管理者パスワード（削除のときと同じもの）を入力してください。';
+const MASTER_CANCEL_MSG = '管理者パスワードが入力されなかったため、マスター管理を開きませんでした。';
+function showMasterTab(){
+  const ok = !!adminCachedToken();
+  document.getElementById('master-lock-box').hidden = ok;
+  document.getElementById('master-main').hidden = !ok;
+  document.getElementById('master-lock-msg').textContent = '';
+  if(ok) renderMasterDeptList();
+}
+async function unlockMasterTab(){
+  const msgEl = document.getElementById('master-lock-msg');
+  msgEl.textContent = '';
+  try{
+    await getAdminToken(MASTER_PW_MSG, MASTER_CANCEL_MSG);
+    showMasterTab();
+  }catch(e){
+    msgEl.textContent = e.message;
+  }
+}
+async function renderMasterDeptList(){
+  const listEl = document.getElementById('master-dept-list');
+  document.getElementById('master-save-msg').textContent = '';
+  listEl.innerHTML = '<span class="settings-sub">読み込み中…</span>';
+  let rows;
+  try{
+    rows = await sb('payment_dept_defaults?select=department,is_checked');
+  }catch(e){
+    listEl.innerHTML = '<span style="color:#b91c1c;">読み込みに失敗しました: ' + escapeHtml(e.message) + '</span>';
+    return;
+  }
+  const saved = {};
+  (rows || []).forEach(r=>{ saved[r.department] = !!r.is_checked; });
+  // 部署タブの並び順 → 申請に出てくるほかの部署 → 保存してあるほかの部署 の順
+  const names = [...DEPT_TAB_ORDER];
+  requests.forEach(r=>{ if(r.department && !names.includes(r.department)) names.push(r.department); });
+  Object.keys(saved).forEach(d=>{ if(!names.includes(d)) names.push(d); });
+  listEl.innerHTML = names.map(d=>{
+    const on = (d in saved) ? saved[d] : ALL_PAY_DEPTS.includes(d);
+    return `<label><input type="checkbox" data-dept="${escapeHtml(d)}" ${on ? 'checked' : ''}> ${escapeHtml(d)}</label>`;
+  }).join('');
+}
+async function saveMasterDeptDefaults(){
+  const btn = document.getElementById('master-save-btn');
+  const msgEl = document.getElementById('master-save-msg');
+  const boxes = [...document.querySelectorAll('#master-dept-list input[type=checkbox]')];
+  if(boxes.length === 0) return;
+  if(!boxes.some(b=>b.checked)){
+    msgEl.style.color = '#b91c1c';
+    msgEl.textContent = '1つ以上の部署にチェックを付けてください。';
+    return;
+  }
+  const now = new Date().toISOString();
+  const body = boxes.map(b=>({ department: b.dataset.dept, is_checked: b.checked, updated_at: now }));
+  btn.disabled = true;
+  msgEl.style.color = '';
+  msgEl.textContent = '保存しています…';
+  try{
+    await sb('payment_dept_defaults?on_conflict=department', {
+      method: 'POST',
+      body: JSON.stringify(body),
+      prefer: 'resolution=merge-duplicates,return=minimal',
+      admin: true, adminMessage: MASTER_PW_MSG, adminCancelMessage: '管理者パスワードが入力されなかったため、保存しませんでした。'
+    });
+    msgEl.style.color = '#15803d';
+    msgEl.textContent = '保存しました。次に画面を開いたときから、この内容ではじめの✓が付きます。';
+    showToast('保存しました');
+  }catch(e){
+    msgEl.style.color = '#b91c1c';
+    msgEl.textContent = '保存できませんでした: ' + e.message;
+  }finally{
+    btn.disabled = false;
+  }
+}
+
 // ---------------- タブ切替 ----------------
 function switchTab(tab){
   document.querySelectorAll('.tab-nav > button').forEach(b=>{
@@ -1337,13 +1489,18 @@ function switchTab(tab){
     if(b.classList.contains('settings-tab-btn')){
       b.textContent = (active ? '✓ ' : '') + '設定';
     }
+    if(b.classList.contains('master-tab-btn')){
+      b.textContent = (active ? '✓ ' : '') + 'マスター';
+    }
   });
   document.getElementById('tab-list').classList.toggle('active', tab === 'list');
   document.getElementById('tab-verify').classList.toggle('active', tab === 'verify');
   document.getElementById('tab-ledger').classList.toggle('active', tab === 'ledger');
   document.getElementById('tab-help').classList.toggle('active', tab === 'help');
   document.getElementById('tab-settings').classList.toggle('active', tab === 'settings');
+  document.getElementById('tab-master').classList.toggle('active', tab === 'master');
   if(tab === 'settings') renderSettingsUrls();
+  if(tab === 'master') showMasterTab();
   updateDeptTabActiveState();
   if(tab === 'verify'){
     populateVerifyYearOptions();
