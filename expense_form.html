@@ -434,7 +434,7 @@
     }
     @page{size:257mm 182mm;margin:3mm;}
   }
-  /* 古いデータの整理（管理者用URLでのみ表示。一覧表のすぐ上） */
+  /* 古いデータの整理（管理者用URLでのみ表示。「設定」の中。2026年10月24日〜） */
   .cleanup-section{margin:0 0 14px;border:1px solid var(--ink);border-radius:8px;background:var(--panel);width:fit-content;max-width:100%;box-sizing:border-box;}
   .cleanup-section summary{padding:10px 14px;font-size:14.5px;font-weight:600;color:var(--ink-dark);cursor:pointer;}
   .cleanup-summary-hint{font-size:12px;font-weight:400;color:var(--muted);margin-left:8px;}
@@ -645,27 +645,6 @@
     </div>
     <div id="search-status" class="search-status" style="display:none;"></div>
     <p class="list-hint">※ 新しいファイルを選ぶと差し替わります。選ばなければ現在のファイルのまま保存されます。同じファイル名のまま中身だけ変えた場合は、各行の「🔄」を押してから選び直してください。</p>
-    <details class="cleanup-section" id="cleanup-section" style="display:none;" ontoggle="if(this.open) refreshCleanupOldest()">
-      <summary>🗑 古いデータの整理<span class="cleanup-summary-hint"><span class="hint-open">ここを押すと開きます</span><span class="hint-close">ここを押すと閉じます</span></span></summary>
-      <div class="cleanup-body">
-        <p>入力した日付より前に作成された申請を、見積書PDF・支出申請管理の支払い記録とあわせて削除します。作成日は、申請書に印刷される日付です。入力できる日付は今日までです。削除したデータは元に戻せません。</p>
-        <p id="cleanup-oldest" class="cleanup-oldest">読み込み中…</p>
-        <div class="cleanup-row">
-          <input type="date" id="cleanup-date" oninput="resetCleanupResult()">
-          <span>より前のデータ</span>
-          <button type="button" class="btn-secondary" onclick="checkCleanupTargets()">対象を確認する</button>
-        </div>
-        <div id="cleanup-result" class="cleanup-result" style="display:none;"></div>
-
-        <hr class="cleanup-sep">
-        <p class="cleanup-sub-title">📎 元のPDFの整理（会計承認日から3か月たった申請）</p>
-        <p>会計承認スタンプを押したPDF（全ページ）だけを残し、スタンプの無い元のPDFを削除します。申請そのものは消えません。「ファイル」ボタンでは、これまでどおりスタンプを押したPDFが開きます。削除の前に、2つのPDFのページ数が同じことを1件ずつ確かめ、違うものは削除しません。削除した元のPDFは戻せないため、先に手動バックアップを取っておいてください。</p>
-        <div class="cleanup-row">
-          <button type="button" class="btn-secondary" onclick="checkOriginalPdfTargets()">対象を確認する</button>
-        </div>
-        <div id="orig-cleanup-result" class="cleanup-result" style="display:none;"></div>
-      </div>
-    </details>
     <div class="table-scroll">
     <table>
       <colgroup>
@@ -748,14 +727,14 @@
         <li><strong>「📊 Excelで書出す」</strong>ボタンを押すと、今表示している（絞り込み済みの）一覧の内容がExcelファイル（.xlsx）としてダウンロードされます。</li>
         <li id="help-tab-add">特定の工事・案件だけを常に見られるようにしたい場合は、タブの一番右にある<strong>「＋ タブ増設」</strong>から専用タブを追加できます。</li>
         <li id="help-tab-remove">増設したタブは、タブ名の右にある<strong>「×」</strong>ボタンから削除できます（タブを消しても、そこに含まれていた申請データ自体は削除されません）。</li>
-        <li id="help-cleanup">一覧表のすぐ上にある<strong>「🗑 古いデータの整理」</strong>を開くと、日付を入れて、その日より前に作成された申請をまとめて削除できます。<strong>「対象を確認する」</strong>で件数を確かめてから削除してください（削除のときは管理者パスワードが必要です）。見積書PDFと、支出申請管理の支払い記録も一緒に消え、元に戻せません。※管理者用URLでのみ表示されます。</li>
+        <li id="help-cleanup">タブの並びの「設定」の中にある<strong>「🗑 古いデータの整理」</strong>を開くと、日付を入れて、その日より前に作成された申請をまとめて削除できます。<strong>「対象を確認する」</strong>で件数を確かめてから削除してください（削除のときは管理者パスワードが必要です）。見積書PDFと、支出申請管理の支払い記録も一緒に消え、元に戻せません。※管理者用URLでのみ表示されます。</li>
         <li>タブの並びにある<strong>「支出申請管理 ↗」</strong>ボタンを押すと、実際の支払い状況を管理する別システム「支出申請管理」が新しいタブで開きます（このシステムとは別のファイルです）。</li>
       </ol>
 
       <h2 class="help-h2">5. 古いデータの整理</h2>
       <ol class="help-steps">
         <li>古い申請が<strong>自動的に削除されることはありません</strong>。作成日からどれだけ時間がたった申請も、削除しない限りそのまま残ります。</li>
-        <li>古い申請を片付けるときは、管理者が一覧表のすぐ上にある<strong>「🗑 古いデータの整理」</strong>で、日付を決めてまとめて削除します（管理者用URLでのみ表示されます）。</li>
+        <li>古い申請を片付けるときは、管理者が「設定」の中にある<strong>「🗑 古いデータの整理」</strong>で、日付を決めてまとめて削除します（管理者用URLでのみ表示されます）。</li>
         <li>同じ「🗑 古いデータの整理」の中の<strong>「📎 元のPDFの整理」</strong>では、会計承認日から3か月たった申請について、スタンプを押したPDF（全ページ）だけを残し、スタンプの無い元のPDFを削除できます（申請は消えません。管理者パスワードが必要です）。自動では削除されません。</li>
       </ol>
 
@@ -769,7 +748,7 @@
   <div class="panel" id="tab-settings" style="display:none;">
     <div class="settings-content">
       <h2 class="settings-title">設定・管理メモ</h2>
-      <p class="settings-lead">このアプリ（③予想経費申請書）の管理に必要なことをまとめています。内容は 2026年10月8日 時点のマスターファイル・修正依頼メモにもとづきます。くわしくは共有サーバーのマスターファイルを見てください。</p>
+      <p class="settings-lead">このアプリ（③予想経費申請書）の管理に必要なことをまとめています。内容は 2026年10月24日 時点のマスターファイル・修正依頼メモにもとづきます。くわしくは共有サーバーのマスターファイルを見てください。</p>
 
       <details class="settings-section" open>
         <summary>🔗 このアプリのURL（配布用）<span class="settings-hint"><span class="hint-open">ここを押すと開きます</span><span class="hint-close">ここを押すと閉じます</span></span></summary>
@@ -853,12 +832,31 @@
         </div>
       </details>
 
-      <details class="settings-section">
+      <details class="settings-section" id="cleanup-section" style="display:none;" ontoggle="if(this.open) refreshCleanupOldest()">
         <summary>🗑 古いデータの整理<span class="settings-hint"><span class="hint-open">ここを押すと開きます</span><span class="hint-close">ここを押すと閉じます</span></span></summary>
+          <div class="cleanup-body">
+            <p>入力した日付より前に作成された申請を、見積書PDF・支出申請管理の支払い記録とあわせて削除します。作成日は、申請書に印刷される日付です。入力できる日付は今日までです。削除したデータは元に戻せません。</p>
+            <p id="cleanup-oldest" class="cleanup-oldest">読み込み中…</p>
+            <div class="cleanup-row">
+              <input type="date" id="cleanup-date" oninput="resetCleanupResult()">
+              <span>より前のデータ</span>
+              <button type="button" class="btn-secondary" onclick="checkCleanupTargets()">対象を確認する</button>
+            </div>
+            <div id="cleanup-result" class="cleanup-result" style="display:none;"></div>
+
+            <hr class="cleanup-sep">
+            <p class="cleanup-sub-title">📎 元のPDFの整理（会計承認日から3か月たった申請）</p>
+            <p>会計承認スタンプを押したPDF（全ページ）だけを残し、スタンプの無い元のPDFを削除します。申請そのものは消えません。「ファイル」ボタンでは、これまでどおりスタンプを押したPDFが開きます。削除の前に、2つのPDFのページ数が同じことを1件ずつ確かめ、違うものは削除しません。削除した元のPDFは戻せないため、先に手動バックアップを取っておいてください。</p>
+            <div class="cleanup-row">
+              <button type="button" class="btn-secondary" onclick="checkOriginalPdfTargets()">対象を確認する</button>
+            </div>
+            <div id="orig-cleanup-result" class="cleanup-result" style="display:none;"></div>
+          </div>
         <div class="settings-body">
+          <h3 class="settings-h3">しくみと注意</h3>
           <ul>
             <li>古い申請が自動で削除されることはありません。</li>
-            <li>片付けるときは、「申請一覧・印刷」タブのいちばん上（検索欄のすぐ上）にある「🗑 古いデータの整理」を使います（管理者用URLのみ）。</li>
+            <li>片付けるときは、この「設定」の中の「🗑 古いデータの整理」（ここ）を使います（管理者用URLのみ。2026年10月24日に「申請一覧・印刷」タブのいちばん上からここへ移しました）。</li>
             <li>入力した日付より前に「作成日」（申請書に印刷される日付）がある申請を、まとめて削除します。年数の制限はありません。入力できる日付は今日までです（今日より後の日付を入れると「今日より後の日付は選べません」と出て、数えません）。</li>
             <li>順番は「対象を確認する」で件数（申請・見積書PDF・④の支払い記録）を確認 → 管理者パスワード → 最終確認 → 削除、です。</li>
             <li>見積書PDFと、④支出申請管理の支払い記録も一緒に消えます。削除したものは元に戻せません。</li>
