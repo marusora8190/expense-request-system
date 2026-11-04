@@ -1455,22 +1455,30 @@ async function saveRequest(){
   // 年度内連番(serial_no)の自動採番(科目〈本部営繕費/教庁営繕費〉ごとに別々に採番する)
   // ・新規申請の場合、または編集中の申請にまだ番号が付いていない場合に採番する
   // ・一度付いた番号は、以後その申請の予算年度・科目を変えても振り直さない
+  //   ただし、変えた先の科目・年度で同じ番号がすでに使われているときだけ、次の空き番号に付け直す（2026年11月4日〜）
   if(payload.budget_year !== null && payload.budget_year !== undefined && payload.budget_category && (!editingId || !editingSerialNo)){
     try{
       payload.serial_no = await nextSerialNoForCategoryYear(payload.budget_category, payload.budget_year);
     }catch(e){
       console.error('連番の自動採番に失敗しました', e);
     }
+  }else if(editingId && editingSerialNo && payload.budget_year !== null && payload.budget_year !== undefined && payload.budget_category){
+    // 編集で番号がすでにある申請は、今の番号のまま保存する（下で重なりを確かめる）
+    payload.serial_no = editingSerialNo;
   }
+  const serialBeforeCheck = payload.serial_no;
 
   try{
-    // 保存直前に、連番が他の申請とぶつかっていないか確認する（ほぼ同時保存対策）
+    // 保存直前に、連番が他の申請とぶつかっていないか確認する（ほぼ同時保存対策・編集で科目や年度を変えたとき）
     if(payload.serial_no !== undefined && payload.serial_no !== null && payload.budget_year !== null && payload.budget_year !== undefined && payload.budget_category){
       const dupSerial = await sb(`expense_requests?budget_category=eq.${encodeURIComponent(payload.budget_category)}&budget_year=eq.${payload.budget_year}&serial_no=eq.${payload.serial_no}&select=id`);
-      const conflicts = dupSerial.filter(d => d.id !== editingId);
+      const conflicts = (dupSerial || []).filter(d => d.id !== editingId);
       if(conflicts.length > 0){
         payload.serial_no = await nextSerialNoForCategoryYear(payload.budget_category, payload.budget_year);
       }
+    }
+    if(editingId && editingSerialNo && payload.serial_no !== serialBeforeCheck){
+      showToast(`変えた先の予算科目・年度で番号が重なっていたため、No.を ${serialNoText(payload.budget_category, payload.budget_year, payload.serial_no)} に付け直しました`, 7000);
     }
 
     // 保存直前にもう一度PDF No.の重複がないか確認する
@@ -1537,18 +1545,18 @@ async function saveRequest(){
         );
         if(!ok) return;
       }
-      await sb(`expense_requests?id=eq.${editingId}`, {
+      await writeWithSerialRetry(payload, () => sb(`expense_requests?id=eq.${editingId}`, {
         method:'PATCH',
         headers:{ 'Prefer':'return=minimal' },
         body: JSON.stringify({...payload, updated_at: new Date().toISOString()})
-      });
+      }));
       showToast('更新しました');
     }else{
-      await sb('expense_requests', {
+      await writeWithSerialRetry(payload, () => sb('expense_requests', {
         method:'POST',
         headers:{ 'Prefer':'return=minimal' },
         body: JSON.stringify(payload)
-      });
+      }));
       showToast('保存しました');
     }
     resetForm();
@@ -1630,6 +1638,30 @@ async function suggestNextPdfNo(){
     }
   }catch(e){
     console.error('PDF No.の自動採番に失敗しました', e);
+  }
+}
+
+// No.の表示（例：教R8-18）。④の一覧と同じ書き方
+function serialNoText(category, fy, n){
+  const c = (category || '').charAt(0);
+  const ry = Number(fy) - 2018;
+  return `${c}${ry >= 1 ? 'R' + ry : fy}-${n}`;
+}
+
+// 保存（POST/PATCH）を行い、ほぼ同時の保存で連番が重なってデータベースに断られたとき
+// （同じ科目・同じ年度に同じ番号は入れられない決まり expense_requests_cat_year_serial_uniq。2026年11月4日〜）だけ、
+// 次の空き番号に付け直してやり直す（最大3回）
+async function writeWithSerialRetry(payload, doWrite){
+  for(let i = 0; ; i++){
+    try{
+      return await doWrite();
+    }catch(e){
+      const msg = String(e && e.message || '');
+      const isSerialDup = msg.includes('expense_requests_cat_year_serial_uniq') || (msg.includes('23505') && msg.includes('serial'));
+      if(!isSerialDup || i >= 3 || !payload.budget_category || payload.budget_year === null || payload.budget_year === undefined) throw e;
+      payload.serial_no = await nextSerialNoForCategoryYear(payload.budget_category, payload.budget_year);
+      showToast(`ほかの人と同時に保存したため、No.を ${serialNoText(payload.budget_category, payload.budget_year, payload.serial_no)} に付け直しました`, 7000);
+    }
   }
 }
 
