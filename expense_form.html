@@ -405,6 +405,27 @@
   .remarks-row .label-col .rl-sub-bracket{font-size:11px;line-height:1;display:block;transform:scaleX(2.2);}
   .remarks-row .label-col .rl-main{font-size:14px;font-weight:700;}
 
+  /* 編集のときは、右に印刷の画面を並べる（2026年11月10日〜） */
+  #tab-new .edit-split{display:block;}
+  #tab-new .edit-preview{display:none;}
+  #tab-new.editing .edit-split{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,46%);gap:22px;align-items:start;}
+  #tab-new.editing .edit-preview{display:block;position:sticky;top:10px;max-height:calc(100vh - 20px);overflow:auto;
+    border:1px solid var(--line);border-radius:10px;background:#f4f1ea;padding:12px;box-sizing:border-box;}
+  #tab-new.editing .field-grid-5col{grid-template-columns:repeat(3,minmax(0,1fr));}
+  .edit-preview-head{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:6px;}
+  .edit-preview-title{font-size:15px;font-weight:700;color:var(--ink-dark);margin-right:auto;}
+  .edit-preview-head button{padding:8px 14px;border-radius:8px;font-size:13.5px;font-weight:600;cursor:pointer;border:1px solid transparent;}
+  .edit-preview-head .go{background:var(--ink);color:#fff;}
+  .edit-preview-head .pdf{background:#2f6f4e;color:#fff;}
+  .edit-preview-head .big{background:#fff;color:var(--text);border-color:#d8d1c2;}
+  .edit-preview-note{font-size:12px;color:var(--muted);margin:0 0 8px;}
+  .edit-preview-frame{overflow:hidden;}
+  .edit-preview-frame .sheet{margin:0;}
+  @media (max-width:1100px){
+    #tab-new.editing .edit-split{grid-template-columns:minmax(0,1fr);}
+    #tab-new.editing .edit-preview{position:static;max-height:none;}
+  }
+
   .sheet-footer{width:233mm;text-align:right;font-size:11px;color:var(--ink);padding:6px 4px 0;letter-spacing:.05em;box-sizing:border-box;}
 
 
@@ -512,6 +533,8 @@
 
   <!-- NEW REQUEST -->
   <div class="panel" id="tab-new" style="display:none;">
+    <div class="edit-split">
+    <div class="edit-main">
     <div class="form-title" id="form-mode-title">新規申請</div>
     <div class="field-grid field-grid-5col">
       <div class="field">
@@ -623,6 +646,19 @@
         <button class="btn-primary" id="save-btn" onclick="confirmSaveRequest()">保存する</button>
       </div>
     </div>
+    </div>
+    <!-- 編集のときだけ出る、右側の印刷の画面（2026年11月10日〜） -->
+    <aside class="edit-preview" id="edit-preview">
+      <div class="edit-preview-head">
+        <span class="edit-preview-title">印刷の画面</span>
+        <button type="button" class="go" onclick="editPreviewAction('print')">印刷</button>
+        <button type="button" class="pdf" onclick="editPreviewAction('pdf')">PDFダウンロード</button>
+        <button type="button" class="big" onclick="editPreviewAction('big')">大きく見る</button>
+      </div>
+      <p class="edit-preview-note">左で直した内容が、保存する前でもすぐここに映ります。</p>
+      <div class="edit-preview-frame" id="edit-preview-frame"></div>
+    </aside>
+    </div>
   </div>
 
   <!-- LIST -->
@@ -715,6 +751,7 @@
       <h2 class="help-h2">3. 申請内容を修正・削除する</h2>
       <ol class="help-steps">
         <li>「申請一覧・印刷」タブの一覧から、該当する申請の<strong>「編集」</strong>ボタンを押すと、入力内容を呼び出して修正できます。</li>
+        <li>編集画面では、右側に<strong>印刷の画面</strong>が並んで出ます。左で直した内容は、保存する前でもすぐ右に映ります。右上の<strong>「印刷」</strong>「<strong>PDFダウンロード</strong>」で、今の内容のまま印刷・PDFにできます（保存はされません。保存は左下の「更新する」で行います）。<strong>「大きく見る」</strong>で、いつもの印刷の画面を大きく開けます。画面の幅がせまいときは、印刷の画面は下に出ます。</li>
         <li>編集画面の下部には3つのボタンがあります。<strong>「クリア」</strong>は入力内容を空にします。<strong>「更新する」</strong>は修正した内容を保存します（新規申請のときはこのボタンが「保存する」と表示されます）。<strong>「この申請を削除」</strong>は、その申請を削除します（編集画面を開いたときだけ表示され、削除すると元に戻せません）。</li>
       </ol>
 
@@ -919,6 +956,7 @@
             <li>見積書PDFは、ファイル置き場「expense-pdfs」に保存しています。①〜⑥の中で、ファイルが日々増えていくのはここだけです。</li>
             <li>会計承認日が入っている申請は、スタンプを押したPDFの控えも「expense-pdfs」に保存し、その場所を expense_requests の stamped_pdf_url（元にしたPDFと承認日は stamped_pdf_key）に記録しています。一覧を開いたとき、控えがまだ無い申請の分を裏で自動的に作ります。PDFを差し替えると、控えも自動で作り直します。</li>
             <li>容量の目安（2026年8月31日時点）：データベースは上限500MBに対し約12MB（②〜⑥の合計）、ファイル置き場は上限1GBに対し約9.4MB。当分は余裕があります。</li>
+            <li>申請の「編集」画面では、右側に印刷の画面（見本）を並べて出します（2026年11月10日〜）。入力欄を直すと、保存する前でもすぐ映ります。右の「印刷」「PDFダウンロード」は、今の入力欄の内容でいつもの印刷の画面を開いて行います（保存はしません）。新規申請のときは出しません。</li>
             <li>データベース（Supabase）は、②④⑤⑥と同じ「スパーベース」プロジェクトを共用しています。</li>
           </ul>
         </div>
@@ -1381,6 +1419,7 @@ function resetForm(){
   document.getElementById('form-mode-title').textContent = '新規申請';
   document.getElementById('save-btn').textContent = '保存する';
   document.getElementById('delete-btn').style.display = 'none';
+  updateEditPreview();
   suggestNextPdfNo();
 }
 
@@ -2241,6 +2280,7 @@ function editRequest(id){
   document.getElementById('save-btn').textContent = '更新する';
   document.getElementById('delete-btn').style.display = 'inline-block';
   switchTab('new');
+  updateEditPreview();
 }
 
 async function deleteRequest(id){
@@ -2576,26 +2616,94 @@ function digitCells(amount){
 function openPrint(id){
   const r = cachedList.find(x=>x.id===id);
   if(!r) return;
-
-  document.getElementById('p-department').textContent = r.department ? `営繕部${r.department}` : '　　　　　　　　　　　　　　';
-  document.getElementById('p-submit-date').innerHTML = fmtReiwaLine(null, '提出', true);
-  document.getElementById('p-start-date').innerHTML = fmtReiwaLine(r.start_date, '　　着 工 予 定');
-  document.getElementById('p-end-date').innerHTML = fmtReiwaLine(r.end_date, '　　終 了 予 定');
-  document.getElementById('p-subject').textContent = r.subject || '';
-  document.getElementById('p-budget').textContent = r.budget_category || '';
-  document.getElementById('p-overview').textContent = r.overview || '';
-  document.getElementById('p-remarks').textContent = r.remarks || '';
-
-  const cells = digitCells(r.total_cost);
-  document.getElementById('p-cost-cells').innerHTML = cells.map(c=>`<div>${c}</div>`).join('');
-
+  fillPrintSheet('p', r);
   document.getElementById('print-overlay').classList.add('show');
   fitSheetToScreen();
 }
 
+// 申請書の用紙に中身を入れる（pre='p' はいつもの印刷の画面、'pv' は編集画面の右の印刷の画面）
+function fillPrintSheet(pre, r){
+  const $ = k => document.getElementById(pre + '-' + k);
+  if(!$('subject')) return;
+  $('department').textContent = r.department ? `営繕部${r.department}` : '　　　　　　　　　　　　　　';
+  $('submit-date').innerHTML = fmtReiwaLine(null, '提出', true);
+  $('start-date').innerHTML = fmtReiwaLine(r.start_date, '　　着 工 予 定');
+  $('end-date').innerHTML = fmtReiwaLine(r.end_date, '　　終 了 予 定');
+  $('subject').textContent = r.subject || '';
+  $('budget').textContent = r.budget_category || '';
+  $('overview').textContent = r.overview || '';
+  $('remarks').textContent = r.remarks || '';
+  const cells = digitCells(r.total_cost);
+  $('cost-cells').innerHTML = cells.map(c=>`<div>${c}</div>`).join('');
+}
+
+// 編集画面の入力欄の今の内容を、印刷用の形にする（保存はしない）
+function formPrintData(){
+  const v = id => document.getElementById(id).value;
+  const cost = v('f-cost').replace(/[^0-9]/g, '');
+  return {
+    department: v('f-department'),
+    start_date: v('f-start-date') || null,
+    end_date: v('f-end-date') || null,
+    subject: v('f-subject'),
+    budget_category: v('f-budget'),
+    total_cost: cost ? Number(cost) : null,
+    overview: v('f-overview'),
+    remarks: v('f-remarks'),
+  };
+}
+
+// 編集画面の右の印刷の画面を作る・中身を入れ直す
+function updateEditPreview(){
+  const tab = document.getElementById('tab-new');
+  const on = !!editingId;
+  tab.classList.toggle('editing', on);
+  if(!on || tab.style.display === 'none') return;
+  const frame = document.getElementById('edit-preview-frame');
+  if(!frame.querySelector('.sheet')){
+    const src = document.querySelector('#print-overlay .sheet');
+    frame.innerHTML = src.outerHTML.replace(/id="p-/g, 'id="pv-');
+  }
+  fillPrintSheet('pv', formPrintData());
+  fitEditPreview();
+}
+
+function fitEditPreview(){
+  const frame = document.getElementById('edit-preview-frame');
+  const sheet = frame && frame.querySelector('.sheet');
+  if(!sheet || !document.getElementById('tab-new').classList.contains('editing')) return;
+  sheet.style.transform = '';
+  const w = sheet.offsetWidth, h = sheet.offsetHeight;
+  const avail = frame.clientWidth;
+  if(!w || !avail) return;
+  const scale = Math.min(1, avail / w);
+  sheet.style.transform = `scale(${scale})`;
+  sheet.style.transformOrigin = 'top left';
+  frame.style.height = `${h * scale}px`;
+}
+
+let editPreviewQueued = false;
+function queueEditPreview(){
+  if(editPreviewQueued || !editingId) return;
+  editPreviewQueued = true;
+  requestAnimationFrame(() => { editPreviewQueued = false; updateEditPreview(); });
+}
+document.addEventListener('input', e => { if(e.target.closest && e.target.closest('#tab-new')) queueEditPreview(); });
+document.addEventListener('change', e => { if(e.target.closest && e.target.closest('#tab-new')) queueEditPreview(); });
+window.addEventListener('resize', () => { if(editingId) fitEditPreview(); });
+
+// 右の印刷の画面のボタン：今の入力欄の内容で、いつもの印刷の画面を開いて行う
+function editPreviewAction(kind){
+  fillPrintSheet('p', formPrintData());
+  document.getElementById('print-overlay').classList.add('show');
+  fitSheetToScreen();
+  if(kind === 'print') printViaPdf();
+  else if(kind === 'pdf') downloadPdf();
+}
+
 function fitSheetToScreen(){
   const frame = document.getElementById('sheet-frame');
-  const sheet = document.querySelector('.sheet');
+  const sheet = document.querySelector('#print-overlay .sheet');
   const toolbar = document.querySelector('.print-toolbar');
   if(!sheet || !frame) return;
   sheet.style.transform = '';
