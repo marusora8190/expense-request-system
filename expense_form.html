@@ -133,6 +133,9 @@
     padding:6px 12px;font-size:12.5px;color:var(--text);cursor:pointer;white-space:nowrap;
   }
   .pdf-reload-btn:hover{background:var(--accent-bg);color:var(--ink-dark);}
+  .pdf-no-row{display:flex;align-items:center;gap:8px;}
+  .pdf-no-row input{flex:1;min-width:0;}
+  #f-pdf-no[readonly]{background:#f3f1ec;color:var(--muted);cursor:default;}
   .form-title{font-size:15px;font-weight:700;margin-bottom:16px;color:var(--ink);}
   .help-content{max-width:760px;}
   .help-h2{font-size:15.5px;font-weight:700;color:var(--ink);margin:26px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--line);}
@@ -585,7 +588,11 @@
       </div>
       <div class="field">
         <label>PDF No.</label>
-        <input type="text" id="f-pdf-no" placeholder="例）2026026">
+        <div class="pdf-no-row">
+          <input type="text" id="f-pdf-no" placeholder="例）20261026" readonly title="PDF No.は自動で入ります（書き換えは管理者のみ）">
+          <button type="button" id="f-pdf-no-unlock" class="pdf-reload-btn" onclick="unlockPdfNo()" style="display:none" title="管理者パスワードを入れると、PDF No.を書き換えられます">🔒 書き換える（管理者）</button>
+        </div>
+        <div class="pdf-file-hint">PDF No.は自動で入ります（年度4けた＋部署1けた＋通し番号3けた）。</div>
       </div>
       <div class="field">
         <label>PDFファイル（見積書など）</label>
@@ -741,6 +748,7 @@
         <li><strong>「新規申請」</strong>タブを開きます。</li>
         <li>科目・提出部署（部署固定URLの場合は自動入力）・担当・各種日付・主題・予算科目（「教庁営繕費」「本部営繕費」から選ぶ。選ばないと保存できません）・総経費・実施の概要・備考などを入力します。</li>
         <li><strong>「作成日」</strong>は、空欄のまま保存すると自動的に保存した日が入ります。まとめて後日入力した場合など、実際に申請した日に直したいときは、この欄に日付を入力すれば上書きできます（一覧の並び順や年度判定、PDF No.の採番もこの日付が基準になります）。</li>
+        <li><strong>「PDF No.」</strong>は、提出部署と作成日から自動で入ります（年度4けた＋部署1けた＋通し番号3けた。例：20261026）。間違って書き換えないよう、ふだんは入力できません。番号を直したいときは、管理者用の画面で<strong>「🔒 書き換える（管理者）」</strong>を押し、管理者パスワードを入れてください。</li>
         <li>見積書・明細書のPDFファイルがあれば添付します。</li>
         <li><strong>「実施の概要」（4行）・「予備」（6行）</strong>には薄い罫線が引いてあり、印刷レイアウトと同じ行数で固定されています（大きさは変更できません）。<strong>Enterキーを押すと次の行（罫線の1行分）に移動</strong>して書き続けられます。</li>
         <li><strong>別紙（予算書・見積書・図面等）を添付する場合は、PDFファイルにしてください。</strong>Word・Excel・画像ファイルなどは添付できません。</li>
@@ -1178,13 +1186,14 @@ function askAdminPassword(message){
     setTimeout(function(){ input.focus(); }, 0);
   });
 }
-async function getAdminToken(){
+async function getAdminToken(firstMessage, cancelMessage){
+  // firstMessage・cancelMessage は、削除以外（PDF No.の書き換えなど）で使うときだけ指定する
   const cached = adminCachedToken();
   if(cached) return cached;
-  let message = '削除するには管理者パスワードを入力してください。';
+  let message = firstMessage || '削除するには管理者パスワードを入力してください。';
   for(;;){
     const pw = await askAdminPassword(message);
-    if(pw === null || pw === '') throw new Error('管理者パスワードが入力されなかったため、削除しませんでした。');
+    if(pw === null || pw === '') throw new Error(cancelMessage || '管理者パスワードが入力されなかったため、削除しませんでした。');
     const res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
       method: 'POST',
       headers: { apikey: SUPABASE_KEY, 'Content-Type': 'application/json' },
@@ -1422,6 +1431,7 @@ function resetForm(){
   document.getElementById('f-pdf-file').value = '';
   document.getElementById('f-pdf-current').innerHTML = '';
   document.getElementById('f-pdf-no').dataset.userEdited = '0';
+  lockPdfNo();
   const currentFY = fiscalYear(todayJST());
   populateBudgetYearOptions(currentFY);
   document.getElementById('f-budget-year').value = currentFY;
@@ -1662,6 +1672,31 @@ function departmentCode(department){
   if(department === '水道課') return '4';
   return '9'; // 想定外の部署名が入っていた場合の予備コード
 }
+
+// ===== PDF No.の欄の書き換え（管理者のみ） =====
+// 間違って手入力しないよう、PDF No.の欄はふだん入力できない形にしておく。
+// 管理者用URLでは「🔒 書き換える（管理者）」ボタンを出し、管理者パスワードを入れたときだけ書き換えられる。
+// （部署用URL・自由入力用URLではボタンを出さない。画面上の制限で、データベースの制限ではない）
+function lockPdfNo(){
+  const field = document.getElementById('f-pdf-no');
+  field.readOnly = true;
+  const btn = document.getElementById('f-pdf-no-unlock');
+  if(btn) btn.style.display = (LOCKED_DEPARTMENT || FREE_MODE) ? 'none' : '';
+}
+async function unlockPdfNo(){
+  if(LOCKED_DEPARTMENT || FREE_MODE) return;
+  try{
+    await getAdminToken('PDF No.を書き換えるには管理者パスワードを入力してください。',
+                        '管理者パスワードが入力されなかったため、PDF No.は書き換えられません。');
+  }catch(e){ showToast(e.message, 4000); return; }
+  const field = document.getElementById('f-pdf-no');
+  field.readOnly = false;
+  document.getElementById('f-pdf-no-unlock').style.display = 'none';
+  field.focus();
+  field.select();
+  showToast('PDF No.を書き換えられるようにしました', 3000);
+}
+// ===== ここまで：PDF No.の欄の書き換え =====
 
 async function suggestNextPdfNo(){
   // 作成日(手動で指定していればその日付、なければ今日の日付)を元に年度を出し、
@@ -2274,6 +2309,7 @@ function editRequest(id){
   document.getElementById('f-assignee').value = r.assignee || '';
   document.getElementById('f-pdf-no').value = r.pdf_no || '';
   document.getElementById('f-pdf-no').dataset.userEdited = '1';
+  lockPdfNo();
   document.getElementById('f-pdf-file').value = '';
   editingPdfUrl = r.pdf_url || null;
   renderCurrentPdfNote();
@@ -2959,6 +2995,7 @@ function printViaPdf(){
 populateBudgetYearOptions(fiscalYear(todayJST()));
 document.getElementById('f-budget-year').value = fiscalYear(todayJST());
 loadOptions();
+lockPdfNo();
 suggestNextPdfNo();
 
 // ===== 設定（管理者用URLでのみ表示） =====
