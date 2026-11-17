@@ -782,7 +782,7 @@
         <li>一覧の「科目」「担当」の欄をクリックすると、その値が検索欄に<strong>追加</strong>されます（今の検索内容は消えないので、クリックを重ねて複数条件で絞り込めます）。一覧の「部署」欄をクリックした場合は、検索欄ではなく下の「部署で絞り込み」のチェックが入ります。</li>
         <li>年度のプルダウンから、特定の年度の申請だけに絞り込めます。</li>
         <li id="help-dept-filter"><strong>「部署で絞り込み」</strong>ボタンからは、複数の部署にチェックを入れて、そのいずれかに該当する申請だけに絞り込めます（例：水道課と電気課の両方をチェックすると、どちらかの部署の申請がすべて表示されます）。一覧の「部署」列と同じ担当者部署で絞り込みます（一覧の「部署」欄をクリックしたときも、ここに自動でチェックが入ります）。※各課専用URL（部署固定URL）で開いている場合は、その部署の申請しか表示されないため、このボタンは表示されません（管理者用URLでのみ表示されます）。</li>
-        <li><strong>「📊 Excelで書出す」</strong>ボタンを押すと、今表示している（絞り込み済みの）一覧の内容がExcelファイル（.xlsx）としてダウンロードされます。</li>
+        <li><strong>「📊 Excelで書出す」</strong>ボタンを押すと、今表示している（絞り込み済みの）一覧の内容がExcelファイル（.xlsx）としてダウンロードされます。いちばん右の<strong>「PDF」</strong>の列の「開く」を押すと、その申請に添付したPDFが開きます（スタンプ入りのPDFがもう作られていれば、そちらが開きます。まだ作られていないときは、一覧の「ファイル」ボタンを一度押すと作られます）。PDFが添付されていない申請は空欄です。インターネットにつながっていないと開けません。</li>
         <li id="help-tab-add">特定の工事・案件だけを常に見られるようにしたい場合は、タブの一番右にある<strong>「＋ タブ増設」</strong>から専用タブを追加できます。</li>
         <li id="help-tab-remove">増設したタブは、タブ名の右にある<strong>「×」</strong>ボタンから削除できます（タブを消しても、そこに含まれていた申請データ自体は削除されません）。</li>
         <li id="help-cleanup">タブの並びの「設定」の中にある<strong>「🗑 古いデータの整理」</strong>を開くと、日付を入れて、その日より前に作成された申請をまとめて削除できます。<strong>「対象を確認する」</strong>で件数を確かめてから削除してください（削除のときは管理者パスワードが必要です）。見積書PDFと、支出申請管理の支払い記録も一緒に消え、元に戻せません。※管理者用URLでのみ表示されます。</li>
@@ -2856,6 +2856,17 @@ function buildExpensePdf(){
 }
 
 // 「この一覧をエクスポート」ボタン: 今表示している一覧(絞り込み結果)をExcelファイルで書き出す
+// Excelの「PDF」の列に入れるPDFの場所。
+// 一覧の「ファイル」ボタンと同じく、スタンプ入りのPDFがもう作られていればそちらを使う。
+function excelPdfLinkOf(r){
+  if(!r || !r.pdf_url) return '';
+  if(fmtMonthDaySlash(r.accounting_approve_date)
+     && (isOriginalPdfRemoved(r) || (r.stamped_pdf_url && r.stamped_pdf_key === stampedPdfKeyOf(r)))){
+    return r.stamped_pdf_url || r.pdf_url;
+  }
+  return r.pdf_url;
+}
+
 async function exportCurrentListToExcel(){
   if(!window.ExcelJS){
     alert('エクスポートの準備ができていません。少し待ってからもう一度お試しください。');
@@ -2879,6 +2890,7 @@ async function exportCurrentListToExcel(){
     { header:'担当', key:'assignee', width:13 },
     { header:'会計提出年月日', key:'accSubmit', width:14 },
     { header:'会計承認', key:'accApprove', width:11 },
+    { header:'PDF', key:'pdf', width:8 },
   ];
 
   // 見出し行を太字に
@@ -2886,7 +2898,8 @@ async function exportCurrentListToExcel(){
   ws.getRow(1).alignment = { vertical:'middle' };
 
   rows.forEach(r => {
-    ws.addRow({
+    const pdfLink = excelPdfLinkOf(r);
+    const row = ws.addRow({
       submit: fmtEraShort((r.created_at||'').slice(0,10)) || '',
       category: r.budget_category || '',
       subject: (r.subject || '').replace(/\n/g, ' '),
@@ -2895,7 +2908,14 @@ async function exportCurrentListToExcel(){
       assignee: r.assignee || '',
       accSubmit: fmtEraShort(r.accounting_submit_date) || '',
       accApprove: fmtEraShort(r.accounting_approve_date) || '',
+      pdf: pdfLink ? { text:'開く', hyperlink: pdfLink } : '',
     });
+    // 「PDF」の列：押すと添付のPDFが開く（青い下線の文字にする）
+    if(pdfLink){
+      const c = row.getCell('pdf');
+      c.font = { color:{ argb:'FF0563C1' }, underline:true };
+      c.alignment = { horizontal:'center' };
+    }
   });
 
   // 金額列に3桁区切りの表示形式
