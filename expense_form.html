@@ -46,6 +46,8 @@
   }
   .reload-notice .rn-reload:hover{background:var(--ink-dark);border-color:var(--ink-dark);}
   @media print{ .reload-notice{display:none !important;} }
+  /* 「Update」ボタンは「設定」タブの右横に置く（2026年11月25日〜） */
+  .tabs .reload-notice{display:inline-flex;margin-bottom:0;margin-left:4px;}
 
   .tabs{display:flex;gap:6px;margin-bottom:20px;}
   .tab{
@@ -531,16 +533,15 @@
     </div>
   </div>
 
-  <div class="reload-notice" id="reload-notice">
-    <button type="button" class="rn-reload" onclick="hardReloadPage()">🔄 Update</button>
-  </div>
-
   <div class="tabs" id="tabs-bar">
     <button class="tab" data-tab="new" data-label="新規申請" onclick="switchTab('new')">新規申請</button>
     <button class="tab active" data-tab="list" data-label="申請一覧・印刷" onclick="switchTab('list')">✓ 申請一覧・印刷</button>
     <button type="button" class="tab external-link-tab" onclick="window.open('https://marusora8190.github.io/expense-request-system/payment_tracker.html', '_blank')" title="支出申請管理システムを新しいタブで開く">支出申請管理 ↗</button>
     <button class="tab" data-tab="help" data-label="使い方" onclick="switchTab('help')">使い方</button>
     <button class="tab" id="settings-tab-btn" data-tab="settings" data-label="設定" onclick="switchTab('settings')" style="display:none;">設定</button>
+    <span class="reload-notice" id="reload-notice">
+      <button type="button" class="rn-reload" onclick="hardReloadPage()">🔄 Update</button>
+    </span>
     <span id="project-tabs-container" style="margin-left:auto;display:flex;gap:6px;"></span>
   </div>
 
