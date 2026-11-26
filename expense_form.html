@@ -152,6 +152,13 @@
     background:var(--panel);color:var(--text);font-size:13.5px;font-weight:600;cursor:pointer;
   }
   .list-print-btn:hover{background:#f1ece1;border-color:var(--ink);}
+  .list-export-wrap{margin-left:auto;display:flex;gap:8px;align-items:center;}
+  .list-export-wrap .list-print-btn{margin-left:0;}
+  .list-sel-clear{padding:9px 12px;border:1px solid var(--line);border-radius:8px;background:var(--panel);color:var(--muted);font-size:12.5px;font-weight:600;cursor:pointer;}
+  .list-sel-clear:hover{background:#f1ece1;color:var(--text);}
+  th.sel-cell,td.sel-cell{padding:4px 2px 4px 6px;text-align:center;}
+  .sel-cell input{width:15px;height:15px;margin:0;cursor:pointer;vertical-align:middle;}
+  tr.row-selected td{background:#fbf3df;}
 
   .dept-filter-wrap{position:relative;}
   .dept-filter-btn{
@@ -239,7 +246,7 @@
   .subject-cell{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .assignee-cell{font-size:13.5px;font-weight:600;color:#000;width:92px;}
   .assignee-cell .assignee-tail{font-size:10.5px;}
-  table th:not(:nth-child(3)), table td:not(:nth-child(3)):not(.sticky-actions){white-space:nowrap;}
+  table th:not(:nth-child(4)), table td:not(:nth-child(4)):not(.sticky-actions){white-space:nowrap;}
   .category-cell{text-align:center;padding-left:2px !important;padding-right:2px !important;width:24px !important;color:#000;font-size:10px;font-weight:400;}
   .category-cell-inner{display:block;writing-mode:vertical-rl;text-orientation:upright;font-size:10px;font-weight:400;color:#000;width:14px;overflow:hidden;margin:0 auto;}
   .date-cell{font-size:13px;font-weight:400;color:#000;width:68px;min-width:68px;max-width:68px;}
@@ -701,13 +708,17 @@
         </button>
         <div id="dept-filter-panel" class="dept-filter-panel" style="display:none;"></div>
       </div>
-      <button type="button" class="list-print-btn" onclick="exportCurrentListToExcel()">📊 Excelで書出す</button>
+      <div class="list-export-wrap">
+      <button type="button" id="list-sel-clear" class="list-sel-clear" onclick="clearExportSelection()" style="display:none;">選択を外す</button>
+      <button type="button" id="excel-export-btn" class="list-print-btn" onclick="exportCurrentListToExcel()" title="左のチェックを入れた申請だけを書き出します。チェックが無いときは、今表示している一覧をすべて書き出します。">📊 Excelで書出す</button>
+      </div>
     </div>
     <div id="search-status" class="search-status" style="display:none;"></div>
     <p class="list-hint">※ 新しいファイルを選ぶと差し替わります。選ばなければ現在のファイルのまま保存されます。同じファイル名のまま中身だけ変えた場合は、各行の「🔄」を押してから選び直してください。</p>
     <div class="table-scroll">
     <table>
       <colgroup>
+        <col style="width:30px;">
         <col style="width:68px;">
         <col style="width:24px;">
         <col style="width:60%;">
@@ -720,6 +731,7 @@
       </colgroup>
       <thead>
         <tr>
+          <th class="sel-cell"><input type="checkbox" id="sel-all" title="表示している申請をすべて選ぶ／外す（Excelで書出す用）" onchange="toggleSelectAllVisible(this.checked)"></th>
           <th class="date-cell">作成日</th>
           <th class="category-cell"><span class="category-cell-inner">科目</span></th>
           <th class="subject-header">主題</th>
@@ -732,11 +744,11 @@
         </tr>
       </thead>
       <tbody id="list-body">
-        <tr><td colspan="9" class="loading">読み込み中…</td></tr>
+        <tr><td colspan="10" class="loading">読み込み中…</td></tr>
       </tbody>
       <tfoot>
         <tr class="total-row">
-          <td colspan="3" class="total-label">合計</td>
+          <td colspan="4" class="total-label">合計</td>
           <td id="list-total" class="amt"></td>
           <td colspan="5"></td>
         </tr>
@@ -1784,7 +1796,7 @@ function populateYearFilter(){
 
 async function loadList(){
   const body = document.getElementById('list-body');
-  body.innerHTML = '<tr><td colspan="9" class="loading">読み込み中…</td></tr>';
+  body.innerHTML = '<tr><td colspan="10" class="loading">読み込み中…</td></tr>';
   try{
     const deptFilter = LOCKED_DEPARTMENT ? `&department=eq.${encodeURIComponent(LOCKED_DEPARTMENT)}` : '';
     const rows = await sbAll(`expense_requests?select=*${deptFilter}&order=created_at.desc,pdf_no.desc.nullslast`);
@@ -1793,7 +1805,7 @@ async function loadList(){
     renderList();
     prepareStampedPdfsInBackground(); // スタンプ済みPDFが無い申請の分を裏で作っておく
   }catch(e){
-    body.innerHTML = '<tr><td colspan="9" class="empty">読み込みに失敗しました</td></tr>';
+    body.innerHTML = '<tr><td colspan="10" class="empty">読み込みに失敗しました</td></tr>';
     console.error(e);
   }
 }
@@ -1906,13 +1918,58 @@ function getFilteredRows(){
   return { rows, q };
 }
 
+// 「Excelで書出す」で書き出す申請の選択（2026-11-26〜）
+// チェックを入れた申請があればそれだけを、無ければ今表示している一覧をすべて書き出す。
+// 選択は、検索や絞り込みを変えても覚えておく（画面を開き直すと消える）。
+const SELECTED_EXPORT_IDS = new Set();
+
+function toggleExportSelect(id, el){
+  if(el.checked) SELECTED_EXPORT_IDS.add(id); else SELECTED_EXPORT_IDS.delete(id);
+  const tr = el.closest('tr');
+  if(tr) tr.classList.toggle('row-selected', el.checked);
+  updateExportSelectionUi(getFilteredRows().rows);
+}
+
+function toggleSelectAllVisible(checked){
+  getFilteredRows().rows.forEach(r => { if(checked) SELECTED_EXPORT_IDS.add(r.id); else SELECTED_EXPORT_IDS.delete(r.id); });
+  renderList();
+}
+
+function clearExportSelection(){
+  SELECTED_EXPORT_IDS.clear();
+  renderList();
+}
+
+function selectedExportRows(){
+  // 一覧の並び順のまま、選んだ申請を返す（削除された申請は外す）
+  return (cachedList || []).filter(r => SELECTED_EXPORT_IDS.has(r.id));
+}
+
+function updateExportSelectionUi(visibleRows){
+  const ids = new Set((cachedList || []).map(r => r.id));
+  for(const id of [...SELECTED_EXPORT_IDS]) if(!ids.has(id)) SELECTED_EXPORT_IDS.delete(id);
+  const n = SELECTED_EXPORT_IDS.size;
+  const btn = document.getElementById('excel-export-btn');
+  if(btn) btn.textContent = n ? `📊 選んだ ${n} 件をExcelで書出す` : '📊 Excelで書出す';
+  const clr = document.getElementById('list-sel-clear');
+  if(clr) clr.style.display = n ? '' : 'none';
+  const all = document.getElementById('sel-all');
+  if(all){
+    const vis = visibleRows || [];
+    const on = vis.filter(r => SELECTED_EXPORT_IDS.has(r.id)).length;
+    all.checked = vis.length > 0 && on === vis.length;
+    all.indeterminate = on > 0 && on < vis.length;
+  }
+}
+
 function renderList(){
   const body = document.getElementById('list-body');
   const { rows, q } = getFilteredRows();
   document.getElementById('search-clear').style.display = q ? 'flex' : 'none';
 
   if(!rows.length){
-    body.innerHTML = '<tr><td colspan="9" class="empty">該当する申請はありません</td></tr>';
+    body.innerHTML = '<tr><td colspan="10" class="empty">該当する申請はありません</td></tr>';
+    updateExportSelectionUi([]);
     document.getElementById('list-total').textContent = '¥0';
     updateSearchStatus(q, 0);
     return;
@@ -1921,7 +1978,8 @@ function renderList(){
   const total = rows.reduce((sum, r) => sum + (Number(r.total_cost) || 0), 0);
   document.getElementById('list-total').textContent = '¥' + total.toLocaleString();
   body.innerHTML = rows.map(r=>`
-      <tr>
+      <tr class="${SELECTED_EXPORT_IDS.has(r.id) ? 'row-selected' : ''}">
+        <td class="sel-cell"><input type="checkbox" ${SELECTED_EXPORT_IDS.has(r.id) ? 'checked' : ''} onchange="toggleExportSelect('${r.id}', this)" title="Excelで書出すときに、この申請を入れる"></td>
         <td class="date-cell">${fmtEraShort((r.created_at||'').slice(0,10))}</td>
         <td class="searchable category-cell" onclick="searchByValue('${escapeHtml(r.budget_category||'')}')" title="${escapeHtml(r.budget_category||'')}"><span class="category-cell-inner">${categoryShortLabel(r.budget_category)}</span></td>
         <td class="subject-cell" title="${escapeHtml(r.subject)}">${escapeHtml((r.subject||'').replace(/\n/g, ' '))}</td>
@@ -1943,6 +2001,7 @@ function renderList(){
         </td>
       </tr>
     `).join('');
+  updateExportSelectionUi(rows);
 }
 
 // 一覧の「🔄」ボタン: 一覧を開いたまま、その行のPDFファイルを直接差し替える
@@ -2874,16 +2933,87 @@ function excelPdfLinkOf(r){
   return r.pdf_url;
 }
 
+// 書き出すPDFのファイル名（共有サーバーのバックアップと同じ付け方。2026-11-26〜）
+//   元のPDF        … 科目_提出部署_主題_PDF No.pdf
+//   スタンプ入り   … 会計承認日_科目_提出部署_主題_PDF No_スタンプ済.pdf
+function excelPdfFileNameOf(r, link){
+  const clean = v => String(v || '').trim();
+  const stamped = !!(link && (link === r.stamped_pdf_url || isOriginalPdfRemoved(r)) && r.accounting_approve_date);
+  let base = [clean(r.budget_category), clean(r.department), clean(r.subject)].filter(Boolean).join('_');
+  base = base.replace(/[\\/:*?"<>|#%\r\n\t]/g, '_').replace(/\s+/g, ' ').replace(/[. ]+$/, '');
+  if(!base) base = '見積書';
+  if(clean(r.pdf_no)) base += '_' + clean(r.pdf_no);
+  if(stamped) base = r.accounting_approve_date + '_' + base + '_スタンプ済';
+  return base;
+}
+
+// 書き出し先：Edge・Chrome では保存先のフォルダを選んでもらい、その中に新しいフォルダを作る。
+// 選べないブラウザでは、同じ中身を1つのZIPファイルにしてダウンロードする。
+let jsZipLoading = null;
+function loadJsZip(){
+  if(window.JSZip) return Promise.resolve();
+  if(!jsZipLoading){
+    jsZipLoading = new Promise((resolve, reject) => {
+      const sc = document.createElement('script');
+      sc.src = 'https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js';
+      sc.onload = () => resolve();
+      sc.onerror = () => { jsZipLoading = null; reject(new Error('ZIPの部品を読み込めませんでした')); };
+      document.head.appendChild(sc);
+    });
+  }
+  return jsZipLoading;
+}
+
 async function exportCurrentListToExcel(){
   if(!window.ExcelJS){
     alert('エクスポートの準備ができていません。少し待ってからもう一度お試しください。');
     return;
   }
-  const { rows } = getFilteredRows();
+  // チェックを入れた申請があればそれだけ、無ければ今表示している一覧をすべて書き出す
+  const rows = SELECTED_EXPORT_IDS.size ? selectedExportRows() : getFilteredRows().rows;
   if(!rows.length){
     showToast('絞り込み結果が0件のため、エクスポートできません');
     return;
   }
+
+  // 保存先のフォルダを選ぶ（ボタンを押した直後でないと選べないため、最初に聞く）
+  let parentDir = null;
+  if(window.showDirectoryPicker){
+    try{
+      parentDir = await window.showDirectoryPicker({ id:'expense-excel-export', mode:'readwrite', startIn:'documents' });
+    }catch(e){
+      if(e && e.name === 'AbortError') return;   // 「キャンセル」を押したとき
+      parentDir = null;                          // 選べなかったときは ZIP にする
+    }
+  }
+
+  const now = new Date();
+  const p2 = n => String(n).padStart(2,'0');
+  const stampName = `${now.getFullYear()}${p2(now.getMonth()+1)}${p2(now.getDate())}`;
+  const folderName = `予想経費申請一覧_${stampName}_${p2(now.getHours())}${p2(now.getMinutes())}`;
+
+  // 先にPDFを集める（同じ名前になったときは (2)・(3) を付ける）
+  const pdfFiles = new Map();   // 申請id → { name, blob }
+  const usedNames = new Set();
+  const targets = rows.filter(r => excelPdfLinkOf(r));
+  let failedPdf = 0;
+  for(let i = 0; i < targets.length; i++){
+    const r = targets[i];
+    showToast(`PDFを集めています… ${i+1}／${targets.length}`, 60000);
+    const link = excelPdfLinkOf(r);
+    const base = excelPdfFileNameOf(r, link);
+    let name = base + '.pdf', k = 2;
+    while(usedNames.has(name.toLowerCase())) name = `${base}(${k++}).pdf`;
+    try{
+      const res = await fetch(link, { cache:'no-store' });
+      if(!res.ok) throw new Error(res.status);
+      pdfFiles.set(r.id, { name, blob: await res.blob() });
+      usedNames.add(name.toLowerCase());
+    }catch(e){
+      failedPdf++;
+    }
+  }
+  showToast('Excelを作っています…', 60000);
 
   const wb = new ExcelJS.Workbook();
   const ws = wb.addWorksheet('申請一覧');
@@ -2905,7 +3035,10 @@ async function exportCurrentListToExcel(){
   ws.getRow(1).alignment = { vertical:'middle' };
 
   rows.forEach(r => {
-    const pdfLink = excelPdfLinkOf(r);
+    // 「PDF」の列：書き出したフォルダの中の PDF フォルダのファイルを開く
+    // （集められなかったPDFは、今までどおりインターネット上の場所を開く）
+    const local = pdfFiles.get(r.id);
+    const pdfLink = local ? 'PDF/' + local.name.replace(/ /g, '%20') : excelPdfLinkOf(r);
     const row = ws.addRow({
       submit: fmtEraShort((r.created_at||'').slice(0,10)) || '',
       category: r.budget_category || '',
@@ -2934,15 +3067,53 @@ async function exportCurrentListToExcel(){
   totalRow.font = { bold:true };
 
   const buffer = await wb.xlsx.writeBuffer();
-  const blob = new Blob([buffer], { type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-  const now = new Date();
-  const fname = `予想経費申請一覧_${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}.xlsx`;
-  const link = document.createElement('a');
-  link.href = URL.createObjectURL(blob);
-  link.download = fname;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
+  const xlsxName = `予想経費申請一覧_${stampName}.xlsx`;
+
+  try{
+    if(parentDir){
+      // 選んだ場所に新しいフォルダを作り、Excel と PDF フォルダを入れる
+      const dir = await parentDir.getDirectoryHandle(folderName, { create:true });
+      const writeFile = async (d, name, data) => {
+        const fh = await d.getFileHandle(name, { create:true });
+        const w = await fh.createWritable();
+        await w.write(data);
+        await w.close();
+      };
+      await writeFile(dir, xlsxName, new Blob([buffer]));
+      if(pdfFiles.size){
+        const pdfDir = await dir.getDirectoryHandle('PDF', { create:true });
+        let i = 0;
+        for(const f of pdfFiles.values()){
+          showToast(`保存しています… ${++i}／${pdfFiles.size}`, 60000);
+          await writeFile(pdfDir, f.name, f.blob);
+        }
+      }
+      showToast(`「${folderName}」フォルダに保存しました（PDF ${pdfFiles.size} 件）` + (failedPdf ? `。PDF ${failedPdf} 件は集められなかったため、Excelからインターネット上の場所を開きます` : ''), failedPdf ? 8000 : 4000);
+    } else {
+      // フォルダを選べないときは、同じ中身を ZIP にしてダウンロードする（展開してから使う）
+      await loadJsZip();
+      const zip = new JSZip();
+      const top = zip.folder(folderName);
+      top.file(xlsxName, buffer);
+      if(pdfFiles.size){
+        const pz = top.folder('PDF');
+        for(const f of pdfFiles.values()) pz.file(f.name, f.blob);
+      }
+      showToast('ZIPファイルを作っています…', 60000);
+      const zblob = await zip.generateAsync({ type:'blob' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(zblob);
+      link.download = folderName + '.zip';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      setTimeout(() => URL.revokeObjectURL(link.href), 60000);
+      showToast('ZIPファイルをダウンロードしました。右クリック →「すべて展開」してから、中のExcelを開いてください' + (failedPdf ? `（PDF ${failedPdf} 件は集められませんでした）` : ''), 8000);
+    }
+  }catch(e){
+    console.error(e);
+    alert('書き出しに失敗しました。もう一度お試しください。\n（' + (e && e.message ? e.message : e) + '）');
+  }
 }
 
 function closePrint(){
