@@ -543,7 +543,7 @@
   </div>
 
   <div class="tabs" id="tabs-bar">
-    <button class="tab" data-tab="new" data-label="新規申請" onclick="switchTab('new')">新規申請</button>
+    <button class="tab" data-tab="new" data-label="新規申請" onclick="openNewRequestTab()">新規申請</button>
     <button class="tab active" data-tab="list" data-label="申請一覧・印刷" onclick="switchTab('list')">✓ 申請一覧・印刷</button>
     <button type="button" class="tab external-link-tab" onclick="window.open('https://marusora8190.github.io/expense-request-system/payment_tracker.html', '_blank')" title="支出申請管理システムを新しいタブで開く">支出申請管理 ↗</button>
     <button class="tab" data-tab="help" data-label="使い方" onclick="switchTab('help')">使い方</button>
@@ -994,6 +994,7 @@
             <li>会計承認日が入っている申請は、スタンプを押したPDFの控えも「expense-pdfs」に保存し、その場所を expense_requests の stamped_pdf_url（元にしたPDFと承認日は stamped_pdf_key）に記録しています。一覧を開いたとき、控えがまだ無い申請の分を裏で自動的に作ります。PDFを差し替えると、控えも自動で作り直します。</li>
             <li>容量の目安（2026年8月31日時点）：データベースは上限500MBに対し約12MB（②〜⑥の合計）、ファイル置き場は上限1GBに対し約9.4MB。当分は余裕があります。</li>
             <li>申請の「編集」画面では、右側に印刷の画面（見本）を並べて出します（2026年11月10日〜）。入力欄を直すと、保存する前でもすぐ映ります。右の「印刷」「PDFダウンロード」は、今の入力欄の内容でいつもの印刷の画面を開いて行います（保存はしません）。新規申請のときは出しません。編集画面の上の「📄 印刷の画面を隠す／出す」で切り替えられ、どちらにしたかはそのパソコンのブラウザー（localStorage の expense-edit-preview-off）に覚えます。</li>
+            <li>「編集」を開いたあとに「新規申請」タブを押すと、入力欄を空にして新しい申請の画面にします（2026年11月27日〜。前に編集した申請の内容は残りません）。新しい申請を入力している途中で一覧などを見て戻ったときは、入力内容をそのまま残します。</li>
             <li>データベース（Supabase）は、②④⑤⑥と同じ「スパーベース」プロジェクトを共用しています。</li>
           </ul>
         </div>
@@ -1395,6 +1396,13 @@ function switchTab(name){
 
 let editingId = null;
 let editingSnapshotUpdatedAt = null;
+// 「新規申請」タブを押したとき（2026年11月27日〜）：
+// 編集を開いたままだと前の申請の内容が残るため、編集中なら入力欄を新規の状態に戻してから開く。
+// 新規の入力途中で一覧などを見て戻ったときは、入力内容をそのまま残す。
+function openNewRequestTab(){
+  if(editingId) resetForm();
+  switchTab('new');
+}
 let editingPdfUrl = null;
 let editingSerialNo = null;
 
