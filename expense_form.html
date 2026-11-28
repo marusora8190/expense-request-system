@@ -275,6 +275,9 @@
   .icon-btn.pdf-none:hover{background:#d8d1c0;}
   .icon-btn.pdf-row-reload{background:#f1ece1;flex:0 0 auto;padding:5px 8px;font-size:12px;}
   .icon-btn.pdf-row-reload:hover{background:var(--accent-bg);color:var(--ink-dark);}
+  /* ④支出申請管理で「完了」になった申請の印（2026-11-28〜）。完了でない行も同じ幅をあけてボタンの位置をそろえる */
+  .done-work{display:inline-flex;align-items:center;padding:3px 8px;border-radius:5px;font-size:12px;font-weight:700;color:#2f6b3f;background:#e4f1e6;border:1px solid #b9dcc0;line-height:1.6;flex:0 0 auto;}
+  .done-work.is-empty{visibility:hidden;}
   .icon-btn.dl{background:#e9e2d0;color:var(--text);}
   .icon-btn.dl:hover{background:#ddd2b3;}
   .icon-btn.del:hover{background:#f4d9d5;}
@@ -885,7 +888,7 @@
           <p><span class="settings-code">ADMIN_EMAIL</span> ／ <span class="settings-code">getAdminToken</span></p>
           <p class="settings-sub">データベースは、削除を管理者アカウントだけに限っています。これが消えると、削除ボタンを押しても実際には削除されません（再読み込みすると申請が戻ってきます）。</p>
           <h3 class="settings-h3">1000件対策の部品</h3>
-          <p><span class="settings-code">sbAll</span>（申請一覧の読み込み・「古いデータの整理」・「元のPDFの整理」で使用）</p>
+          <p><span class="settings-code">sbAll</span>（申請一覧の読み込み・④の支払いの状態の読み込み・「古いデータの整理」・「元のPDFの整理」で使用）</p>
           <p class="settings-sub">データベースは1回に1000件までしか返さないため、1000件ずつ区切ってすべて読み込みます。これが消えると、申請が1000件を超えたときに一覧の一部が表示されなくなります。新しく読み込みを追加するときも、この部品を使います。</p>
         </div>
       </details>
@@ -1023,6 +1026,7 @@
             <li>容量の目安（2026年8月31日時点）：データベースは上限500MBに対し約12MB（②〜⑥の合計）、ファイル置き場は上限1GBに対し約9.4MB。当分は余裕があります。</li>
             <li>申請の「編集」画面では、右側に印刷の画面（見本）を並べて出します（2026年11月10日〜）。入力欄を直すと、保存する前でもすぐ映ります。右の「印刷」「PDFダウンロード」は、今の入力欄の内容でいつもの印刷の画面を開いて行います（保存はしません）。新規申請のときは出しません。編集画面の上の「📄 印刷の画面を隠す／出す」で切り替えられ、どちらにしたかはそのパソコンのブラウザー（localStorage の expense-edit-preview-off）に覚えます。</li>
             <li>「編集」を開いたあとに「新規申請」タブを押すと、入力欄を空にして新しい申請の画面にします（2026年11月27日〜。前に編集した申請の内容は残りません）。新しい申請を入力している途中で一覧などを見て戻ったときは、入力内容をそのまま残します。</li>
+            <li>一覧の右端（🔄の右）の「支払完了」は、④支出申請管理で「完了」になっている申請です（2026年11月28日〜）。④と同じく、支払いの記録があって残金が0円以下か、「支払いを完了として扱う」にチェックがあるときに出ます。④で記録したあとは、一覧を開き直すか「🔄 Update」で映ります。</li>
             <li>データベース（Supabase）は、②④⑤⑥と同じ「スパーベース」プロジェクトを共用しています。</li>
           </ul>
         </div>
@@ -1286,11 +1290,13 @@ async function sb(path, opts={}){
 // Supabase は1回の読み込みで最大1000件までしか返さないため、
 // 全件が必要な読み込みは、1000件ずつ区切って最後まで読み込む。
 // 区切りの順番が毎回同じになるよう、並び順に id を加えてから取得する。
-async function sbAll(path, pageSize = 1000){
+// id の欄が無い表(payment_overrides)は、3つ目に「重複しない欄の並び順」を渡す（2026-11-28〜。④と同じ形）。
+async function sbAll(path, pageSize = 1000, keyOrder = 'id.asc'){
   let p = path.replace(/&limit=\d+/, '');
   const m = p.match(/[?&]order=([^&]*)/);
-  if(!m) p += (p.includes('?') ? '&' : '?') + 'order=id.asc';
-  else if(!/(^|,)id\./.test(m[1])) p = p.replace(m[0], m[0] + ',id.asc');
+  const keyCol = keyOrder.split('.')[0];
+  if(!m) p += (p.includes('?') ? '&' : '?') + 'order=' + keyOrder;
+  else if(!new RegExp('(^|,)' + keyCol + '\\.').test(m[1])) p = p.replace(m[0], m[0] + ',' + keyOrder);
   const all = [];
   for(let offset = 0; ; offset += pageSize){
     const page = await sb(`${p}&limit=${pageSize}&offset=${offset}`);
@@ -1835,8 +1841,12 @@ async function loadList(){
   body.innerHTML = '<tr><td colspan="10" class="loading">読み込み中…</td></tr>';
   try{
     const deptFilter = LOCKED_DEPARTMENT ? `&department=eq.${encodeURIComponent(LOCKED_DEPARTMENT)}` : '';
-    const rows = await sbAll(`expense_requests?select=*${deptFilter}&order=created_at.desc,pdf_no.desc.nullslast`);
+    const [rows, payState] = await Promise.all([
+      sbAll(`expense_requests?select=*${deptFilter}&order=created_at.desc,pdf_no.desc.nullslast`),
+      loadPaymentState()
+    ]);
     cachedList = rows;
+    COMPLETED_IDS = completedIdsOf(rows, payState);
     populateYearFilter();
     renderList();
     prepareStampedPdfsInBackground(); // スタンプ済みPDFが無い申請の分を裏で作っておく
@@ -1844,6 +1854,35 @@ async function loadList(){
     body.innerHTML = '<tr><td colspan="10" class="empty">読み込みに失敗しました</td></tr>';
     console.error(e);
   }
+}
+
+// ④支出申請管理で「完了」になった申請（2026-11-28〜）
+// ④と同じ決め方：支払いの記録があって残金が0円以下、または「支払いを完了として扱う」にチェックがある。
+// 読み込めなかったときは表示しないだけで、一覧はふつうに出す。
+var COMPLETED_IDS = new Set();   // 一覧より先に描くことがあっても困らないよう var にする
+async function loadPaymentState(){
+  try{
+    const [pays, ovrs] = await Promise.all([
+      sbAll('payments?select=expense_request_id,amount'),
+      sbAll('payment_overrides?select=expense_request_id,is_completed&is_completed=is.true', 1000, 'expense_request_id.asc')
+    ]);
+    const paid = {};   // 申請id → 支払合計
+    pays.forEach(p => { paid[p.expense_request_id] = (paid[p.expense_request_id] || 0) + Number(p.amount || 0); });
+    return { paid, manual: new Set(ovrs.map(o => o.expense_request_id)) };
+  }catch(e){
+    console.warn('④の完了の状態を読み込めませんでした', e);
+    return { paid:{}, manual:new Set() };
+  }
+}
+function completedIdsOf(rows, state){
+  const ids = new Set();
+  (rows || []).forEach(r => {
+    if(state.manual.has(r.id)
+       || (Object.prototype.hasOwnProperty.call(state.paid, r.id) && Number(r.total_cost || 0) - state.paid[r.id] <= 0)){
+      ids.add(r.id);
+    }
+  });
+  return ids;
 }
 
 // 検索欄の下に「「〇〇」で絞り込み中（△件）」と表示し、何で絞り込んでいるか分かるようにする
@@ -2033,6 +2072,7 @@ function renderList(){
               : `<button class="icon-btn pdf pdf-none" onclick="copyPdfNo('${escapeHtml(r.pdf_no||'')}')" title="添付の見積書・明細書PDF未添付。PDF No.: ${escapeHtml(r.pdf_no||'—')}（クリックで番号をコピー）">file</button>`
             }
             <button class="icon-btn pdf-row-reload" onclick="triggerRowPdfReplace('${r.id}')" title="同じ名前のファイルを選び直したい時は、こちらを押してから選択し直してください">🔄</button>
+            <span class="done-work${COMPLETED_IDS.has(r.id) ? '' : ' is-empty'}" title="${COMPLETED_IDS.has(r.id) ? '④支出申請管理で「完了」になっている工事です' : ''}">支払完了</span>
           </div>
         </td>
       </tr>
