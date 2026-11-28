@@ -278,6 +278,8 @@
   /* ④支出申請管理で「完了」になった申請の印（2026-11-28〜）。完了でない行も同じ幅をあけてボタンの位置をそろえる */
   .done-work{display:inline-flex;align-items:center;padding:3px 8px;border-radius:5px;font-size:12px;font-weight:700;color:#2f6b3f;background:#e4f1e6;border:1px solid #b9dcc0;line-height:1.6;flex:0 0 auto;}
   .done-work.is-empty{visibility:hidden;}
+  /* ボタンの列の幅を測るときだけ、ボタンを縮めずに並べる（2026-11-28〜） */
+  #list-body.measuring .row-actions{width:max-content;}
   .icon-btn.dl{background:#e9e2d0;color:var(--text);}
   .icon-btn.dl:hover{background:#ddd2b3;}
   .icon-btn.del:hover{background:#f4d9d5;}
@@ -730,7 +732,7 @@
         <col style="width:92px;">
         <col style="width:68px;">
         <col style="width:68px;">
-        <col style="width:200px;">
+        <col id="col-actions" style="width:200px;">
       </colgroup>
       <thead>
         <tr>
@@ -2078,7 +2080,24 @@ function renderList(){
       </tr>
     `).join('');
   updateExportSelectionUi(rows);
+  fitActionsColumn();
 }
+
+// 右端のボタンの列（編集・印刷・file・🔄・支払完了）の幅を、中身に合わせて自動で決める（2026-11-28〜）
+// ボタンが見切れないよう、いちばん長い行に合わせる（200px より狭くはしない）。
+function fitActionsColumn(){
+  const col = document.getElementById('col-actions');
+  const body = document.getElementById('list-body');
+  if(!col || !body) return;
+  const boxes = body.querySelectorAll('.row-actions');
+  if(!boxes.length) return;
+  body.classList.add('measuring');
+  let w = 0;
+  boxes.forEach(el => { w = Math.max(w, el.getBoundingClientRect().width); });
+  body.classList.remove('measuring');
+  if(w > 0) col.style.width = Math.max(200, Math.ceil(w) + 22) + 'px';   // 22 = 左右の余白
+}
+if(document.fonts && document.fonts.ready) document.fonts.ready.then(() => fitActionsColumn());
 
 // 一覧の「🔄」ボタン: 一覧を開いたまま、その行のPDFファイルを直接差し替える
 let rowPdfReplaceTargetId = null;
