@@ -798,7 +798,7 @@
         <li>一覧の「科目」「担当」の欄をクリックすると、その値が検索欄に<strong>追加</strong>されます（今の検索内容は消えないので、クリックを重ねて複数条件で絞り込めます）。一覧の「部署」欄をクリックした場合は、検索欄ではなく下の「部署で絞り込み」のチェックが入ります。</li>
         <li>年度のプルダウンから、特定の年度の申請だけに絞り込めます。</li>
         <li id="help-dept-filter"><strong>「部署で絞り込み」</strong>ボタンからは、複数の部署にチェックを入れて、そのいずれかに該当する申請だけに絞り込めます（例：水道課と電気課の両方をチェックすると、どちらかの部署の申請がすべて表示されます）。一覧の「部署」列と同じ担当者部署で絞り込みます（一覧の「部署」欄をクリックしたときも、ここに自動でチェックが入ります）。※各課専用URL（部署固定URL）で開いている場合は、その部署の申請しか表示されないため、このボタンは表示されません（管理者用URLでのみ表示されます）。</li>
-        <li><strong>「📊 Excelで書出す」</strong>ボタンを押すと、今表示している（絞り込み済みの）一覧の内容がExcelファイル（.xlsx）としてダウンロードされます。いちばん右の<strong>「PDF」</strong>の列の「開く」を押すと、その申請に添付したPDFが開きます（スタンプ入りのPDFがもう作られていれば、そちらが開きます。まだ作られていないときは、一覧の「ファイル」ボタンを一度押すと作られます）。PDFが添付されていない申請は空欄です。インターネットにつながっていないと開けません。</li>
+        <li><strong>「📊 Excelで書出す」</strong>ボタンを押すと、一覧の内容をExcelファイル（.xlsx）に書き出します。左のチェックを入れた申請があればそれだけを、チェックが無いときは今表示している（絞り込み済みの）一覧をすべて書き出します。Edge・Chromeでは保存する場所をたずねられ、選んだ場所に「予想経費申請一覧_日付_時刻」のフォルダができて、その中にExcelと<strong>「PDF」</strong>フォルダ（添付したPDFの写し）が入ります。<strong>前に書き出したフォルダを選ぶと、そのフォルダの中のExcelとPDFを上書きします</strong>（Excelを開いているときは先に閉じてください。今回の一覧に無い古いPDFは残ります）。次に書き出すときは、前に保存したフォルダから選ぶ画面が開きます。場所を選べないブラウザでは、同じ中身がZIPファイルでダウンロードされます（右クリック →「すべて展開」してから使います）。Excelの文字はすべて「Meiryo UI」です。いちばん右の<strong>「PDF」</strong>の列の「開く」を押すと、その申請のPDFが開きます（スタンプ入りのPDFがもう作られていれば、そちらが開きます）。PDFが添付されていない申請は空欄です。
         <li id="help-tab-add">特定の工事・案件だけを常に見られるようにしたい場合は、タブの一番右にある<strong>「＋ タブ増設」</strong>から専用タブを追加できます。</li>
         <li id="help-tab-remove">増設したタブは、タブ名の右にある<strong>「×」</strong>ボタンから削除できます（タブを消しても、そこに含まれていた申請データ自体は削除されません）。</li>
         <li id="help-cleanup">タブの並びの「設定」の中にある<strong>「🗑 古いデータの整理」</strong>を開くと、日付を入れて、その日より前に作成された申請をまとめて削除できます。<strong>「対象を確認する」</strong>で件数を確かめてから削除してください（削除のときは管理者パスワードが必要です）。見積書PDFと、支出申請管理の支払い記録も一緒に消え、元に戻せません。※管理者用URLでのみ表示されます。</li>
@@ -2972,6 +2972,54 @@ function loadJsZip(){
   return jsZipLoading;
 }
 
+// 前に書き出したフォルダを覚えておく（2026-11-28〜）
+// 次に「Excelで書出す」を押したとき、保存先を選ぶ画面をそのフォルダから開く。
+// 覚えるのはこのパソコン・このブラウザだけ。
+const EXPORT_DIR_DB = 'expense-excel-export';
+let lastExportDirHandle = null;
+function openExportDirDb(){
+  return new Promise((resolve, reject) => {
+    const q = indexedDB.open(EXPORT_DIR_DB, 1);
+    q.onupgradeneeded = () => q.result.createObjectStore('h');
+    q.onsuccess = () => resolve(q.result);
+    q.onerror = () => reject(q.error);
+  });
+}
+async function loadLastExportDir(){
+  try{
+    const db = await openExportDirDb();
+    lastExportDirHandle = await new Promise(resolve => {
+      const g = db.transaction('h').objectStore('h').get('last');
+      g.onsuccess = () => resolve(g.result || null);
+      g.onerror = () => resolve(null);
+    });
+  }catch(e){ lastExportDirHandle = null; }
+}
+async function saveLastExportDir(handle){
+  lastExportDirHandle = handle;
+  try{
+    const db = await openExportDirDb();
+    db.transaction('h', 'readwrite').objectStore('h').put(handle, 'last');
+  }catch(e){}
+}
+if(window.showDirectoryPicker && window.indexedDB) loadLastExportDir();
+
+// 選んだフォルダが、前に「Excelで書出す」で作ったフォルダかどうかを調べる。
+// そうなら、中にある書き出したExcelの名前を返す（無ければ ''、作ったフォルダでなければ null）。
+async function findExportedXlsxIn(dir){
+  const names = [];
+  let hasPdfDir = false;
+  try{
+    for await (const [name, h] of dir.entries()){
+      if(h.kind === 'file' && /^予想経費申請一覧_.*\.xlsx$/i.test(name)) names.push(name);
+      if(h.kind === 'directory' && name === 'PDF') hasPdfDir = true;
+    }
+  }catch(e){ return null; }
+  if(names.length) return names.sort().pop();
+  if(/^予想経費申請一覧_/.test(dir.name || '') && hasPdfDir) return '';
+  return null;
+}
+
 async function exportCurrentListToExcel(){
   if(!window.ExcelJS){
     alert('エクスポートの準備ができていません。少し待ってからもう一度お試しください。');
@@ -2985,13 +3033,20 @@ async function exportCurrentListToExcel(){
   }
 
   // 保存先のフォルダを選ぶ（ボタンを押した直後でないと選べないため、最初に聞く）
+  // 前に書き出したフォルダがあれば、そのフォルダから選ぶ画面を開く（2026-11-28〜）
   let parentDir = null;
   if(window.showDirectoryPicker){
+    const pick = startIn => window.showDirectoryPicker({ id:'expense-excel-export', mode:'readwrite', startIn });
     try{
-      parentDir = await window.showDirectoryPicker({ id:'expense-excel-export', mode:'readwrite', startIn:'documents' });
+      parentDir = await pick(lastExportDirHandle || 'documents');
     }catch(e){
       if(e && e.name === 'AbortError') return;   // 「キャンセル」を押したとき
-      parentDir = null;                          // 選べなかったときは ZIP にする
+      parentDir = null;
+      if(lastExportDirHandle){                   // 覚えていたフォルダが無くなっていたとき
+        try{ parentDir = await pick('documents'); }
+        catch(e2){ if(e2 && e2.name === 'AbortError') return; parentDir = null; }
+      }
+      // それでも選べなかったときは ZIP にする
     }
   }
 
@@ -2999,6 +3054,17 @@ async function exportCurrentListToExcel(){
   const p2 = n => String(n).padStart(2,'0');
   const stampName = `${now.getFullYear()}${p2(now.getMonth()+1)}${p2(now.getDate())}`;
   const folderName = `予想経費申請一覧_${stampName}_${p2(now.getHours())}${p2(now.getMinutes())}`;
+
+  // 選んだのが前に書き出したフォルダなら、そのフォルダの中のExcelとPDFを上書きする（2026-11-28〜）
+  let overwriteXlsx = null;   // 上書きするときのExcelの名前（上書きしないときは null）
+  if(parentDir){
+    const found = await findExportedXlsxIn(parentDir);
+    if(found !== null){
+      const ok = confirm(`「${parentDir.name}」は、前に書き出したフォルダです。\n\nこのフォルダの中のExcelとPDFを、今の内容で上書きしますか？\n\n（Excelを開いているときは、先に閉じてください）`);
+      if(!ok) return;
+      overwriteXlsx = found || `予想経費申請一覧_${stampName}.xlsx`;
+    }
+  }
 
   // 先にPDFを集める（同じ名前になったときは (2)・(3) を付ける）
   const pdfFiles = new Map();   // 申請id → { name, blob }
@@ -3038,8 +3104,12 @@ async function exportCurrentListToExcel(){
     { header:'PDF', key:'pdf', width:8 },
   ];
 
+  // 文字はすべて「Meiryo UI」にする（2026-11-28〜）
+  const XL_FONT = { name:'Meiryo UI', size:11 };
+  ws.columns.forEach(col => { col.font = { ...XL_FONT }; });
+
   // 見出し行を太字に
-  ws.getRow(1).font = { bold:true };
+  ws.getRow(1).font = { ...XL_FONT, bold:true };
   ws.getRow(1).alignment = { vertical:'middle' };
 
   rows.forEach(r => {
@@ -3072,15 +3142,23 @@ async function exportCurrentListToExcel(){
   // 合計行を追加して太字に
   const total = rows.reduce((sum, r) => sum + (Number(r.total_cost) || 0), 0);
   const totalRow = ws.addRow({ subject:'合計', amount: total });
-  totalRow.font = { bold:true };
+  totalRow.font = { ...XL_FONT, bold:true };
+
+  // 最後に、すべてのマスの文字を「Meiryo UI」にそろえる（太字・青い下線などはそのまま）
+  ws.eachRow({ includeEmpty:true }, row => {
+    row.eachCell({ includeEmpty:true }, c => {
+      c.font = { ...(c.font || {}), name:XL_FONT.name, size:(c.font && c.font.size) || XL_FONT.size };
+    });
+  });
 
   const buffer = await wb.xlsx.writeBuffer();
-  const xlsxName = `予想経費申請一覧_${stampName}.xlsx`;
+  const xlsxName = overwriteXlsx || `予想経費申請一覧_${stampName}.xlsx`;
 
   try{
     if(parentDir){
       // 選んだ場所に新しいフォルダを作り、Excel と PDF フォルダを入れる
-      const dir = await parentDir.getDirectoryHandle(folderName, { create:true });
+      // （前に書き出したフォルダを選んだときは、そのフォルダにそのまま上書きする）
+      const dir = overwriteXlsx ? parentDir : await parentDir.getDirectoryHandle(folderName, { create:true });
       const writeFile = async (d, name, data) => {
         const fh = await d.getFileHandle(name, { create:true });
         const w = await fh.createWritable();
@@ -3096,7 +3174,8 @@ async function exportCurrentListToExcel(){
           await writeFile(pdfDir, f.name, f.blob);
         }
       }
-      showToast(`「${folderName}」フォルダに保存しました（PDF ${pdfFiles.size} 件）` + (failedPdf ? `。PDF ${failedPdf} 件は集められなかったため、Excelからインターネット上の場所を開きます` : ''), failedPdf ? 8000 : 4000);
+      saveLastExportDir(dir);   // 次はこのフォルダから選べるように覚えておく
+      showToast(`「${dir.name}」フォルダに${overwriteXlsx ? '上書き' : ''}保存しました（PDF ${pdfFiles.size} 件）` + (failedPdf ? `。PDF ${failedPdf} 件は集められなかったため、Excelからインターネット上の場所を開きます` : ''), failedPdf ? 8000 : 4000);
     } else {
       // フォルダを選べないときは、同じ中身を ZIP にしてダウンロードする（展開してから使う）
       await loadJsZip();
@@ -3120,7 +3199,11 @@ async function exportCurrentListToExcel(){
     }
   }catch(e){
     console.error(e);
-    alert('書き出しに失敗しました。もう一度お試しください。\n（' + (e && e.message ? e.message : e) + '）');
+    if(parentDir && e && (e.name === 'NoModificationAllowedError' || e.name === 'InvalidStateError' || e.name === 'NotReadableError')){
+      alert('保存できませんでした。\n書き出したExcelやPDFを開いたままだと上書きできません。閉じてから、もう一度お試しください。\n（' + (e.message || e.name) + '）');
+    } else {
+      alert('書き出しに失敗しました。もう一度お試しください。\n（' + (e && e.message ? e.message : e) + '）');
+    }
   }
 }
 
