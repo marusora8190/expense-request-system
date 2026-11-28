@@ -941,6 +941,34 @@
       </details>
 
       <details class="settings-section">
+        <summary>📊 Excelの書き出し<span class="settings-hint"><span class="hint-open">ここを押すと開きます</span><span class="hint-close">ここを押すと閉じます</span></span></summary>
+        <div class="settings-body">
+          <p class="settings-sub">一覧の「📊 Excelで書出す」ボタンの動きです（2026年11月26日〜。上書きとMeiryo UIは2026年11月28日〜）。</p>
+          <h3 class="settings-h3">書き出す申請</h3>
+          <ul>
+            <li>一覧のいちばん左のチェックを入れた申請があれば、それだけを書き出します（ボタンが「選んだ ○件をExcelで書出す」に変わります）。「選択を外す」でチェックを全部外せます。</li>
+            <li>チェックが無いときは、今表示している（検索・年度・部署で絞り込んだ）一覧をすべて書き出します。</li>
+            <li>チェックは、絞り込みを変えても残ります。画面を開き直すと消えます。</li>
+          </ul>
+          <h3 class="settings-h3">Excelの中身</h3>
+          <ul>
+            <li>列：作成日・科目・主題・金額・部署・担当・会計提出年月日・会計承認・PDF。いちばん下に金額の合計の行が付きます。</li>
+            <li>文字はすべて「Meiryo UI」です。金額は3けたごとに区切ります。</li>
+            <li>「PDF」の列の「開く」を押すと、いっしょに保存したPDFの写しが開きます。会計承認日があってスタンプ入りのPDFがもう作られていれば、スタンプ入りのほうを保存します。PDFが添付されていない申請は空欄です。</li>
+          </ul>
+          <h3 class="settings-h3">保存のしかた</h3>
+          <ul>
+            <li>Edge・Chromeでは、保存する場所をたずねられます。選んだ場所に「予想経費申請一覧_日付_時刻」のフォルダを作り、その中にExcelと「PDF」フォルダ（PDFの写し）を入れます。</li>
+            <li>PDFの名前：元のPDFは「科目_提出部署_主題_PDF No.pdf」、スタンプ入りは「会計承認日_科目_提出部署_主題_PDF No_スタンプ済.pdf」（共有サーバーのバックアップと同じ付け方）。</li>
+            <li><strong>前に書き出したフォルダを選ぶと、確かめてから、そのフォルダの中のExcel（名前は前と同じ）とPDFを上書きします。</strong>Excelを開いたままだと上書きできないので、先に閉じてください。今回の一覧に入っていない古いPDFは消さずに残ります。</li>
+            <li>次に書き出すときは、前に保存したフォルダから選ぶ画面が開きます（覚えるのは、使っているパソコン・ブラウザだけ）。</li>
+            <li>場所を選べないブラウザでは、同じ中身を1つのZIPファイルでダウンロードします。右クリック →「すべて展開」してから、中のExcelを開いてください。</li>
+            <li>PDFを集められなかった申請は、Excelの「開く」でインターネット上の場所を開きます（インターネットにつながっていないと開けません）。</li>
+          </ul>
+        </div>
+      </details>
+
+      <details class="settings-section">
         <summary>💾 バックアップ<span class="settings-hint"><span class="hint-open">ここを押すと開きます</span><span class="hint-close">ここを押すと閉じます</span></span></summary>
         <div class="settings-body">
           <h3 class="settings-h3">自動バックアップ（週1回）</h3>
